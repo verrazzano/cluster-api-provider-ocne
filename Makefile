@@ -23,7 +23,7 @@ SHELL:=/usr/bin/env bash
 #
 # Go.
 #
-GO_CONTAINER_IMAGE ?= ghcr.io/oracle/oraclelinux:7-slim
+GO_CONTAINER_IMAGE ?= ghcr.io/oracle/oraclelinux:8
 
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
@@ -422,13 +422,13 @@ ALL_DOCKER_BUILD_E2E = ocne-bootstrap ocne-control-plane
 
 .PHONY: docker-build-ocne-bootstrap
 docker-build-ocne-bootstrap: ## Build the docker image for ocne bootstrap controller manager
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-build-ocne-control-plane
 docker-build-ocne-control-plane: ## Build the docker image for ocne control plane controller manager
-	DOCKER_BUILDKIT=1 docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./controlplane/ocne/config/default/manager_pull_policy.yaml"
 
