@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-        - image: iad.ocir.io/odsbuilddev/aamitra/dev/ocne-control-plane-controller-amd64
+        - image: ghcr.io/verrazzano/cluster-api-ocne-control-plane-controller-amd64
           name: manager

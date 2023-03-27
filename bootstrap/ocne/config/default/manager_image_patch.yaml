@@ -7,5 +7,5 @@ spec:
   template:
     spec:
       containers:
-        - image: iad.ocir.io/odsbuilddev/aamitra/dev/ocne-bootstrap-controller-amd64
+        - image: ghcr.io/verrazzano/cluster-api-ocne-bootstrap-controller-amd64
           name: manager

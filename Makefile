@@ -185,11 +185,11 @@ IMAGE_NAME ?= cluster-api-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
 
 # bootstrap
-OCNE_BOOTSTRAP_IMAGE_NAME ?= ocne-bootstrap-controller
+OCNE_BOOTSTRAP_IMAGE_NAME ?= cluster-api-ocne-bootstrap-controller
 OCNE_BOOTSTRAP_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_BOOTSTRAP_IMAGE_NAME)
 
 # control plane
-OCNE_CONTROL_PLANE_IMAGE_NAME ?= ocne-control-plane-controller
+OCNE_CONTROL_PLANE_IMAGE_NAME ?= cluster-api-ocne-control-plane-controller
 OCNE_CONTROL_PLANE_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_CONTROL_PLANE_IMAGE_NAME)
 
 # capd
