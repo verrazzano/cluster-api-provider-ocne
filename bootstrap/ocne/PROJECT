@@ -1,0 +1,10 @@
+version: "2"
+domain: cluster.x-k8s.io
+repo: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne
+resources:
+- group: bootstrap
+  version: v1beta1
+  kind: KubeadmConfig
+- group: bootstrap
+  version: v1beta1
+  kind: KubeadmConfigTemplate

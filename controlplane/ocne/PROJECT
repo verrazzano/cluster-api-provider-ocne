@@ -1,0 +1,10 @@
+version: "2"
+domain: controlplane.cluster.x-k8s.io
+repo: github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne
+resources:
+- group: controlplane
+  version: v1beta1
+  kind: KubeadmControlPlane
+- group: controlplane
+  kind: KubeadmControlPlaneTemplate
+  version: v1beta1
