@@ -404,7 +404,8 @@ manager-ocne-control-plane: ## Build the ocne control plane manager binary into 
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
-	docker pull ghcr.io/oracle/oraclelinux:7-slim
+	docker pull ghcr.io/oracle/oraclelinux:8
+	docker pull ghcr.io/oracle/oraclelinux:8-slim
 
 .PHONY: docker-build-all
 docker-build-all: $(addprefix docker-build-,$(ALL_ARCH)) ## Build docker images for all architectures
