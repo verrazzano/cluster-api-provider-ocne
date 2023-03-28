@@ -15,7 +15,7 @@ spec:
     listKind: OcneControlPlaneList
     plural: ocnecontrolplanes
     shortNames:
-    - kcp
+    - ocnecp
     singular: ocnecontrolplane
   scope: Namespaced
   versions:

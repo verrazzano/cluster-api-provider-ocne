@@ -423,14 +423,14 @@ ALL_DOCKER_BUILD_E2E = ocne-bootstrap ocne-control-plane
 
 .PHONY: docker-build-ocne-bootstrap
 docker-build-ocne-bootstrap: ## Build the docker image for ocne bootstrap controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_image_patch.yaml"
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_BOOTSTRAP_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-build-ocne-control-plane
 docker-build-ocne-control-plane: ## Build the docker image for ocne control plane controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH):$(TAG)
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./controlplane/ocne/config/default/manager_pull_policy.yaml"
 
 ## --------------------------------------
@@ -554,18 +554,18 @@ docker-push-%:
 
 .PHONY: docker-push
 docker-push: ## Push the docker images to be included in the release
-	docker push $(OCNE_BOOTSTRAP_CONTROLLER_IMG)-$(ARCH):$(TAG)
-	docker push $(OCNE_CONTROL_PLANE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker push $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
+	docker push $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
 
 .PHONY: docker-push-manifest-ocne-bootstrap
 docker-push-manifest-ocne-bootstrap: ## Push the multiarch manifest for the ocne bootstrap docker images
 	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
-	@for arch in $(ALL_ARCH); do docker push ${OCNE_BOOTSTRAP_CONTROLLER_IMG}-$${arch}:${TAG}; done
+	@for arch in $(ALL_ARCH); do docker push ${OCNE_BOOTSTRAP_CONTROLLER_IMG}:${TAG}; done
 
 .PHONY: docker-push-manifest-ocne-control-plane
 docker-push-manifest-ocne-control-plane: ## Push the multiarch manifest for the ocne control plane docker images
 	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
-	@for arch in $(ALL_ARCH); do docker push ${OCNE_CONTROL_PLANE_CONTROLLER_IMG}-$${arch}:${TAG}; done
+	@for arch in $(ALL_ARCH); do docker push ${OCNE_CONTROL_PLANE_CONTROLLER_IMG}:${TAG}; done
 
 .PHONY: set-manifest-pull-policy
 set-manifest-pull-policy:
