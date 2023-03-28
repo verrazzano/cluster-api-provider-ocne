@@ -4,7 +4,7 @@ repo: github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne
 resources:
 - group: controlplane
   version: v1beta1
-  kind: KubeadmControlPlane
+  kind: OcneControlPlane
 - group: controlplane
-  kind: KubeadmControlPlaneTemplate
+  kind: OcneControlPlaneTemplate
   version: v1beta1

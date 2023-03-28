@@ -4,7 +4,7 @@ repo: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne
 resources:
 - group: bootstrap
   version: v1beta1
-  kind: KubeadmConfig
+  kind: OcneConfig
 - group: bootstrap
   version: v1beta1
-  kind: KubeadmConfigTemplate
+  kind: OcneConfigTemplate
