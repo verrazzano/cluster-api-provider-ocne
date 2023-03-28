@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
 // Package upstreamv1beta3 contains a mirror of kubeadm API v1beta3 API, required because it is not possible to import k/K.
 //
 // IMPORTANT: Do not change these files!

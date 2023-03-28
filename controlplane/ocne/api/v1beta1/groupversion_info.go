@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
 // Package v1beta1 contains API Schema definitions for the kubeadm v1beta1 API group
 // +kubebuilder:object:generate=true
 // +groupName=controlplane.cluster.x-k8s.io

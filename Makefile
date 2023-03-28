@@ -15,6 +15,8 @@
 # If you update this file, please follow
 # https://www.thapaliya.com/en/writings/well-documented-makefiles/
 
+# This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
 # Ensure Make is run with bash shell as some syntax below is bash-specific
 SHELL:=/usr/bin/env bash
 

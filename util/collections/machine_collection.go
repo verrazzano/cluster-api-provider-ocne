@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
 // Modified copy of k8s.io/apimachinery/pkg/util/sets/int64.go
 // Modifications
 //   - int64 became *clusterv1.Machine
