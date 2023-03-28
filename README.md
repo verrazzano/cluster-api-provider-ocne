@@ -1,10 +1,3 @@
-<a href="https://cluster-api.sigs.k8s.io"><img alt="capi" src="./logos/kubernetes-cluster-logos_final-02.svg" width="160x" /></a>
-<p>
-<a href="https://godoc.org/github.com/verrazzano/cluster-api-provider-ocne"><img src="https://godoc.org/github.com/verrazzano/cluster-api-provider-ocne?status.svg"></a>
-<!-- join kubernetes slack channel for cluster-api -->
-<a href="http://slack.k8s.io/">
-<img src="https://img.shields.io/badge/join%20slack-%23cluster--api-brightgreen"></a>
-</p>
 
 # Cluster API
 
