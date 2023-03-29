@@ -30,7 +30,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// RolloutStrategyType defines the rollout strategies for a OcneControlPlane.
+// RolloutStrategyType defines the rollout strategies for a OCNEControlPlane.
 type RolloutStrategyType string
 
 const (
@@ -40,7 +40,7 @@ const (
 )
 
 const (
-	// OcneControlPlaneFinalizer is the finalizer applied to OcneControlPlane resources
+	// OcneControlPlaneFinalizer is the finalizer applied to OCNEControlPlane resources
 	// by its managing controller.
 	OcneControlPlaneFinalizer = "ocne.controlplane.cluster.x-k8s.io"
 
@@ -55,7 +55,7 @@ const (
 	OcneClusterConfigurationAnnotation = "controlplane.cluster.x-k8s.io/ocne-cluster-configuration"
 )
 
-// OcneControlPlaneSpec defines the desired state of OcneControlPlane.
+// OcneControlPlaneSpec defines the desired state of OCNEControlPlane.
 type OcneControlPlaneSpec struct {
 	// Number of desired machines. Defaults to 1. When stacked etcd is used only
 	// odd numbers are permitted, as per [etcd best practice](https://etcd.io/docs/v3.3.12/faq/#why-an-odd-number-of-cluster-members).
@@ -77,7 +77,7 @@ type OcneControlPlaneSpec struct {
 
 	// OcneConfigSpec is a OcneConfigSpec
 	// to use for initializing and joining machines to the control plane.
-	OcneConfigSpec bootstrapv1.OcneConfigSpec `json:"ocneConfigSpec"`
+	OcneConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
 
 	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.
@@ -86,7 +86,7 @@ type OcneControlPlaneSpec struct {
 
 	// RolloutAfter is a field to indicate a rollout should be performed
 	// after the specified time even if no changes have been made to the
-	// OcneControlPlane.
+	// OCNEControlPlane.
 	// +optional
 	RolloutAfter *metav1.Time `json:"rolloutAfter,omitempty"`
 
@@ -98,7 +98,7 @@ type OcneControlPlaneSpec struct {
 }
 
 // OcneControlPlaneMachineTemplate defines the template for Machines
-// in a OcneControlPlane object.
+// in a OCNEControlPlane object.
 type OcneControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
@@ -162,7 +162,7 @@ type RollingUpdate struct {
 	MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty"`
 }
 
-// OcneControlPlaneStatus defines the observed state of OcneControlPlane.
+// OcneControlPlaneStatus defines the observed state of OCNEControlPlane.
 type OcneControlPlaneStatus struct {
 	// Selector is the label selector in string format to avoid introspection
 	// by clients, and is used to provide the CRD-based integration for the
@@ -204,7 +204,7 @@ type OcneControlPlaneStatus struct {
 	// +optional
 	Initialized bool `json:"initialized"`
 
-	// Ready denotes that the OcneControlPlane API Server is ready to
+	// Ready denotes that the OCNEControlPlane API Server is ready to
 	// receive requests.
 	// +optional
 	Ready bool `json:"ready"`
@@ -213,7 +213,7 @@ type OcneControlPlaneStatus struct {
 	// state, and will be set to a token value suitable for
 	// programmatic interpretation.
 	// +optional
-	FailureReason errors.OcneControlPlaneStatusError `json:"failureReason,omitempty"`
+	FailureReason errors.OCNEControlPlaneStatusError `json:"failureReason,omitempty"`
 
 	// ErrorMessage indicates that there is a terminal problem reconciling the
 	// state, and will be set to a descriptive error message.
@@ -224,7 +224,7 @@ type OcneControlPlaneStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Conditions defines current service state of the OcneControlPlane.
+	// Conditions defines current service state of the OCNEControlPlane.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
@@ -236,17 +236,17 @@ type OcneControlPlaneStatus struct {
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 // +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialized",description="This denotes whether or not the control plane has the uploaded kubeadm-config configmap"
-// +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="OcneControlPlane API Server is ready to receive requests"
+// +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="OCNEControlPlane API Server is ready to receive requests"
 // +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.replicas",description="Total number of machines desired by this control plane",priority=10
 // +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=".status.replicas",description="Total number of non-terminated machines targeted by this control plane"
 // +kubebuilder:printcolumn:name="Ready",type=integer,JSONPath=".status.readyReplicas",description="Total number of fully running and ready control plane machines"
 // +kubebuilder:printcolumn:name="Updated",type=integer,JSONPath=".status.updatedReplicas",description="Total number of non-terminated machines targeted by this control plane that have the desired template spec"
 // +kubebuilder:printcolumn:name="Unavailable",type=integer,JSONPath=".status.unavailableReplicas",description="Total number of unavailable machines targeted by this control plane"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OcneControlPlane"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OCNEControlPlane"
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=".spec.version",description="Kubernetes version associated with this control plane"
 
-// OcneControlPlane is the Schema for the OcneControlPlane API.
-type OcneControlPlane struct {
+// OCNEControlPlane is the Schema for the OCNEControlPlane API.
+type OCNEControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -255,24 +255,24 @@ type OcneControlPlane struct {
 }
 
 // GetConditions returns the set of conditions for this object.
-func (in *OcneControlPlane) GetConditions() clusterv1.Conditions {
+func (in *OCNEControlPlane) GetConditions() clusterv1.Conditions {
 	return in.Status.Conditions
 }
 
 // SetConditions sets the conditions on this object.
-func (in *OcneControlPlane) SetConditions(conditions clusterv1.Conditions) {
+func (in *OCNEControlPlane) SetConditions(conditions clusterv1.Conditions) {
 	in.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
 
-// OcneControlPlaneList contains a list of OcneControlPlane.
-type OcneControlPlaneList struct {
+// OCNEControlPlaneList contains a list of OCNEControlPlane.
+type OCNEControlPlaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []OcneControlPlane `json:"items"`
+	Items           []OCNEControlPlane `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&OcneControlPlane{}, &OcneControlPlaneList{})
+	SchemeBuilder.Register(&OCNEControlPlane{}, &OCNEControlPlaneList{})
 }

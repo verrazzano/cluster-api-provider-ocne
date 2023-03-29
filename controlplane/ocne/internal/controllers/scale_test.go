@@ -38,12 +38,12 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func TestKubeadmControlPlaneReconciler_initializeControlPlane(t *testing.T) {
+func TestOCNEControlPlaneReconciler_initializeControlPlane(t *testing.T) {
 	g := NewWithT(t)
 
-	cluster, kcp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
+	cluster, ocnecp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
 
-	fakeClient := newFakeClient(cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy())
+	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
@@ -55,10 +55,10 @@ func TestKubeadmControlPlaneReconciler_initializeControlPlane(t *testing.T) {
 	}
 	controlPlane := &internal.ControlPlane{
 		Cluster: cluster,
-		KCP:     kcp,
+		KCP:     ocnecp,
 	}
 
-	result, err := r.initializeControlPlane(ctx, cluster, kcp, controlPlane)
+	result, err := r.initializeControlPlane(ctx, cluster, ocnecp, controlPlane)
 	g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -66,12 +66,12 @@ func TestKubeadmControlPlaneReconciler_initializeControlPlane(t *testing.T) {
 	g.Expect(fakeClient.List(ctx, machineList, client.InNamespace(cluster.Namespace))).To(Succeed())
 	g.Expect(machineList.Items).To(HaveLen(1))
 
-	res, err := collections.GetFilteredMachinesForCluster(ctx, fakeClient, cluster, collections.OwnedMachines(kcp))
+	res, err := collections.GetFilteredMachinesForCluster(ctx, fakeClient, cluster, collections.OwnedMachines(ocnecp))
 	g.Expect(res).To(HaveLen(1))
 	g.Expect(err).NotTo(HaveOccurred())
 
 	g.Expect(machineList.Items[0].Namespace).To(Equal(cluster.Namespace))
-	g.Expect(machineList.Items[0].Name).To(HavePrefix(kcp.Name))
+	g.Expect(machineList.Items[0].Name).To(HavePrefix(ocnecp.Name))
 
 	g.Expect(machineList.Items[0].Spec.InfrastructureRef.Namespace).To(Equal(cluster.Namespace))
 	g.Expect(machineList.Items[0].Spec.InfrastructureRef.Name).To(HavePrefix(genericMachineTemplate.GetName()))
@@ -79,18 +79,18 @@ func TestKubeadmControlPlaneReconciler_initializeControlPlane(t *testing.T) {
 	g.Expect(machineList.Items[0].Spec.InfrastructureRef.Kind).To(Equal("GenericMachine"))
 
 	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.Namespace).To(Equal(cluster.Namespace))
-	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.Name).To(HavePrefix(kcp.Name))
+	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.Name).To(HavePrefix(ocnecp.Name))
 	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.APIVersion).To(Equal(bootstrapv1.GroupVersion.String()))
-	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.Kind).To(Equal("OcneConfig"))
+	g.Expect(machineList.Items[0].Spec.Bootstrap.ConfigRef.Kind).To(Equal("OCNEConfig"))
 }
 
-func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
+func TestOCNEControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 	t.Run("creates a control plane Machine if preflight checks pass", func(t *testing.T) {
 		g := NewWithT(t)
 
-		cluster, kcp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
-		setKCPHealthy(kcp)
-		initObjs := []client.Object{cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy()}
+		cluster, ocnecp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
+		setKCPHealthy(ocnecp)
+		initObjs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy()}
 
 		fmc := &fakeManagementCluster{
 			Machines: collections.New(),
@@ -98,7 +98,7 @@ func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 		}
 
 		for i := 0; i < 2; i++ {
-			m, _ := createMachineNodePair(fmt.Sprintf("test-%d", i), cluster, kcp, true)
+			m, _ := createMachineNodePair(fmt.Sprintf("test-%d", i), cluster, ocnecp, true)
 			setMachineHealthy(m)
 			fmc.Machines.Insert(m)
 			initObjs = append(initObjs, m.DeepCopy())
@@ -113,12 +113,12 @@ func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 			recorder:                  record.NewFakeRecorder(32),
 		}
 		controlPlane := &internal.ControlPlane{
-			KCP:      kcp,
+			KCP:      ocnecp,
 			Cluster:  cluster,
 			Machines: fmc.Machines,
 		}
 
-		result, err := r.scaleUpControlPlane(ctx, cluster, kcp, controlPlane)
+		result, err := r.scaleUpControlPlane(ctx, cluster, ocnecp, controlPlane)
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 		g.Expect(err).ToNot(HaveOccurred())
 
@@ -127,15 +127,15 @@ func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 		g.Expect(controlPlaneMachines.Items).To(HaveLen(3))
 	})
 	t.Run("does not create a control plane Machine if preflight checks fail", func(t *testing.T) {
-		cluster, kcp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
-		initObjs := []client.Object{fakeGenericMachineTemplateCRD, cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy()}
+		cluster, ocnecp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
+		initObjs := []client.Object{fakeGenericMachineTemplateCRD, cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy()}
 		cluster.Spec.ControlPlaneEndpoint.Host = "nodomain.example.com"
 		cluster.Spec.ControlPlaneEndpoint.Port = 6443
 		cluster.Status.InfrastructureReady = true
 
 		beforeMachines := collections.New()
 		for i := 0; i < 2; i++ {
-			m, _ := createMachineNodePair(fmt.Sprintf("test-%d", i), cluster.DeepCopy(), kcp.DeepCopy(), true)
+			m, _ := createMachineNodePair(fmt.Sprintf("test-%d", i), cluster.DeepCopy(), ocnecp.DeepCopy(), true)
 			beforeMachines.Insert(m)
 			initObjs = append(initObjs, m.DeepCopy())
 		}
@@ -156,7 +156,7 @@ func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 			recorder:                  record.NewFakeRecorder(32),
 		}
 
-		result, err := r.reconcile(context.Background(), cluster, kcp)
+		result, err := r.reconcile(context.Background(), cluster, ocnecp)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: preflightFailedRequeueAfter}))
 
@@ -175,7 +175,7 @@ func TestKubeadmControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 	})
 }
 
-func TestKubeadmControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) {
+func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) {
 	t.Run("deletes control plane Machine if preflight checks pass", func(t *testing.T) {
 		g := NewWithT(t)
 
@@ -194,19 +194,19 @@ func TestKubeadmControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.
 		}
 
 		cluster := &clusterv1.Cluster{}
-		kcp := &controlplanev1.OcneControlPlane{
+		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OcneControlPlaneSpec{
 				Version: "v1.19.1",
 			},
 		}
-		setKCPHealthy(kcp)
+		setKCPHealthy(ocnecp)
 		controlPlane := &internal.ControlPlane{
-			KCP:      kcp,
+			KCP:      ocnecp,
 			Cluster:  cluster,
 			Machines: machines,
 		}
 
-		result, err := r.scaleDownControlPlane(context.Background(), cluster, kcp, controlPlane, controlPlane.Machines)
+		result, err := r.scaleDownControlPlane(context.Background(), cluster, ocnecp, controlPlane, controlPlane.Machines)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 
@@ -235,18 +235,18 @@ func TestKubeadmControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.
 		}
 
 		cluster := &clusterv1.Cluster{}
-		kcp := &controlplanev1.OcneControlPlane{
+		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OcneControlPlaneSpec{
 				Version: "v1.19.1",
 			},
 		}
 		controlPlane := &internal.ControlPlane{
-			KCP:      kcp,
+			KCP:      ocnecp,
 			Cluster:  cluster,
 			Machines: machines,
 		}
 
-		result, err := r.scaleDownControlPlane(context.Background(), cluster, kcp, controlPlane, controlPlane.Machines)
+		result, err := r.scaleDownControlPlane(context.Background(), cluster, ocnecp, controlPlane, controlPlane.Machines)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 
@@ -275,14 +275,14 @@ func TestKubeadmControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.
 		}
 
 		cluster := &clusterv1.Cluster{}
-		kcp := &controlplanev1.OcneControlPlane{}
+		ocnecp := &controlplanev1.OCNEControlPlane{}
 		controlPlane := &internal.ControlPlane{
-			KCP:      kcp,
+			KCP:      ocnecp,
 			Cluster:  cluster,
 			Machines: machines,
 		}
 
-		result, err := r.scaleDownControlPlane(context.Background(), cluster, kcp, controlPlane, controlPlane.Machines)
+		result, err := r.scaleDownControlPlane(context.Background(), cluster, ocnecp, controlPlane, controlPlane.Machines)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: preflightFailedRequeueAfter}))
 
@@ -293,7 +293,7 @@ func TestKubeadmControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.
 }
 
 func TestSelectMachineForScaleDown(t *testing.T) {
-	kcp := controlplanev1.OcneControlPlane{
+	ocnecp := controlplanev1.OCNEControlPlane{
 		Spec: controlplanev1.OcneControlPlaneSpec{},
 	}
 	startDate := time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)
@@ -314,19 +314,19 @@ func TestSelectMachineForScaleDown(t *testing.T) {
 	}
 
 	needsUpgradeControlPlane := &internal.ControlPlane{
-		KCP:      &kcp,
+		KCP:      &ocnecp,
 		Cluster:  &clusterv1.Cluster{Status: clusterv1.ClusterStatus{FailureDomains: fd}},
 		Machines: mc3,
 	}
 	upToDateControlPlane := &internal.ControlPlane{
-		KCP:     &kcp,
+		KCP:     &ocnecp,
 		Cluster: &clusterv1.Cluster{Status: clusterv1.ClusterStatus{FailureDomains: fd}},
 		Machines: mc3.Filter(func(m *clusterv1.Machine) bool {
 			return m.Name != "machine-5"
 		}),
 	}
 	annotatedControlPlane := &internal.ControlPlane{
-		KCP:      &kcp,
+		KCP:      &ocnecp,
 		Cluster:  &clusterv1.Cluster{Status: clusterv1.ClusterStatus{FailureDomains: fd}},
 		Machines: mc6,
 	}
@@ -409,18 +409,18 @@ func TestSelectMachineForScaleDown(t *testing.T) {
 func TestPreflightChecks(t *testing.T) {
 	testCases := []struct {
 		name         string
-		kcp          *controlplanev1.OcneControlPlane
+		ocnecp       *controlplanev1.OCNEControlPlane
 		machines     []*clusterv1.Machine
 		expectResult ctrl.Result
 	}{
 		{
 			name:         "control plane without machines (not initialized) should pass",
-			kcp:          &controlplanev1.OcneControlPlane{},
+			ocnecp:       &controlplanev1.OCNEControlPlane{},
 			expectResult: ctrl.Result{},
 		},
 		{
-			name: "control plane with a deleting machine should requeue",
-			kcp:  &controlplanev1.OcneControlPlane{},
+			name:   "control plane with a deleting machine should requeue",
+			ocnecp: &controlplanev1.OCNEControlPlane{},
 			machines: []*clusterv1.Machine{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -431,8 +431,8 @@ func TestPreflightChecks(t *testing.T) {
 			expectResult: ctrl.Result{RequeueAfter: deleteRequeueAfter},
 		},
 		{
-			name: "control plane with an unhealthy machine condition should requeue",
-			kcp:  &controlplanev1.OcneControlPlane{},
+			name:   "control plane with an unhealthy machine condition should requeue",
+			ocnecp: &controlplanev1.OCNEControlPlane{},
 			machines: []*clusterv1.Machine{
 				{
 					Status: clusterv1.MachineStatus{
@@ -449,8 +449,8 @@ func TestPreflightChecks(t *testing.T) {
 			expectResult: ctrl.Result{RequeueAfter: preflightFailedRequeueAfter},
 		},
 		{
-			name: "control plane with an healthy machine and an healthy kcp condition should pass",
-			kcp: &controlplanev1.OcneControlPlane{
+			name: "control plane with an healthy machine and an healthy ocnecp condition should pass",
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Status: controlplanev1.OcneControlPlaneStatus{
 					Conditions: clusterv1.Conditions{
 						*conditions.TrueCondition(controlplanev1.ControlPlaneComponentsHealthyCondition),
@@ -484,7 +484,7 @@ func TestPreflightChecks(t *testing.T) {
 			}
 			controlPlane := &internal.ControlPlane{
 				Cluster:  &clusterv1.Cluster{},
-				KCP:      tt.kcp,
+				KCP:      tt.ocnecp,
 				Machines: collections.FromMachines(tt.machines...),
 			}
 			result, err := r.preflightChecks(context.TODO(), controlPlane)

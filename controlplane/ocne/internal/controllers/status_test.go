@@ -37,7 +37,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func TestKubeadmControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
+func TestOCNEControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -47,9 +47,9 @@ func TestKubeadmControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -67,10 +67,10 @@ func TestKubeadmControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 			},
 		},
 	}
-	kcp.Default()
-	g.Expect(kcp.ValidateCreate()).To(Succeed())
+	ocnecp.Default()
+	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
-	fakeClient := newFakeClient(kcp.DeepCopy(), cluster.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
 	log.SetLogger(klogr.New())
 
 	r := &OcneControlPlaneReconciler{
@@ -82,18 +82,18 @@ func TestKubeadmControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	g.Expect(r.updateStatus(ctx, kcp, cluster)).To(Succeed())
-	g.Expect(kcp.Status.Replicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.ReadyReplicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.UnavailableReplicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.Initialized).To(BeFalse())
-	g.Expect(kcp.Status.Ready).To(BeFalse())
-	g.Expect(kcp.Status.Selector).NotTo(BeEmpty())
-	g.Expect(kcp.Status.FailureMessage).To(BeNil())
-	g.Expect(kcp.Status.FailureReason).To(BeEquivalentTo(""))
+	g.Expect(r.updateStatus(ctx, ocnecp, cluster)).To(Succeed())
+	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.ReadyReplicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.UnavailableReplicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.Initialized).To(BeFalse())
+	g.Expect(ocnecp.Status.Ready).To(BeFalse())
+	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
+	g.Expect(ocnecp.Status.FailureMessage).To(BeNil())
+	g.Expect(ocnecp.Status.FailureReason).To(BeEquivalentTo(""))
 }
 
-func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testing.T) {
+func TestOCNEControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -103,9 +103,9 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testin
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -123,14 +123,14 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testin
 			},
 		},
 	}
-	kcp.Default()
-	g.Expect(kcp.ValidateCreate()).To(Succeed())
+	ocnecp.Default()
+	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
 	machines := map[string]*clusterv1.Machine{}
-	objs := []client.Object{cluster.DeepCopy(), kcp.DeepCopy()}
+	objs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy()}
 	for i := 0; i < 3; i++ {
 		name := fmt.Sprintf("test-%d", i)
-		m, n := createMachineNodePair(name, cluster, kcp, false)
+		m, n := createMachineNodePair(name, cluster, ocnecp, false)
 		objs = append(objs, n, m)
 		machines[m.Name] = m
 	}
@@ -147,18 +147,18 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testin
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	g.Expect(r.updateStatus(ctx, kcp, cluster)).To(Succeed())
-	g.Expect(kcp.Status.Replicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.ReadyReplicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.UnavailableReplicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.Selector).NotTo(BeEmpty())
-	g.Expect(kcp.Status.FailureMessage).To(BeNil())
-	g.Expect(kcp.Status.FailureReason).To(BeEquivalentTo(""))
-	g.Expect(kcp.Status.Initialized).To(BeFalse())
-	g.Expect(kcp.Status.Ready).To(BeFalse())
+	g.Expect(r.updateStatus(ctx, ocnecp, cluster)).To(Succeed())
+	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.ReadyReplicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.UnavailableReplicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
+	g.Expect(ocnecp.Status.FailureMessage).To(BeNil())
+	g.Expect(ocnecp.Status.FailureReason).To(BeEquivalentTo(""))
+	g.Expect(ocnecp.Status.Initialized).To(BeFalse())
+	g.Expect(ocnecp.Status.Ready).To(BeFalse())
 }
 
-func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T) {
+func TestOCNEControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -168,9 +168,9 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -188,14 +188,14 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T
 			},
 		},
 	}
-	kcp.Default()
-	g.Expect(kcp.ValidateCreate()).To(Succeed())
+	ocnecp.Default()
+	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
-	objs := []client.Object{cluster.DeepCopy(), kcp.DeepCopy(), kubeadmConfigMap()}
+	objs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy(), kubeadmConfigMap()}
 	machines := map[string]*clusterv1.Machine{}
 	for i := 0; i < 3; i++ {
 		name := fmt.Sprintf("test-%d", i)
-		m, n := createMachineNodePair(name, cluster, kcp, true)
+		m, n := createMachineNodePair(name, cluster, ocnecp, true)
 		objs = append(objs, n, m)
 		machines[m.Name] = m
 	}
@@ -218,20 +218,20 @@ func TestKubeadmControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	g.Expect(r.updateStatus(ctx, kcp, cluster)).To(Succeed())
-	g.Expect(kcp.Status.Replicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.ReadyReplicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.UnavailableReplicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.Selector).NotTo(BeEmpty())
-	g.Expect(kcp.Status.FailureMessage).To(BeNil())
-	g.Expect(kcp.Status.FailureReason).To(BeEquivalentTo(""))
-	g.Expect(kcp.Status.Initialized).To(BeTrue())
-	g.Expect(conditions.IsTrue(kcp, controlplanev1.AvailableCondition)).To(BeTrue())
-	g.Expect(conditions.IsTrue(kcp, controlplanev1.MachinesCreatedCondition)).To(BeTrue())
-	g.Expect(kcp.Status.Ready).To(BeTrue())
+	g.Expect(r.updateStatus(ctx, ocnecp, cluster)).To(Succeed())
+	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.ReadyReplicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.UnavailableReplicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
+	g.Expect(ocnecp.Status.FailureMessage).To(BeNil())
+	g.Expect(ocnecp.Status.FailureReason).To(BeEquivalentTo(""))
+	g.Expect(ocnecp.Status.Initialized).To(BeTrue())
+	g.Expect(conditions.IsTrue(ocnecp, controlplanev1.AvailableCondition)).To(BeTrue())
+	g.Expect(conditions.IsTrue(ocnecp, controlplanev1.MachinesCreatedCondition)).To(BeTrue())
+	g.Expect(ocnecp.Status.Ready).To(BeTrue())
 }
 
-func TestKubeadmControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing.T) {
+func TestOCNEControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -241,9 +241,9 @@ func TestKubeadmControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -261,17 +261,17 @@ func TestKubeadmControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing
 			},
 		},
 	}
-	kcp.Default()
-	g.Expect(kcp.ValidateCreate()).To(Succeed())
+	ocnecp.Default()
+	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 	machines := map[string]*clusterv1.Machine{}
-	objs := []client.Object{cluster.DeepCopy(), kcp.DeepCopy()}
+	objs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy()}
 	for i := 0; i < 4; i++ {
 		name := fmt.Sprintf("test-%d", i)
-		m, n := createMachineNodePair(name, cluster, kcp, false)
+		m, n := createMachineNodePair(name, cluster, ocnecp, false)
 		machines[m.Name] = m
 		objs = append(objs, n, m)
 	}
-	m, n := createMachineNodePair("testReady", cluster, kcp, true)
+	m, n := createMachineNodePair("testReady", cluster, ocnecp, true)
 	objs = append(objs, n, m, kubeadmConfigMap())
 	machines[m.Name] = m
 	fakeClient := newFakeClient(objs...)
@@ -292,18 +292,18 @@ func TestKubeadmControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	g.Expect(r.updateStatus(ctx, kcp, cluster)).To(Succeed())
-	g.Expect(kcp.Status.Replicas).To(BeEquivalentTo(5))
-	g.Expect(kcp.Status.ReadyReplicas).To(BeEquivalentTo(1))
-	g.Expect(kcp.Status.UnavailableReplicas).To(BeEquivalentTo(4))
-	g.Expect(kcp.Status.Selector).NotTo(BeEmpty())
-	g.Expect(kcp.Status.FailureMessage).To(BeNil())
-	g.Expect(kcp.Status.FailureReason).To(BeEquivalentTo(""))
-	g.Expect(kcp.Status.Initialized).To(BeTrue())
-	g.Expect(kcp.Status.Ready).To(BeTrue())
+	g.Expect(r.updateStatus(ctx, ocnecp, cluster)).To(Succeed())
+	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(5))
+	g.Expect(ocnecp.Status.ReadyReplicas).To(BeEquivalentTo(1))
+	g.Expect(ocnecp.Status.UnavailableReplicas).To(BeEquivalentTo(4))
+	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
+	g.Expect(ocnecp.Status.FailureMessage).To(BeNil())
+	g.Expect(ocnecp.Status.FailureReason).To(BeEquivalentTo(""))
+	g.Expect(ocnecp.Status.Initialized).To(BeTrue())
+	g.Expect(ocnecp.Status.Ready).To(BeTrue())
 }
 
-func TestKubeadmControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAreNotReady(t *testing.T) {
+func TestOCNEControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAreNotReady(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -313,9 +313,9 @@ func TestKubeadmControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAr
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -334,14 +334,14 @@ func TestKubeadmControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAr
 			},
 		},
 	}
-	kcp.Default()
-	g.Expect(kcp.ValidateCreate()).To(Succeed())
+	ocnecp.Default()
+	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 	machines := map[string]*clusterv1.Machine{}
-	objs := []client.Object{cluster.DeepCopy(), kcp.DeepCopy()}
+	objs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy()}
 	// Create the desired number of machines
 	for i := 0; i < 3; i++ {
 		name := fmt.Sprintf("test-%d", i)
-		m, n := createMachineNodePair(name, cluster, kcp, false)
+		m, n := createMachineNodePair(name, cluster, ocnecp, false)
 		machines[m.Name] = m
 		objs = append(objs, n, m)
 	}
@@ -365,12 +365,12 @@ func TestKubeadmControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAr
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	g.Expect(r.updateStatus(ctx, kcp, cluster)).To(Succeed())
-	g.Expect(kcp.Status.Replicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.ReadyReplicas).To(BeEquivalentTo(0))
-	g.Expect(kcp.Status.UnavailableReplicas).To(BeEquivalentTo(3))
-	g.Expect(kcp.Status.Ready).To(BeFalse())
-	g.Expect(conditions.IsTrue(kcp, controlplanev1.MachinesCreatedCondition)).To(BeTrue())
+	g.Expect(r.updateStatus(ctx, ocnecp, cluster)).To(Succeed())
+	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.ReadyReplicas).To(BeEquivalentTo(0))
+	g.Expect(ocnecp.Status.UnavailableReplicas).To(BeEquivalentTo(3))
+	g.Expect(ocnecp.Status.Ready).To(BeFalse())
+	g.Expect(conditions.IsTrue(ocnecp, controlplanev1.MachinesCreatedCondition)).To(BeTrue())
 }
 
 func kubeadmConfigMap() *corev1.ConfigMap {

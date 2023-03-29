@@ -20,7 +20,7 @@ limitations under the License.
 
 package v1beta1
 
-func (*OcneControlPlane) Hub()             {}
-func (*OcneControlPlaneList) Hub()         {}
+func (*OCNEControlPlane) Hub()             {}
+func (*OCNEControlPlaneList) Hub()         {}
 func (*OcneControlPlaneTemplate) Hub()     {}
 func (*OcneControlPlaneTemplateList) Hub() {}

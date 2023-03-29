@@ -20,7 +20,7 @@ package v1beta1
 
 import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-// Conditions and condition Reasons for the OcneConfig object.
+// Conditions and condition Reasons for the OCNEConfig object.
 
 const (
 	// DataSecretAvailableCondition documents the status of the bootstrap secret generation process.
@@ -34,10 +34,10 @@ const (
 	// waiting for the cluster infrastructure to be ready.
 	//
 	// NOTE: Having the cluster infrastructure ready is a pre-condition for starting to create machines;
-	// the OcneConfig controller ensure this pre-condition is satisfied.
+	// the OCNEConfig controller ensure this pre-condition is satisfied.
 	WaitingForClusterInfrastructureReason = "WaitingForClusterInfrastructure"
 
-	// DataSecretGenerationFailedReason (Severity=Warning) documents a OcneConfig controller detecting
+	// DataSecretGenerationFailedReason (Severity=Warning) documents a OCNEConfig controller detecting
 	// an error while generating a data secret; those kind of errors are usually due to misconfigurations
 	// and user intervention is required to get them fixed.
 	DataSecretGenerationFailedReason = "DataSecretGenerationFailed"
@@ -46,18 +46,18 @@ const (
 const (
 	// CertificatesAvailableCondition documents that cluster certificates are available.
 	//
-	// NOTE: Cluster certificates are generated only for the OcneConfig object linked to the initial control plane
+	// NOTE: Cluster certificates are generated only for the OCNEConfig object linked to the initial control plane
 	// machine, if the cluster is not using a control plane ref object, if the certificates are not provided
 	// by the users.
 	// IMPORTANT: This condition won't be re-created after clusterctl move.
 	CertificatesAvailableCondition clusterv1.ConditionType = "CertificatesAvailable"
 
-	// CertificatesGenerationFailedReason (Severity=Warning) documents a OcneConfig controller detecting
+	// CertificatesGenerationFailedReason (Severity=Warning) documents a OCNEConfig controller detecting
 	// an error while generating certificates; those kind of errors are usually temporary and the controller
 	// automatically recover from them.
 	CertificatesGenerationFailedReason = "CertificatesGenerationFailed"
 
-	// CertificatesCorruptedReason (Severity=Error) documents a OcneConfig controller detecting
+	// CertificatesCorruptedReason (Severity=Error) documents a OCNEConfig controller detecting
 	// an error while retrieving certificates for a joining node.
 	CertificatesCorruptedReason = "CertificatesCorrupted"
 )

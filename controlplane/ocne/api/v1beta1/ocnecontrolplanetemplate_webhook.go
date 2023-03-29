@@ -48,7 +48,7 @@ var _ webhook.Defaulter = &OcneControlPlaneTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *OcneControlPlaneTemplate) Default() {
-	bootstrapv1.DefaultOcneConfigSpec(&r.Spec.Template.Spec.OcneConfigSpec)
+	bootstrapv1.DefaultOcneConfigSpec(&r.Spec.Template.Spec.OCNEConfigSpec)
 
 	r.Spec.Template.Spec.RolloutStrategy = defaultRolloutStrategy(r.Spec.Template.Spec.RolloutStrategy)
 }
@@ -70,8 +70,8 @@ func (r *OcneControlPlaneTemplate) ValidateCreate() error {
 
 	spec := r.Spec.Template.Spec
 	allErrs := validateKubeadmControlPlaneTemplateResourceSpec(spec, field.NewPath("spec", "template", "spec"))
-	allErrs = append(allErrs, validateClusterConfiguration(spec.OcneConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "template", "spec", "ocneConfigSpec", "clusterConfiguration"))...)
-	allErrs = append(allErrs, spec.OcneConfigSpec.Validate(field.NewPath("spec", "template", "spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "template", "spec", "ocneConfigSpec", "clusterConfiguration"))...)
+	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "template", "spec", "ocneConfigSpec"))...)
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OcneControlPlaneTemplate").GroupKind(), r.Name, allErrs)
 	}
@@ -104,8 +104,8 @@ func (r *OcneControlPlaneTemplate) ValidateDelete() error {
 }
 
 // validateKubeadmControlPlaneTemplateResourceSpec is a copy of validateKubeadmControlPlaneSpec which
-// only validates the fields in OcneControlPlaneTemplateResourceSpec we care about.
-func validateKubeadmControlPlaneTemplateResourceSpec(s OcneControlPlaneTemplateResourceSpec, pathPrefix *field.Path) field.ErrorList {
+// only validates the fields in OCNEControlPlaneTemplateResourceSpec we care about.
+func validateKubeadmControlPlaneTemplateResourceSpec(s OCNEControlPlaneTemplateResourceSpec, pathPrefix *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	allErrs = append(allErrs, validateRolloutBefore(s.RolloutBefore, pathPrefix.Child("rolloutBefore"))...)

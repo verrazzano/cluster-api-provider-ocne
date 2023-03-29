@@ -30,8 +30,8 @@ const (
 	DefaultImageRepository = "registry.k8s.io"
 	// OldDefaultImageRepository is the old default Kubernetes image registry.
 	OldDefaultImageRepository = "k8s.gcr.io"
-	// DefaultOcneImageRepository is the default ocne image repository
-	DefaultOcneImageRepository = "container-registry.oracle.com/olcne"
+	// DefaultOCNEImageRepository is the default ocne image repository
+	DefaultOCNEImageRepository = "container-registry.oracle.com/olcne"
 )
 
 var (
@@ -104,7 +104,7 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 	return fmt.Sprintf("%s,/var/run/shared-tmpfs/csi.sock", noProxy)
 }
 
-func GetOcneOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) []string {
+func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) []string {
 	var ocneNodeOverrrides []string
 	k8sversion := extractVersionString(kubernetesVersion)
 	yumOrdnfProxyOverrides := []string{

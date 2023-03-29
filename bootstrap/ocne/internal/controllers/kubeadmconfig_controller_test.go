@@ -53,7 +53,7 @@ import (
 )
 
 // MachineToBootstrapMapFunc return kubeadm bootstrap configref name when configref exists.
-func TestKubeadmConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
+func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 	g := NewWithT(t)
 	cluster := builder.Cluster("my-cluster", metav1.NamespaceDefault).Build()
 	objs := []client.Object{cluster}
@@ -92,7 +92,7 @@ func TestKubeadmConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 }
 
 // Reconcile returns early if the kubeadm config is ready because it should never re-generate bootstrap data.
-func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *testing.T) {
 	g := NewWithT(t)
 
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
@@ -120,7 +120,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *
 }
 
 // Reconcile returns early if the kubeadm config is ready because it should never re-generate bootstrap data.
-func TestKubeadmConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.T) {
+func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.T) {
 	g := NewWithT(t)
 
 	clusterName := "my-cluster"
@@ -170,7 +170,7 @@ func TestKubeadmConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testi
 	key := client.ObjectKeyFromObject(config)
 	actual := &corev1.Secret{}
 
-	t.Run("OcneConfig ownerReference is added on first reconcile", func(t *testing.T) {
+	t.Run("OCNEConfig ownerReference is added on first reconcile", func(t *testing.T) {
 		_, err = k.Reconcile(ctx, request)
 		g.Expect(err).NotTo(HaveOccurred())
 
@@ -182,7 +182,7 @@ func TestKubeadmConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testi
 		g.Expect(controllerOwner.Name).To(Equal(config.Name))
 	})
 
-	t.Run("OcneConfig ownerReference re-reconciled without error", func(t *testing.T) {
+	t.Run("OCNEConfig ownerReference re-reconciled without error", func(t *testing.T) {
 		_, err = k.Reconcile(ctx, request)
 		g.Expect(err).NotTo(HaveOccurred())
 
@@ -193,7 +193,7 @@ func TestKubeadmConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testi
 		g.Expect(controllerOwner.Kind).To(Equal(config.Kind))
 		g.Expect(controllerOwner.Name).To(Equal(config.Name))
 	})
-	t.Run("non-OcneConfig controller OwnerReference is replaced", func(t *testing.T) {
+	t.Run("non-OCNEConfig controller OwnerReference is replaced", func(t *testing.T) {
 		g.Expect(myclient.Get(ctx, key, actual)).To(Succeed())
 
 		actual.SetOwnerReferences([]metav1.OwnerReference{
@@ -219,7 +219,7 @@ func TestKubeadmConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testi
 }
 
 // Reconcile returns nil if the referenced Machine cannot be found.
-func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t *testing.T) {
 	g := NewWithT(t)
 
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
@@ -249,7 +249,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFoun
 }
 
 // If the machine has bootstrap data secret reference, there is no need to generate more bootstrap data.
-func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t *testing.T) {
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
@@ -280,7 +280,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName
 	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
 }
 
-func TestKubeadmConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
+func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -323,7 +323,7 @@ func TestKubeadmConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T)
 }
 
 // Return early If the owning machine does not have an associated cluster.
-func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *testing.T) {
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
@@ -352,7 +352,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *t
 }
 
 // This does not expect an error, hoping the machine gets updated with a cluster.
-func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedCluster(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedCluster(t *testing.T) {
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
@@ -381,7 +381,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociat
 }
 
 // This does not expect an error, hoping that the associated cluster will be created.
-func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -414,7 +414,7 @@ func TestKubeadmConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFoun
 }
 
 // If the control plane isn't initialized then there is no cluster for either a worker or control plane node to join.
-func TestKubeadmConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotInitialized(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotInitialized(t *testing.T) {
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
 
@@ -481,7 +481,7 @@ func TestKubeadmConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotI
 }
 
 // This generates cloud-config data but does not test the validity of it.
-func TestKubeadmConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -530,7 +530,7 @@ func TestKubeadmConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T)
 }
 
 // If a control plane has no JoinConfiguration, then we will create a default and no error will occur.
-func TestKubeadmConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConfiguration(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConfiguration(t *testing.T) {
 	g := NewWithT(t)
 	// TODO: extract this kind of code into a setup function that puts the state of objects into an initialized controlplane (implies secrets exist)
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -571,7 +571,7 @@ func TestKubeadmConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidC
 }
 
 // If there is no APIEndpoint but everything is ready then requeue in hopes of a new APIEndpoint showing up eventually.
-func TestKubeadmConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoints(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoints(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -621,7 +621,7 @@ func TestReconcileIfJoinNodesAndControlPlaneIsReady(t *testing.T) {
 		name          string
 		machine       *clusterv1.Machine
 		configName    string
-		configBuilder func(string, string) *bootstrapv1.OcneConfig
+		configBuilder func(string, string) *bootstrapv1.OCNEConfig
 	}{
 		{
 			name:          "Join a worker node with a fully compiled kubeadm config object",
@@ -708,13 +708,13 @@ func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
 		name          string
 		machinePool   *expv1.MachinePool
 		configName    string
-		configBuilder func(string, string) *bootstrapv1.OcneConfig
+		configBuilder func(string, string) *bootstrapv1.OCNEConfig
 	}{
 		{
 			name:        "Join a worker node with a fully compiled kubeadm config object",
 			machinePool: newWorkerMachinePoolForCluster(cluster),
 			configName:  "workerpool-join-cfg",
-			configBuilder: func(namespace, name string) *bootstrapv1.OcneConfig {
+			configBuilder: func(namespace, name string) *bootstrapv1.OCNEConfig {
 				return newWorkerJoinKubeadmConfig(namespace, "workerpool-join-cfg")
 			},
 		},
@@ -773,7 +773,7 @@ func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
 }
 
 // Ensure bootstrap data is generated in the correct format based on the format specified in the
-// OcneConfig resource.
+// OCNEConfig resource.
 func TestBootstrapDataFormat(t *testing.T) {
 	testcases := []struct {
 		name               string
@@ -817,7 +817,7 @@ func TestBootstrapDataFormat(t *testing.T) {
 			}
 
 			var machine *clusterv1.Machine
-			var config *bootstrapv1.OcneConfig
+			var config *bootstrapv1.OCNEConfig
 			var configName string
 			if tc.isWorker {
 				machine = newWorkerMachineForCluster(cluster)
@@ -853,18 +853,18 @@ func TestBootstrapDataFormat(t *testing.T) {
 				},
 			}
 
-			// Reconcile the OcneConfig resource.
+			// Reconcile the OCNEConfig resource.
 			_, err := k.Reconcile(ctx, request)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			// Verify the OcneConfig resource state is correct.
+			// Verify the OCNEConfig resource state is correct.
 			cfg, err := getKubeadmConfig(myclient, configName, metav1.NamespaceDefault)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cfg.Status.Ready).To(BeTrue())
 			g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
 
 			// Read the secret containing the bootstrap data which was generated by the
-			// OcneConfig controller.
+			// OCNEConfig controller.
 			key := client.ObjectKey{
 				Namespace: metav1.NamespaceDefault,
 				Name:      *cfg.Status.DataSecretName,
@@ -898,7 +898,7 @@ func TestBootstrapDataFormat(t *testing.T) {
 // during kubeadmconfig reconcile it is possible that bootstrap secret gets created
 // but kubeadmconfig is not patched, do not error if secret already exists.
 // ignore the alreadyexists error and update the status to ready.
-func TestKubeadmConfigSecretCreatedStatusNotPatched(t *testing.T) {
+func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -942,7 +942,7 @@ func TestKubeadmConfigSecretCreatedStatusNotPatched(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       "OcneConfig",
+					Kind:       "OCNEConfig",
 					Name:       workerJoinConfig.Name,
 					UID:        workerJoinConfig.UID,
 					Controller: pointer.Bool(true),
@@ -1355,7 +1355,7 @@ func TestBootstrapTokenRotationMachinePool(t *testing.T) {
 }
 
 // Ensure the discovery portion of the JoinConfiguration gets generated correctly.
-func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testing.T) {
 	k := &OcneConfigReconciler{
 		Client:             fake.NewClientBuilder().Build(),
 		KubeadmInitLock:    &myInitLocker{},
@@ -1379,20 +1379,20 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 	testcases := []struct {
 		name              string
 		cluster           *clusterv1.Cluster
-		config            *bootstrapv1.OcneConfig
-		validateDiscovery func(*WithT, *bootstrapv1.OcneConfig) error
+		config            *bootstrapv1.OCNEConfig
+		validateDiscovery func(*WithT, *bootstrapv1.OCNEConfig) error
 	}{
 		{
 			name:    "Automatically generate token if discovery not specified",
 			cluster: goodcluster,
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapToken,
 					},
 				},
 			},
-			validateDiscovery: func(g *WithT, c *bootstrapv1.OcneConfig) error {
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
 				d := c.Spec.JoinConfiguration.Discovery
 				g.Expect(d.BootstrapToken).NotTo(BeNil())
 				g.Expect(d.BootstrapToken.Token).NotTo(Equal(""))
@@ -1404,8 +1404,8 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 		{
 			name:    "Respect discoveryConfiguration.File",
 			cluster: goodcluster,
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapv1.Discovery{
 							File: &bootstrapv1.FileDiscovery{},
@@ -1413,7 +1413,7 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 					},
 				},
 			},
-			validateDiscovery: func(g *WithT, c *bootstrapv1.OcneConfig) error {
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
 				d := c.Spec.JoinConfiguration.Discovery
 				g.Expect(d.BootstrapToken).To(BeNil())
 				return nil
@@ -1422,8 +1422,8 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 		{
 			name:    "Respect discoveryConfiguration.BootstrapToken.APIServerEndpoint",
 			cluster: goodcluster,
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapv1.Discovery{
 							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
@@ -1434,7 +1434,7 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 					},
 				},
 			},
-			validateDiscovery: func(g *WithT, c *bootstrapv1.OcneConfig) error {
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
 				d := c.Spec.JoinConfiguration.Discovery
 				g.Expect(d.BootstrapToken.APIServerEndpoint).To(Equal("bar.com:6443"))
 				return nil
@@ -1443,8 +1443,8 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 		{
 			name:    "Respect discoveryConfiguration.BootstrapToken.Token",
 			cluster: goodcluster,
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapv1.Discovery{
 							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
@@ -1455,7 +1455,7 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 					},
 				},
 			},
-			validateDiscovery: func(g *WithT, c *bootstrapv1.OcneConfig) error {
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
 				d := c.Spec.JoinConfiguration.Discovery
 				g.Expect(d.BootstrapToken.Token).To(Equal("abcdef.0123456789abcdef"))
 				return nil
@@ -1464,8 +1464,8 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 		{
 			name:    "Respect discoveryConfiguration.BootstrapToken.CACertHashes",
 			cluster: goodcluster,
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapv1.Discovery{
 							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
@@ -1475,7 +1475,7 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 					},
 				},
 			},
-			validateDiscovery: func(g *WithT, c *bootstrapv1.OcneConfig) error {
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
 				d := c.Spec.JoinConfiguration.Discovery
 				g.Expect(reflect.DeepEqual(d.BootstrapToken.CACertHashes, caHash)).To(BeTrue())
 				return nil
@@ -1498,13 +1498,13 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testin
 }
 
 // Test failure cases for the discovery reconcile function.
-func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t *testing.T) {
 	k := &OcneConfigReconciler{}
 
 	testcases := []struct {
 		name    string
 		cluster *clusterv1.Cluster
-		config  *bootstrapv1.OcneConfig
+		config  *bootstrapv1.OCNEConfig
 
 		result ctrl.Result
 		err    error
@@ -1512,8 +1512,8 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t 
 		{
 			name:    "Should requeue if cluster has not ControlPlaneEndpoint",
 			cluster: &clusterv1.Cluster{}, // cluster without endpoints
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
 						Discovery: bootstrapv1.Discovery{
 							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
@@ -1543,19 +1543,19 @@ func TestKubeadmConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t 
 }
 
 // Set cluster configuration defaults based on dynamic values from the cluster object.
-func TestKubeadmConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguration(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguration(t *testing.T) {
 	k := &OcneConfigReconciler{}
 
 	testcases := []struct {
 		name    string
 		cluster *clusterv1.Cluster
 		machine *clusterv1.Machine
-		config  *bootstrapv1.OcneConfig
+		config  *bootstrapv1.OCNEConfig
 	}{
 		{
 			name: "Config settings have precedence",
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName:       "mycluster",
 						KubernetesVersion: "myversion",
@@ -1589,8 +1589,8 @@ func TestKubeadmConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguratio
 		},
 		{
 			name: "Top level object settings are used in case config settings are missing",
-			config: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 				},
 			},
@@ -1632,7 +1632,7 @@ func TestKubeadmConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguratio
 }
 
 // Allow users to skip CA Verification if they *really* want to.
-func TestKubeadmConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessRequestedToSkip(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessRequestedToSkip(t *testing.T) {
 	// Setup work for an initialized cluster
 	clusterName := "my-cluster"
 	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
@@ -1713,7 +1713,7 @@ func TestKubeadmConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessReques
 			_, err = reconciler.Reconcile(ctx, req)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			cfg := &bootstrapv1.OcneConfig{}
+			cfg := &bootstrapv1.OCNEConfig{}
 			err = myclient.Get(ctx, key, cfg)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(cfg.Spec.JoinConfiguration.Discovery.BootstrapToken.UnsafeSkipCAVerification).To(Equal(tc.skipCAVerification))
@@ -1723,7 +1723,7 @@ func TestKubeadmConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessReques
 
 // If a cluster object changes then all associated KubeadmConfigs should be re-reconciled.
 // This allows us to not requeue a kubeadm config while we wait for InfrastructureReady.
-func TestKubeadmConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
+func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 	_ = feature.MutableGates.Set("MachinePool=true")
 	g := NewWithT(t)
 
@@ -1771,7 +1771,7 @@ func TestKubeadmConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 }
 
 // Reconcile should not fail if the Etcd CA Secret already exists.
-func TestKubeadmConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "my-cluster").Build()
@@ -1802,7 +1802,7 @@ func TestKubeadmConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t 
 }
 
 // Exactly one control plane machine initializes if there are multiple control plane machines defined.
-func TestKubeadmConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -1853,7 +1853,7 @@ func TestKubeadmConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitiali
 }
 
 // Patch should be applied if there is an error in reconcile.
-func TestKubeadmConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
+func TestOCNEConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
@@ -1903,7 +1903,7 @@ func TestKubeadmConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) 
 	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
 }
 
-func TestKubeadmConfigReconciler_ResolveFiles(t *testing.T) {
+func TestOCNEConfigReconciler_ResolveFiles(t *testing.T) {
 	testSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "source",
@@ -1914,13 +1914,13 @@ func TestKubeadmConfigReconciler_ResolveFiles(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		cfg     *bootstrapv1.OcneConfig
+		cfg     *bootstrapv1.OCNEConfig
 		objects []client.Object
 		expect  []bootstrapv1.File
 	}{
 		"content should pass through": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Files: []bootstrapv1.File{
 						{
 							Content:     "foo",
@@ -1941,8 +1941,8 @@ func TestKubeadmConfigReconciler_ResolveFiles(t *testing.T) {
 			},
 		},
 		"contentFrom should convert correctly": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Files: []bootstrapv1.File{
 						{
 							ContentFrom: &bootstrapv1.FileSource{
@@ -1969,8 +1969,8 @@ func TestKubeadmConfigReconciler_ResolveFiles(t *testing.T) {
 			objects: []client.Object{testSecret},
 		},
 		"multiple files should work correctly": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Files: []bootstrapv1.File{
 						{
 							Content:     "bar",
@@ -2044,7 +2044,7 @@ func TestKubeadmConfigReconciler_ResolveFiles(t *testing.T) {
 	}
 }
 
-func TestKubeadmConfigReconciler_ResolveUsers(t *testing.T) {
+func TestOCNEConfigReconciler_ResolveUsers(t *testing.T) {
 	fakePasswd := "bar"
 	testSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -2056,13 +2056,13 @@ func TestKubeadmConfigReconciler_ResolveUsers(t *testing.T) {
 	}
 
 	cases := map[string]struct {
-		cfg     *bootstrapv1.OcneConfig
+		cfg     *bootstrapv1.OCNEConfig
 		objects []client.Object
 		expect  []bootstrapv1.User
 	}{
 		"password should pass through": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Users: []bootstrapv1.User{
 						{
 							Name:   "foo",
@@ -2079,8 +2079,8 @@ func TestKubeadmConfigReconciler_ResolveUsers(t *testing.T) {
 			},
 		},
 		"passwdFrom should convert correctly": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Users: []bootstrapv1.User{
 						{
 							Name: "foo",
@@ -2103,8 +2103,8 @@ func TestKubeadmConfigReconciler_ResolveUsers(t *testing.T) {
 			objects: []client.Object{testSecret},
 		},
 		"multiple users should work correctly": {
-			cfg: &bootstrapv1.OcneConfig{
-				Spec: bootstrapv1.OcneConfigSpec{
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
 					Users: []bootstrapv1.User{
 						{
 							Name:   "foo",
@@ -2208,14 +2208,14 @@ func newWorkerMachinePoolForCluster(cluster *clusterv1.Cluster) *expv1.MachinePo
 	return newMachinePool(cluster, "worker-machinepool")
 }
 
-// newKubeadmConfig return a CABPK OcneConfig object.
-func newKubeadmConfig(namespace, name string) *bootstrapv1.OcneConfig {
+// newKubeadmConfig return a CABPK OCNEConfig object.
+func newKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
 	return bootstrapbuilder.OcneConfig(namespace, name).
 		Build()
 }
 
-// newKubeadmConfig return a CABPK OcneConfig object with a worker JoinConfiguration.
-func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OcneConfig {
+// newKubeadmConfig return a CABPK OCNEConfig object with a worker JoinConfiguration.
+func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
 	return bootstrapbuilder.OcneConfig(namespace, name).
 		WithJoinConfig(&bootstrapv1.JoinConfiguration{
 			ControlPlane: nil,
@@ -2223,8 +2223,8 @@ func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OcneConfig 
 		Build()
 }
 
-// newKubeadmConfig returns a CABPK OcneConfig object with a ControlPlane JoinConfiguration.
-func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OcneConfig {
+// newKubeadmConfig returns a CABPK OCNEConfig object with a ControlPlane JoinConfiguration.
+func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
 	return bootstrapbuilder.OcneConfig(namespace, name).
 		WithJoinConfig(&bootstrapv1.JoinConfiguration{
 			ControlPlane: &bootstrapv1.JoinControlPlane{},
@@ -2232,16 +2232,16 @@ func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OcneC
 		Build()
 }
 
-// newControlPlaneJoinConfig returns a CABPK OcneConfig object with a ControlPlane InitConfiguration and ClusterConfiguration.
-func newControlPlaneInitKubeadmConfig(namespace, name string) *bootstrapv1.OcneConfig {
+// newControlPlaneJoinConfig returns a CABPK OCNEConfig object with a ControlPlane InitConfiguration and ClusterConfiguration.
+func newControlPlaneInitKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
 	return bootstrapbuilder.OcneConfig(namespace, name).
 		WithInitConfig(&bootstrapv1.InitConfiguration{}).
 		WithClusterConfig(&bootstrapv1.ClusterConfiguration{}).
 		Build()
 }
 
-// addKubeadmConfigToMachine adds the config details to the passed Machine, and adds the Machine to the OcneConfig as an ownerReference.
-func addKubeadmConfigToMachine(config *bootstrapv1.OcneConfig, machine *clusterv1.Machine) {
+// addKubeadmConfigToMachine adds the config details to the passed Machine, and adds the Machine to the OCNEConfig as an ownerReference.
+func addKubeadmConfigToMachine(config *bootstrapv1.OCNEConfig, machine *clusterv1.Machine) {
 	if machine == nil {
 		panic("no machine passed to function")
 	}
@@ -2258,8 +2258,8 @@ func addKubeadmConfigToMachine(config *bootstrapv1.OcneConfig, machine *clusterv
 	machine.Spec.Bootstrap.ConfigRef.Namespace = config.Namespace
 }
 
-// addKubeadmConfigToMachine adds the config details to the passed MachinePool and adds the Machine to the OcneConfig as an ownerReference.
-func addKubeadmConfigToMachinePool(config *bootstrapv1.OcneConfig, machinePool *expv1.MachinePool) {
+// addKubeadmConfigToMachine adds the config details to the passed MachinePool and adds the Machine to the OCNEConfig as an ownerReference.
+func addKubeadmConfigToMachinePool(config *bootstrapv1.OCNEConfig, machinePool *expv1.MachinePool) {
 	if machinePool == nil {
 		panic("no machinePool passed to function")
 	}
@@ -2275,7 +2275,7 @@ func addKubeadmConfigToMachinePool(config *bootstrapv1.OcneConfig, machinePool *
 	machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace = config.Namespace
 }
 
-func createSecrets(t *testing.T, cluster *clusterv1.Cluster, config *bootstrapv1.OcneConfig) []client.Object {
+func createSecrets(t *testing.T, cluster *clusterv1.Cluster, config *bootstrapv1.OCNEConfig) []client.Object {
 	t.Helper()
 
 	out := []client.Object{}
@@ -2287,7 +2287,7 @@ func createSecrets(t *testing.T, cluster *clusterv1.Cluster, config *bootstrapv1
 		t.Fatal(err)
 	}
 	for _, certificate := range certificates {
-		out = append(out, certificate.AsSecret(util.ObjectKey(cluster), *metav1.NewControllerRef(config, bootstrapv1.GroupVersion.WithKind("OcneConfig"))))
+		out = append(out, certificate.AsSecret(util.ObjectKey(cluster), *metav1.NewControllerRef(config, bootstrapv1.GroupVersion.WithKind("OCNEConfig"))))
 	}
 	return out
 }
@@ -2312,7 +2312,7 @@ func (m *myInitLocker) Unlock(_ context.Context, _ *clusterv1.Cluster) bool {
 }
 
 func assertHasFalseCondition(g *WithT, myclient client.Client, req ctrl.Request, t clusterv1.ConditionType, s clusterv1.ConditionSeverity, r string) {
-	config := &bootstrapv1.OcneConfig{
+	config := &bootstrapv1.OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name,
 			Namespace: req.Namespace,
@@ -2329,7 +2329,7 @@ func assertHasFalseCondition(g *WithT, myclient client.Client, req ctrl.Request,
 }
 
 func assertHasTrueCondition(g *WithT, myclient client.Client, req ctrl.Request, t clusterv1.ConditionType) {
-	config := &bootstrapv1.OcneConfig{
+	config := &bootstrapv1.OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name,
 			Namespace: req.Namespace,

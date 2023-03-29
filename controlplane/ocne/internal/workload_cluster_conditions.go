@@ -72,8 +72,8 @@ func (w *Workload) updateManagedEtcdConditions(ctx context.Context, controlPlane
 
 	// Update conditions for etcd members on the nodes.
 	var (
-		// kcpErrors is used to store errors that can't be reported on any machine.
-		kcpErrors []string
+		// ocnecpErrors is used to store errors that can't be reported on any machine.
+		ocnecpErrors []string
 		// clusterID is used to store and compare the etcd's cluster id.
 		clusterID *uint64
 		// members is used to store the list of etcd members and compare with all the other nodes in the cluster.
@@ -95,7 +95,7 @@ func (w *Workload) updateManagedEtcdConditions(ctx context.Context, controlPlane
 			if hasProvisioningMachine(controlPlane.Machines) {
 				continue
 			}
-			kcpErrors = append(kcpErrors, fmt.Sprintf("Control plane node %s does not have a corresponding machine", node.Name))
+			ocnecpErrors = append(ocnecpErrors, fmt.Sprintf("Control plane node %s does not have a corresponding machine", node.Name))
 			continue
 		}
 
@@ -153,13 +153,13 @@ func (w *Workload) updateManagedEtcdConditions(ctx context.Context, controlPlane
 	}
 
 	// Make sure that the list of etcd members and machines is consistent.
-	kcpErrors = compareMachinesAndMembers(controlPlane, members, kcpErrors)
+	ocnecpErrors = compareMachinesAndMembers(controlPlane, members, ocnecpErrors)
 
 	// Aggregate components error from machines at KCP level
 	aggregateFromMachinesToKCP(aggregateFromMachinesToKCPInput{
 		controlPlane:      controlPlane,
 		machineConditions: []clusterv1.ConditionType{controlplanev1.MachineEtcdMemberHealthyCondition},
-		kcpErrors:         kcpErrors,
+		ocnecpErrors:      ocnecpErrors,
 		condition:         controlplanev1.EtcdClusterHealthyCondition,
 		unhealthyReason:   controlplanev1.EtcdClusterUnhealthyReason,
 		unknownReason:     controlplanev1.EtcdClusterUnknownReason,
@@ -194,11 +194,11 @@ func (w *Workload) getCurrentEtcdMembers(ctx context.Context, machine *clusterv1
 	return currentMembers, nil
 }
 
-func compareMachinesAndMembers(controlPlane *ControlPlane, members []*etcd.Member, kcpErrors []string) []string {
+func compareMachinesAndMembers(controlPlane *ControlPlane, members []*etcd.Member, ocnecpErrors []string) []string {
 	// NOTE: We run this check only if we actually know the list of members, otherwise the first for loop
 	// could generate a false negative when reporting missing etcd members.
 	if members == nil {
-		return kcpErrors
+		return ocnecpErrors
 	}
 
 	// Check Machine -> Etcd member.
@@ -232,10 +232,10 @@ func compareMachinesAndMembers(controlPlane *ControlPlane, members []*etcd.Membe
 			if name == "" {
 				name = fmt.Sprintf("%d (Name not yet assigned)", member.ID)
 			}
-			kcpErrors = append(kcpErrors, fmt.Sprintf("etcd member %s does not have a corresponding machine", name))
+			ocnecpErrors = append(ocnecpErrors, fmt.Sprintf("etcd member %s does not have a corresponding machine", name))
 		}
 	}
-	return kcpErrors
+	return ocnecpErrors
 }
 
 // UpdateStaticPodConditions is responsible for updating machine conditions reflecting the status of all the control plane
@@ -265,7 +265,7 @@ func (w *Workload) UpdateStaticPodConditions(ctx context.Context, controlPlane *
 	}
 
 	// Update conditions for control plane components hosted as static pods on the nodes.
-	var kcpErrors []string
+	var ocnecpErrors []string
 
 	for _, node := range controlPlaneNodes.Items {
 		// Search for the machine corresponding to the node.
@@ -284,7 +284,7 @@ func (w *Workload) UpdateStaticPodConditions(ctx context.Context, controlPlane *
 			if hasProvisioningMachine(controlPlane.Machines) {
 				continue
 			}
-			kcpErrors = append(kcpErrors, fmt.Sprintf("Control plane node %s does not have a corresponding machine", node.Name))
+			ocnecpErrors = append(ocnecpErrors, fmt.Sprintf("Control plane node %s does not have a corresponding machine", node.Name))
 			continue
 		}
 
@@ -339,7 +339,7 @@ func (w *Workload) UpdateStaticPodConditions(ctx context.Context, controlPlane *
 	aggregateFromMachinesToKCP(aggregateFromMachinesToKCPInput{
 		controlPlane:      controlPlane,
 		machineConditions: allMachinePodConditions,
-		kcpErrors:         kcpErrors,
+		ocnecpErrors:      ocnecpErrors,
 		condition:         controlplanev1.ControlPlaneComponentsHealthyCondition,
 		unhealthyReason:   controlplanev1.ControlPlaneComponentsUnhealthyReason,
 		unknownReason:     controlplanev1.ControlPlaneComponentsUnknownReason,
@@ -503,7 +503,7 @@ func podCondition(pod corev1.Pod, condition corev1.PodConditionType) corev1.Cond
 type aggregateFromMachinesToKCPInput struct {
 	controlPlane      *ControlPlane
 	machineConditions []clusterv1.ConditionType
-	kcpErrors         []string
+	ocnecpErrors      []string
 	condition         clusterv1.ConditionType
 	unhealthyReason   string
 	unknownReason     string
@@ -516,11 +516,11 @@ type aggregateFromMachinesToKCPInput struct {
 func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 	// Aggregates machines for condition status.
 	// NB. A machine could be assigned to many groups, but only the group with the highest severity will be reported.
-	kcpMachinesWithErrors := sets.NewString()
-	kcpMachinesWithWarnings := sets.NewString()
-	kcpMachinesWithInfo := sets.NewString()
-	kcpMachinesWithTrue := sets.NewString()
-	kcpMachinesWithUnknown := sets.NewString()
+	ocnecpMachinesWithErrors := sets.NewString()
+	ocnecpMachinesWithWarnings := sets.NewString()
+	ocnecpMachinesWithInfo := sets.NewString()
+	ocnecpMachinesWithTrue := sets.NewString()
+	ocnecpMachinesWithUnknown := sets.NewString()
 
 	for i := range input.controlPlane.Machines {
 		machine := input.controlPlane.Machines[i]
@@ -528,53 +528,53 @@ func aggregateFromMachinesToKCP(input aggregateFromMachinesToKCPInput) {
 			if machineCondition := conditions.Get(machine, condition); machineCondition != nil {
 				switch machineCondition.Status {
 				case corev1.ConditionTrue:
-					kcpMachinesWithTrue.Insert(machine.Name)
+					ocnecpMachinesWithTrue.Insert(machine.Name)
 				case corev1.ConditionFalse:
 					switch machineCondition.Severity {
 					case clusterv1.ConditionSeverityInfo:
-						kcpMachinesWithInfo.Insert(machine.Name)
+						ocnecpMachinesWithInfo.Insert(machine.Name)
 					case clusterv1.ConditionSeverityWarning:
-						kcpMachinesWithWarnings.Insert(machine.Name)
+						ocnecpMachinesWithWarnings.Insert(machine.Name)
 					case clusterv1.ConditionSeverityError:
-						kcpMachinesWithErrors.Insert(machine.Name)
+						ocnecpMachinesWithErrors.Insert(machine.Name)
 					}
 				case corev1.ConditionUnknown:
-					kcpMachinesWithUnknown.Insert(machine.Name)
+					ocnecpMachinesWithUnknown.Insert(machine.Name)
 				}
 			}
 		}
 	}
 
 	// In case of at least one machine with errors or KCP level errors (nodes without machines), report false, error.
-	if len(kcpMachinesWithErrors) > 0 {
-		input.kcpErrors = append(input.kcpErrors, fmt.Sprintf("Following machines are reporting %s errors: %s", input.note, strings.Join(kcpMachinesWithErrors.List(), ", ")))
+	if len(ocnecpMachinesWithErrors) > 0 {
+		input.ocnecpErrors = append(input.ocnecpErrors, fmt.Sprintf("Following machines are reporting %s errors: %s", input.note, strings.Join(ocnecpMachinesWithErrors.List(), ", ")))
 	}
-	if len(input.kcpErrors) > 0 {
-		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityError, strings.Join(input.kcpErrors, "; "))
+	if len(input.ocnecpErrors) > 0 {
+		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityError, strings.Join(input.ocnecpErrors, "; "))
 		return
 	}
 
 	// In case of no errors and at least one machine with warnings, report false, warnings.
-	if len(kcpMachinesWithWarnings) > 0 {
-		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityWarning, "Following machines are reporting %s warnings: %s", input.note, strings.Join(kcpMachinesWithWarnings.List(), ", "))
+	if len(ocnecpMachinesWithWarnings) > 0 {
+		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityWarning, "Following machines are reporting %s warnings: %s", input.note, strings.Join(ocnecpMachinesWithWarnings.List(), ", "))
 		return
 	}
 
 	// In case of no errors, no warning, and at least one machine with info, report false, info.
-	if len(kcpMachinesWithWarnings) > 0 {
-		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityWarning, "Following machines are reporting %s info: %s", input.note, strings.Join(kcpMachinesWithInfo.List(), ", "))
+	if len(ocnecpMachinesWithWarnings) > 0 {
+		conditions.MarkFalse(input.controlPlane.KCP, input.condition, input.unhealthyReason, clusterv1.ConditionSeverityWarning, "Following machines are reporting %s info: %s", input.note, strings.Join(ocnecpMachinesWithInfo.List(), ", "))
 		return
 	}
 
 	// In case of no errors, no warning, no Info, and at least one machine with true conditions, report true.
-	if len(kcpMachinesWithTrue) > 0 {
+	if len(ocnecpMachinesWithTrue) > 0 {
 		conditions.MarkTrue(input.controlPlane.KCP, input.condition)
 		return
 	}
 
 	// Otherwise, if there is at least one machine with unknown, report unknown.
-	if len(kcpMachinesWithUnknown) > 0 {
-		conditions.MarkUnknown(input.controlPlane.KCP, input.condition, input.unknownReason, "Following machines are reporting unknown %s status: %s", input.note, strings.Join(kcpMachinesWithUnknown.List(), ", "))
+	if len(ocnecpMachinesWithUnknown) > 0 {
+		conditions.MarkUnknown(input.controlPlane.KCP, input.condition, input.unknownReason, "Following machines are reporting unknown %s status: %s", input.note, strings.Join(ocnecpMachinesWithUnknown.List(), ", "))
 		return
 	}
 

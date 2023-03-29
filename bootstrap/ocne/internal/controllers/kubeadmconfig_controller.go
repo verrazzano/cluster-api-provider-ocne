@@ -89,7 +89,7 @@ type InitLocker interface {
 // +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=*,verbs=get;list
 
-// OcneConfigReconciler reconciles a OcneConfig object.
+// OcneConfigReconciler reconciles a OCNEConfig object.
 type OcneConfigReconciler struct {
 	Client          client.Client
 	KubeadmInitLock InitLocker
@@ -97,7 +97,7 @@ type OcneConfigReconciler struct {
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
 
-	// TokenTTL is the amount of time a bootstrap token (and therefore a OcneConfig) will be valid.
+	// TokenTTL is the amount of time a bootstrap token (and therefore a OCNEConfig) will be valid.
 	TokenTTL time.Duration
 
 	remoteClientGetter remote.ClusterClientGetter
@@ -106,7 +106,7 @@ type OcneConfigReconciler struct {
 // Scope is a scoped struct used during reconciliation.
 type Scope struct {
 	logr.Logger
-	Config      *bootstrapv1.OcneConfig
+	Config      *bootstrapv1.OCNEConfig
 	ConfigOwner *bsutil.ConfigOwner
 	Cluster     *clusterv1.Cluster
 }
@@ -124,7 +124,7 @@ func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	}
 
 	b := ctrl.NewControllerManagedBy(mgr).
-		For(&bootstrapv1.OcneConfig{}).
+		For(&bootstrapv1.OCNEConfig{}).
 		WithOptions(options).
 		Watches(
 			&source.Kind{Type: &clusterv1.Machine{}},
@@ -158,12 +158,12 @@ func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 	return nil
 }
 
-// Reconcile handles OcneConfig events.
+// Reconcile handles OCNEConfig events.
 func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, rerr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// Lookup the ocne config
-	config := &bootstrapv1.OcneConfig{}
+	config := &bootstrapv1.OCNEConfig{}
 	if err := r.Client.Get(ctx, req.NamespacedName, config); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -172,7 +172,7 @@ func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	// AddOwners adds the owners of OcneConfig as k/v pairs to the logger.
+	// AddOwners adds the owners of OCNEConfig as k/v pairs to the logger.
 	// Specifically, it will add KubeadmControlPlane, MachineSet and MachineDeployment.
 	ctx, log, err := clog.AddOwners(ctx, r.Client, config)
 	if err != nil {
@@ -231,7 +231,7 @@ func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	// Attempt to Patch the OcneConfig object and status after each reconciliation if no error occurs.
+	// Attempt to Patch the OCNEConfig object and status after each reconciliation if no error occurs.
 	defer func() {
 		// always update the readyCondition; the summary is represented using the "1 of x completed" notation.
 		conditions.SetSummary(config,
@@ -252,7 +252,7 @@ func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			}
 		}
 	}()
-	// Ensure the bootstrap secret associated with this OcneConfig has the correct ownerReference.
+	// Ensure the bootstrap secret associated with this OCNEConfig has the correct ownerReference.
 	if err := r.ensureBootstrapSecretOwnersRef(ctx, scope); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -314,7 +314,7 @@ func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return r.joinWorker(ctx, scope)
 }
 
-func (r *OcneConfigReconciler) refreshBootstrapToken(ctx context.Context, config *bootstrapv1.OcneConfig, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *OcneConfigReconciler) refreshBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	token := config.Spec.JoinConfiguration.Discovery.BootstrapToken.Token
 
@@ -333,7 +333,7 @@ func (r *OcneConfigReconciler) refreshBootstrapToken(ctx context.Context, config
 	}, nil
 }
 
-func (r *OcneConfigReconciler) rotateMachinePoolBootstrapToken(ctx context.Context, config *bootstrapv1.OcneConfig, cluster *clusterv1.Cluster, scope *Scope) (ctrl.Result, error) {
+func (r *OcneConfigReconciler) rotateMachinePoolBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster, scope *Scope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(2).Info("Config is owned by a MachinePool, checking if token should be rotated")
 	remoteClient, err := r.remoteClientGetter(ctx, OcneConfigControllerName, r.Client, util.ObjectKey(cluster))
@@ -460,7 +460,7 @@ func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			ctx,
 			r.Client,
 			util.ObjectKey(scope.Cluster),
-			*metav1.NewControllerRef(scope.Config, bootstrapv1.GroupVersion.WithKind("OcneConfig")))
+			*metav1.NewControllerRef(scope.Config, bootstrapv1.GroupVersion.WithKind("OCNEConfig")))
 	} else {
 		err = certificates.Lookup(ctx,
 			r.Client,
@@ -491,7 +491,7 @@ func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	}
 
 	// Setting the image repository to ocne container repository rather than k8s.io
-	ocneRepository := ocne.DefaultOcneImageRepository
+	ocneRepository := ocne.DefaultOCNEImageRepository
 	if scope.Config.Spec.ClusterConfiguration.ImageRepository != "" {
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
 	}
@@ -518,14 +518,14 @@ func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:     files,
 			NTP:                 scope.Config.Spec.NTP,
-			PreOcneCommands:     scope.Config.Spec.PreOcneCommands,
-			PostOcneCommands:    scope.Config.Spec.PostOcneCommands,
+			PreOCNECommands:     scope.Config.Spec.PreOCNECommands,
+			PostOCNECommands:    scope.Config.Spec.PostOCNECommands,
 			Users:               users,
 			Mounts:              scope.Config.Spec.Mounts,
 			DiskSetup:           scope.Config.Spec.DiskSetup,
-			OcneVerbosity:       verbosityFlag,
+			OCNEVerbosity:       verbosityFlag,
 			KubernetesVersion:   kubernetesVersion,
-			OcneImageRepository: ocneRepository,
+			OCNEImageRepository: ocneRepository,
 			Proxy:               scope.Config.Spec.Proxy,
 			PodSubnet:           podSubnet,
 			ServiceSubnet:       serviceSubnet,
@@ -598,7 +598,7 @@ func (r *OcneConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 	}
 
 	if scope.Config.Spec.JoinConfiguration.ControlPlane != nil {
-		return ctrl.Result{}, errors.New("Machine is a Worker, but JoinConfiguration.ControlPlane is set in the OcneConfig object")
+		return ctrl.Result{}, errors.New("Machine is a Worker, but JoinConfiguration.ControlPlane is set in the OCNEConfig object")
 	}
 
 	verbosityFlag := ""
@@ -619,7 +619,7 @@ func (r *OcneConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 	}
 
 	// Setting the image repository to ocne container repository rather than k8s.io
-	ocneRepository := ocne.DefaultOcneImageRepository
+	ocneRepository := ocne.DefaultOCNEImageRepository
 	if scope.Config.Spec.ClusterConfiguration != nil {
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
 	}
@@ -643,14 +643,14 @@ func (r *OcneConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:      files,
 			NTP:                  scope.Config.Spec.NTP,
-			PreOcneCommands:      scope.Config.Spec.PreOcneCommands,
-			PostOcneCommands:     scope.Config.Spec.PostOcneCommands,
+			PreOCNECommands:      scope.Config.Spec.PreOCNECommands,
+			PostOCNECommands:     scope.Config.Spec.PostOCNECommands,
 			Users:                users,
 			Mounts:               scope.Config.Spec.Mounts,
 			DiskSetup:            scope.Config.Spec.DiskSetup,
-			OcneVerbosity:        verbosityFlag,
+			OCNEVerbosity:        verbosityFlag,
 			UseExperimentalRetry: scope.Config.Spec.UseExperimentalRetryJoin,
-			OcneImageRepository:  ocneRepository,
+			OCNEImageRepository:  ocneRepository,
 			Proxy:                scope.Config.Spec.Proxy,
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
@@ -747,7 +747,7 @@ func (r *OcneConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 	}
 
 	// Setting the image repository to ocne container repository rather than k8s.io
-	ocneRepository := ocne.DefaultOcneImageRepository
+	ocneRepository := ocne.DefaultOCNEImageRepository
 	if scope.Config.Spec.ClusterConfiguration != nil {
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
 	}
@@ -773,15 +773,15 @@ func (r *OcneConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:      files,
 			NTP:                  scope.Config.Spec.NTP,
-			PreOcneCommands:      scope.Config.Spec.PreOcneCommands,
-			PostOcneCommands:     scope.Config.Spec.PostOcneCommands,
+			PreOCNECommands:      scope.Config.Spec.PreOCNECommands,
+			PostOCNECommands:     scope.Config.Spec.PostOCNECommands,
 			Users:                users,
 			Mounts:               scope.Config.Spec.Mounts,
 			DiskSetup:            scope.Config.Spec.DiskSetup,
-			OcneVerbosity:        verbosityFlag,
+			OCNEVerbosity:        verbosityFlag,
 			UseExperimentalRetry: scope.Config.Spec.UseExperimentalRetryJoin,
 			KubernetesVersion:    kubernetesVersion,
-			OcneImageRepository:  ocneRepository,
+			OCNEImageRepository:  ocneRepository,
 			Proxy:                scope.Config.Spec.Proxy,
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
@@ -814,7 +814,7 @@ func (r *OcneConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 
 // resolveFiles maps .Spec.Files into cloudinit.Files, resolving any object references
 // along the way.
-func (r *OcneConfigReconciler) resolveFiles(ctx context.Context, cfg *bootstrapv1.OcneConfig) ([]bootstrapv1.File, error) {
+func (r *OcneConfigReconciler) resolveFiles(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.File, error) {
 	collected := make([]bootstrapv1.File, 0, len(cfg.Spec.Files))
 
 	for i := range cfg.Spec.Files {
@@ -852,7 +852,7 @@ func (r *OcneConfigReconciler) resolveSecretFileContent(ctx context.Context, ns 
 
 // resolveUsers maps .Spec.Users into cloudinit.Users, resolving any object references
 // along the way.
-func (r *OcneConfigReconciler) resolveUsers(ctx context.Context, cfg *bootstrapv1.OcneConfig) ([]bootstrapv1.User, error) {
+func (r *OcneConfigReconciler) resolveUsers(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.User, error) {
 	collected := make([]bootstrapv1.User, 0, len(cfg.Spec.Users))
 
 	for i := range cfg.Spec.Users {
@@ -913,7 +913,7 @@ func (r *OcneConfigReconciler) ClusterToOcneConfigs(o client.Object) []ctrl.Requ
 
 	for _, m := range machineList.Items {
 		if m.Spec.Bootstrap.ConfigRef != nil &&
-			m.Spec.Bootstrap.ConfigRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OcneConfig").GroupKind() {
+			m.Spec.Bootstrap.ConfigRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OCNEConfig").GroupKind() {
 			name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
 			result = append(result, ctrl.Request{NamespacedName: name})
 		}
@@ -927,7 +927,7 @@ func (r *OcneConfigReconciler) ClusterToOcneConfigs(o client.Object) []ctrl.Requ
 
 		for _, mp := range machinePoolList.Items {
 			if mp.Spec.Template.Spec.Bootstrap.ConfigRef != nil &&
-				mp.Spec.Template.Spec.Bootstrap.ConfigRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OcneConfig").GroupKind() {
+				mp.Spec.Template.Spec.Bootstrap.ConfigRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OCNEConfig").GroupKind() {
 				name := client.ObjectKey{Namespace: mp.Namespace, Name: mp.Spec.Template.Spec.Bootstrap.ConfigRef.Name}
 				result = append(result, ctrl.Request{NamespacedName: name})
 			}
@@ -938,7 +938,7 @@ func (r *OcneConfigReconciler) ClusterToOcneConfigs(o client.Object) []ctrl.Requ
 }
 
 // MachineToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
-// request for reconciliation of OcneConfig.
+// request for reconciliation of OCNEConfig.
 func (r *OcneConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl.Request {
 	m, ok := o.(*clusterv1.Machine)
 	if !ok {
@@ -946,7 +946,7 @@ func (r *OcneConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl
 	}
 
 	result := []ctrl.Request{}
-	if m.Spec.Bootstrap.ConfigRef != nil && m.Spec.Bootstrap.ConfigRef.GroupVersionKind() == bootstrapv1.GroupVersion.WithKind("OcneConfig") {
+	if m.Spec.Bootstrap.ConfigRef != nil && m.Spec.Bootstrap.ConfigRef.GroupVersionKind() == bootstrapv1.GroupVersion.WithKind("OCNEConfig") {
 		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
 		result = append(result, ctrl.Request{NamespacedName: name})
 	}
@@ -954,7 +954,7 @@ func (r *OcneConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl
 }
 
 // MachinePoolToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
-// request for reconciliation of OcneConfig.
+// request for reconciliation of OCNEConfig.
 func (r *OcneConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []ctrl.Request {
 	m, ok := o.(*expv1.MachinePool)
 	if !ok {
@@ -963,7 +963,7 @@ func (r *OcneConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []
 
 	result := []ctrl.Request{}
 	configRef := m.Spec.Template.Spec.Bootstrap.ConfigRef
-	if configRef != nil && configRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OcneConfig").GroupKind() {
+	if configRef != nil && configRef.GroupVersionKind().GroupKind() == bootstrapv1.GroupVersion.WithKind("OCNEConfig").GroupKind() {
 		name := client.ObjectKey{Namespace: m.Namespace, Name: configRef.Name}
 		result = append(result, ctrl.Request{NamespacedName: name})
 	}
@@ -974,7 +974,7 @@ func (r *OcneConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []
 // The implementation func respect user provided discovery configurations, but in case some of them are missing, a valid BootstrapToken object
 // is automatically injected into config.JoinConfiguration.Discovery.
 // This allows to simplify configuration UX, by providing the option to delegate to CABPOCNE the configuration of ocne join discovery.
-func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv1.OcneConfig, certificates secret.Certificates) (ctrl.Result, error) {
+func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv1.OCNEConfig, certificates secret.Certificates) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// if config already contains a file discovery configuration, respect it without further validations
@@ -1037,7 +1037,7 @@ func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *
 
 // reconcileTopLevelObjectSettings injects into config.ClusterConfiguration values from top level objects like cluster and machine.
 // The implementation func respect user provided config values, but in case some of them are missing, values from top level objects are used.
-func (r *OcneConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine, config *bootstrapv1.OcneConfig) {
+func (r *OcneConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine, config *bootstrapv1.OCNEConfig) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// If there is no ControlPlaneEndpoint defined in ClusterConfiguration but
@@ -1096,7 +1096,7 @@ func (r *OcneConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: bootstrapv1.GroupVersion.String(),
-					Kind:       "OcneConfig",
+					Kind:       "OCNEConfig",
 					Name:       scope.Config.Name,
 					UID:        scope.Config.UID,
 					Controller: pointer.Bool(true),
@@ -1114,11 +1114,11 @@ func (r *OcneConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 	// it is possible that secret creation happens but the config.Status patches are not applied
 	if err := r.Client.Create(ctx, secret); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return errors.Wrapf(err, "failed to create bootstrap data secret for OcneConfig %s/%s", scope.Config.Namespace, scope.Config.Name)
+			return errors.Wrapf(err, "failed to create bootstrap data secret for OCNEConfig %s/%s", scope.Config.Namespace, scope.Config.Name)
 		}
-		log.Info("bootstrap data secret for OcneConfig already exists, updating", "Secret", klog.KObj(secret))
+		log.Info("bootstrap data secret for OCNEConfig already exists, updating", "Secret", klog.KObj(secret))
 		if err := r.Client.Update(ctx, secret); err != nil {
-			return errors.Wrapf(err, "failed to update bootstrap data secret for OcneConfig %s/%s", scope.Config.Namespace, scope.Config.Name)
+			return errors.Wrapf(err, "failed to update bootstrap data secret for OCNEConfig %s/%s", scope.Config.Namespace, scope.Config.Name)
 		}
 	}
 	scope.Config.Status.DataSecretName = pointer.String(secret.Name)
@@ -1127,7 +1127,7 @@ func (r *OcneConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 	return nil
 }
 
-// Ensure the bootstrap secret has the OcneConfig as a controller OwnerReference.
+// Ensure the bootstrap secret has the OCNEConfig as a controller OwnerReference.
 func (r *OcneConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Context, scope *Scope) error {
 	secret := &corev1.Secret{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: scope.Config.Namespace, Name: scope.Config.Name}, secret)
@@ -1136,25 +1136,25 @@ func (r *OcneConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Contex
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
-		return errors.Wrapf(err, "failed to add OcneConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
+		return errors.Wrapf(err, "failed to add OCNEConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
 	}
 	patchHelper, err := patch.NewHelper(secret, r.Client)
 	if err != nil {
-		return errors.Wrapf(err, "failed to add OcneConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
+		return errors.Wrapf(err, "failed to add OCNEConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
 	}
-	if c := metav1.GetControllerOf(secret); c != nil && c.Kind != "OcneConfig" {
+	if c := metav1.GetControllerOf(secret); c != nil && c.Kind != "OCNEConfig" {
 		secret.OwnerReferences = util.RemoveOwnerRef(secret.OwnerReferences, *c)
 	}
 	secret.OwnerReferences = util.EnsureOwnerRef(secret.OwnerReferences, metav1.OwnerReference{
 		APIVersion: bootstrapv1.GroupVersion.String(),
-		Kind:       "OcneConfig",
+		Kind:       "OCNEConfig",
 		UID:        scope.Config.UID,
 		Name:       scope.Config.Name,
 		Controller: pointer.Bool(true),
 	})
 	err = patchHelper.Patch(ctx, secret)
 	if err != nil {
-		return errors.Wrapf(err, "could not add OcneConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
+		return errors.Wrapf(err, "could not add OCNEConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
 	}
 	return nil
 }

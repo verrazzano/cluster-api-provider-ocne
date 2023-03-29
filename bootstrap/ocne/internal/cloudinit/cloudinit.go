@@ -47,8 +47,8 @@ const (
 // BaseUserData is shared across all the various types of files written to disk.
 type BaseUserData struct {
 	Header               string
-	PreOcneCommands      []string
-	PostOcneCommands     []string
+	PreOCNECommands      []string
+	PostOCNECommands     []string
 	AdditionalFiles      []bootstrapv1.File
 	WriteFiles           []bootstrapv1.File
 	Users                []bootstrapv1.User
@@ -57,11 +57,11 @@ type BaseUserData struct {
 	Mounts               []bootstrapv1.MountPoints
 	ControlPlane         bool
 	UseExperimentalRetry bool
-	OcneCommand          string
-	OcneVerbosity        string
+	OCNECommand          string
+	OCNEVerbosity        string
 	SentinelFileCommand  string
 	KubernetesVersion    string
-	OcneImageRepository  string
+	OCNEImageRepository  string
 	Proxy                bootstrapv1.ProxySpec
 	PodSubnet            string
 	ServiceSubnet        string
@@ -70,13 +70,13 @@ type BaseUserData struct {
 
 func (input *BaseUserData) prepare() error {
 	if strings.ToLower(input.Header) != "test" {
-		input.PreOcneCommands = ocne.GetOcneOverrides(input.KubernetesVersion, input.OcneImageRepository, input.PodSubnet, input.ServiceSubnet, &input.Proxy)
+		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, &input.Proxy)
 	}
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
-	input.OcneCommand = fmt.Sprintf(standardJoinCommand, input.OcneVerbosity)
+	input.OCNECommand = fmt.Sprintf(standardJoinCommand, input.OCNEVerbosity)
 	if input.UseExperimentalRetry {
-		input.OcneCommand = retriableJoinScriptName
+		input.OCNECommand = retriableJoinScriptName
 		joinScriptFile, err := generateBootstrapScript(input)
 		if err != nil {
 			return errors.Wrap(err, "failed to generate user data for machine joining control plane")

@@ -58,9 +58,9 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -73,13 +73,13 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 	}
 	clusterName := client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: "foo"}
 
-	fakeClient := newFakeClient(kcp.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy())
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	result, err := r.reconcileKubeconfig(ctx, cluster, kcp)
+	result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(result).To(BeZero())
 
@@ -108,9 +108,9 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,13 +122,13 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 		},
 	}
 
-	fakeClient := newFakeClient(kcp.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy())
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	result, err := r.reconcileKubeconfig(ctx, cluster, kcp)
+	result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: dependentCertRequeueAfter}))
 
@@ -157,9 +157,9 @@ func TestReconcileKubeconfigSecretAdoptsV1alpha2Secrets(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -182,13 +182,13 @@ func TestReconcileKubeconfigSecretAdoptsV1alpha2Secrets(t *testing.T) {
 		}, // the Cluster ownership defines v1alpha2 controlled secrets
 	)
 
-	fakeClient := newFakeClient(kcp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	result, err := r.reconcileKubeconfig(ctx, cluster, kcp)
+	result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(result).To(Equal(ctrl.Result{}))
 
@@ -206,7 +206,7 @@ func TestReconcileKubeconfigSecretAdoptsV1alpha2Secrets(t *testing.T) {
 		Name:       cluster.Name,
 		UID:        cluster.UID,
 	}))
-	g.Expect(kubeconfigSecret.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))))
+	g.Expect(kubeconfigSecret.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))))
 }
 
 func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
@@ -226,9 +226,9 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -257,13 +257,13 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 		Type: corev1.SecretTypeOpaque,
 	}
 
-	fakeClient := newFakeClient(kcp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	result, err := r.reconcileKubeconfig(ctx, cluster, kcp)
+	result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp)
 	g.Expect(err).To(Succeed())
 	g.Expect(result).To(BeZero())
 
@@ -275,10 +275,10 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 	g.Expect(r.Client.Get(ctx, secretName, kubeconfigSecret)).To(Succeed())
 	g.Expect(kubeconfigSecret.Labels).To(Equal(existingKubeconfigSecret.Labels))
 	g.Expect(kubeconfigSecret.Data).To(Equal(existingKubeconfigSecret.Data))
-	g.Expect(kubeconfigSecret.OwnerReferences).ToNot(ContainElement(*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))))
+	g.Expect(kubeconfigSecret.OwnerReferences).ToNot(ContainElement(*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))))
 }
 
-func TestKubeadmControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
+func TestOCNEControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := &clusterv1.Cluster{
@@ -295,9 +295,9 @@ func TestKubeadmControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -314,15 +314,15 @@ func TestKubeadmControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 	caCert := clusterCerts.GetByPurpose(secret.ClusterCA)
 	existingCACertSecret := caCert.AsSecret(
 		client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: "foo"},
-		*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane")),
+		*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane")),
 	)
 
-	fakeClient := newFakeClient(kcp.DeepCopy(), existingCACertSecret.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingCACertSecret.DeepCopy())
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
-	result, err := r.reconcileKubeconfig(ctx, cluster, kcp)
+	result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(result).To(Equal(ctrl.Result{}))
 
@@ -333,7 +333,7 @@ func TestKubeadmControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 	}
 	g.Expect(r.Client.Get(ctx, secretName, kubeconfigSecret)).To(Succeed())
 	g.Expect(kubeconfigSecret.OwnerReferences).NotTo(BeEmpty())
-	g.Expect(kubeconfigSecret.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))))
+	g.Expect(kubeconfigSecret.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))))
 	g.Expect(kubeconfigSecret.Labels).To(HaveKeyWithValue(clusterv1.ClusterLabelName, cluster.Name))
 }
 
@@ -365,9 +365,9 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kcp-foo",
+			Name:      "ocnecp-foo",
 			Namespace: cluster.Namespace,
 		},
 		Spec: controlplanev1.OcneControlPlaneSpec{
@@ -383,17 +383,17 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 		},
 	}
 
-	fakeClient := newFakeClient(cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy())
+	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	bootstrapSpec := &bootstrapv1.OcneConfigSpec{
+	bootstrapSpec := &bootstrapv1.OCNEConfigSpec{
 		JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 	}
-	g.Expect(r.cloneConfigsAndGenerateMachine(ctx, cluster, kcp, bootstrapSpec, nil)).To(Succeed())
+	g.Expect(r.cloneConfigsAndGenerateMachine(ctx, cluster, ocnecp, bootstrapSpec, nil)).To(Succeed())
 
 	machineList := &clusterv1.MachineList{}
 	g.Expect(fakeClient.List(ctx, machineList, client.InNamespace(cluster.Namespace))).To(Succeed())
@@ -402,7 +402,7 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 	for _, m := range machineList.Items {
 		g.Expect(m.Namespace).To(Equal(cluster.Namespace))
 		g.Expect(m.Name).NotTo(BeEmpty())
-		g.Expect(m.Name).To(HavePrefix(kcp.Name))
+		g.Expect(m.Name).To(HavePrefix(ocnecp.Name))
 
 		infraObj, err := external.Get(ctx, r.Client, &m.Spec.InfrastructureRef, m.Spec.InfrastructureRef.Namespace)
 		g.Expect(err).NotTo(HaveOccurred())
@@ -415,9 +415,9 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 		g.Expect(m.Spec.InfrastructureRef.Kind).To(Equal("GenericMachine"))
 
 		g.Expect(m.Spec.Bootstrap.ConfigRef.Namespace).To(Equal(cluster.Namespace))
-		g.Expect(m.Spec.Bootstrap.ConfigRef.Name).To(HavePrefix(kcp.Name))
+		g.Expect(m.Spec.Bootstrap.ConfigRef.Name).To(HavePrefix(ocnecp.Name))
 		g.Expect(m.Spec.Bootstrap.ConfigRef.APIVersion).To(Equal(bootstrapv1.GroupVersion.String()))
-		g.Expect(m.Spec.Bootstrap.ConfigRef.Kind).To(Equal("OcneConfig"))
+		g.Expect(m.Spec.Bootstrap.ConfigRef.Kind).To(Equal("OCNEConfig"))
 	}
 }
 
@@ -449,9 +449,9 @@ func TestCloneConfigsAndGenerateMachineFail(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kcp-foo",
+			Name:      "ocnecp-foo",
 			Namespace: cluster.Namespace,
 		},
 		Spec: controlplanev1.OcneControlPlaneSpec{
@@ -467,21 +467,21 @@ func TestCloneConfigsAndGenerateMachineFail(t *testing.T) {
 		},
 	}
 
-	fakeClient := newFakeClient(cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy())
+	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
 	r := &OcneControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	bootstrapSpec := &bootstrapv1.OcneConfigSpec{
+	bootstrapSpec := &bootstrapv1.OCNEConfigSpec{
 		JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 	}
 
 	// Try to break Infra Cloning
-	kcp.Spec.MachineTemplate.InfrastructureRef.Name = "something_invalid"
-	g.Expect(r.cloneConfigsAndGenerateMachine(ctx, cluster, kcp, bootstrapSpec, nil)).To(HaveOccurred())
-	g.Expect(&kcp.GetConditions()[0]).Should(conditions.HaveSameStateOf(&clusterv1.Condition{
+	ocnecp.Spec.MachineTemplate.InfrastructureRef.Name = "something_invalid"
+	g.Expect(r.cloneConfigsAndGenerateMachine(ctx, cluster, ocnecp, bootstrapSpec, nil)).To(HaveOccurred())
+	g.Expect(&ocnecp.GetConditions()[0]).Should(conditions.HaveSameStateOf(&clusterv1.Condition{
 		Type:     controlplanev1.MachinesCreatedCondition,
 		Status:   corev1.ConditionFalse,
 		Severity: clusterv1.ConditionSeverityError,
@@ -490,7 +490,7 @@ func TestCloneConfigsAndGenerateMachineFail(t *testing.T) {
 	}))
 }
 
-func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
+func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 	g := NewWithT(t)
 	fakeClient := newFakeClient()
 
@@ -501,7 +501,7 @@ func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
 		},
 	}
 
-	kcpMachineTemplateObjectMeta := clusterv1.ObjectMeta{
+	ocnecpMachineTemplateObjectMeta := clusterv1.ObjectMeta{
 		Labels: map[string]string{
 			"machineTemplateLabel": "machineTemplateLabelValue",
 		},
@@ -509,7 +509,7 @@ func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
 			"machineTemplateAnnotation": "machineTemplateAnnotationValue",
 		},
 	}
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testControlPlane",
 			Namespace: cluster.Namespace,
@@ -517,7 +517,7 @@ func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
 		Spec: controlplanev1.OcneControlPlaneSpec{
 			Version: "v1.16.6",
 			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
-				ObjectMeta: kcpMachineTemplateObjectMeta,
+				ObjectMeta: ocnecpMachineTemplateObjectMeta,
 			},
 		},
 	}
@@ -536,7 +536,7 @@ func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
 	}
 	expectedMachineSpec := clusterv1.MachineSpec{
 		ClusterName: cluster.Name,
-		Version:     pointer.String(kcp.Spec.Version),
+		Version:     pointer.String(ocnecp.Spec.Version),
 		Bootstrap: clusterv1.Bootstrap{
 			ConfigRef: bootstrapRef.DeepCopy(),
 		},
@@ -547,38 +547,38 @@ func TestKubeadmControlPlaneReconciler_generateMachine(t *testing.T) {
 		managementCluster: &internal.Management{Client: fakeClient},
 		recorder:          record.NewFakeRecorder(32),
 	}
-	g.Expect(r.generateMachine(ctx, kcp, cluster, infraRef, bootstrapRef, nil)).To(Succeed())
+	g.Expect(r.generateMachine(ctx, ocnecp, cluster, infraRef, bootstrapRef, nil)).To(Succeed())
 
 	machineList := &clusterv1.MachineList{}
 	g.Expect(fakeClient.List(ctx, machineList, client.InNamespace(cluster.Namespace))).To(Succeed())
 	g.Expect(machineList.Items).To(HaveLen(1))
 	machine := machineList.Items[0]
-	g.Expect(machine.Name).To(HavePrefix(kcp.Name))
-	g.Expect(machine.Namespace).To(Equal(kcp.Namespace))
+	g.Expect(machine.Name).To(HavePrefix(ocnecp.Name))
+	g.Expect(machine.Namespace).To(Equal(ocnecp.Namespace))
 	g.Expect(machine.OwnerReferences).To(HaveLen(1))
-	g.Expect(machine.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))))
+	g.Expect(machine.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))))
 	g.Expect(machine.Spec).To(Equal(expectedMachineSpec))
 
 	// Verify that the machineTemplate.ObjectMeta has been propagated to the Machine.
-	for k, v := range kcpMachineTemplateObjectMeta.Labels {
+	for k, v := range ocnecpMachineTemplateObjectMeta.Labels {
 		g.Expect(machine.Labels[k]).To(Equal(v))
 	}
 	g.Expect(machine.Labels[clusterv1.ClusterLabelName]).To(Equal(cluster.Name))
 	g.Expect(machine.Labels[clusterv1.MachineControlPlaneLabelName]).To(Equal(""))
-	g.Expect(machine.Labels[clusterv1.MachineControlPlaneNameLabel]).To(Equal(kcp.Name))
+	g.Expect(machine.Labels[clusterv1.MachineControlPlaneNameLabel]).To(Equal(ocnecp.Name))
 
-	for k, v := range kcpMachineTemplateObjectMeta.Annotations {
+	for k, v := range ocnecpMachineTemplateObjectMeta.Annotations {
 		g.Expect(machine.Annotations[k]).To(Equal(v))
 	}
 
 	// Verify that machineTemplate.ObjectMeta in KCP has not been modified.
-	g.Expect(kcp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.ClusterLabelName))
-	g.Expect(kcp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneLabelName))
-	g.Expect(kcp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneNameLabel))
-	g.Expect(kcp.Spec.MachineTemplate.ObjectMeta.Annotations).NotTo(HaveKey(controlplanev1.OcneClusterConfigurationAnnotation))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.ClusterLabelName))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneLabelName))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneNameLabel))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations).NotTo(HaveKey(controlplanev1.OcneClusterConfigurationAnnotation))
 }
 
-func TestKubeadmControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
+func TestOCNEControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
 	g := NewWithT(t)
 	fakeClient := newFakeClient()
 
@@ -589,20 +589,20 @@ func TestKubeadmControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
 		},
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testControlPlane",
 			Namespace: cluster.Namespace,
 		},
 	}
 
-	spec := bootstrapv1.OcneConfigSpec{}
-	expectedReferenceKind := "OcneConfig"
+	spec := bootstrapv1.OCNEConfigSpec{}
+	expectedReferenceKind := "OCNEConfig"
 	expectedReferenceAPIVersion := bootstrapv1.GroupVersion.String()
 	expectedOwner := metav1.OwnerReference{
-		Kind:       "OcneControlPlane",
+		Kind:       "OCNEControlPlane",
 		APIVersion: controlplanev1.GroupVersion.String(),
-		Name:       kcp.Name,
+		Name:       ocnecp.Name,
 	}
 
 	r := &OcneControlPlaneReconciler{
@@ -610,15 +610,15 @@ func TestKubeadmControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	got, err := r.generateKubeadmConfig(ctx, kcp, cluster, spec.DeepCopy())
+	got, err := r.generateKubeadmConfig(ctx, ocnecp, cluster, spec.DeepCopy())
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(got).NotTo(BeNil())
-	g.Expect(got.Name).To(HavePrefix(kcp.Name))
-	g.Expect(got.Namespace).To(Equal(kcp.Namespace))
+	g.Expect(got.Name).To(HavePrefix(ocnecp.Name))
+	g.Expect(got.Namespace).To(Equal(ocnecp.Namespace))
 	g.Expect(got.Kind).To(Equal(expectedReferenceKind))
 	g.Expect(got.APIVersion).To(Equal(expectedReferenceAPIVersion))
 
-	bootstrapConfig := &bootstrapv1.OcneConfig{}
+	bootstrapConfig := &bootstrapv1.OCNEConfig{}
 	key := client.ObjectKey{Name: got.Name, Namespace: got.Namespace}
 	g.Expect(fakeClient.Get(ctx, key, bootstrapConfig)).To(Succeed())
 	g.Expect(bootstrapConfig.OwnerReferences).To(HaveLen(1))
@@ -626,7 +626,7 @@ func TestKubeadmControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
 	g.Expect(bootstrapConfig.Spec).To(Equal(spec))
 }
 
-func TestKubeadmControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
+func TestOCNEControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 	g := NewWithT(t)
 	otherOwner := metav1.OwnerReference{
 		Name:               "testcontroller",
@@ -639,31 +639,31 @@ func TestKubeadmControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 	clusterName := "test1"
 	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
 
-	// A OcneConfig secret created by CAPI controllers with no owner references.
+	// A OCNEConfig secret created by CAPI controllers with no owner references.
 	capiKubeadmConfigSecretNoOwner := kubeconfig.GenerateSecretWithOwner(
 		client.ObjectKey{Name: clusterName, Namespace: metav1.NamespaceDefault},
 		[]byte{},
 		metav1.OwnerReference{})
 	capiKubeadmConfigSecretNoOwner.OwnerReferences = []metav1.OwnerReference{}
 
-	// A OcneConfig secret created by CAPI controllers with a non-KCP owner reference.
+	// A OCNEConfig secret created by CAPI controllers with a non-KCP owner reference.
 	capiKubeadmConfigSecretOtherOwner := capiKubeadmConfigSecretNoOwner.DeepCopy()
 	capiKubeadmConfigSecretOtherOwner.OwnerReferences = []metav1.OwnerReference{otherOwner}
 
-	// A user provided OcneConfig secret with no owner reference.
+	// A user provided OCNEConfig secret with no owner reference.
 	userProvidedKubeadmConfigSecretNoOwner := kubeconfig.GenerateSecretWithOwner(
 		client.ObjectKey{Name: clusterName, Namespace: metav1.NamespaceDefault},
 		[]byte{},
 		metav1.OwnerReference{})
 	userProvidedKubeadmConfigSecretNoOwner.Type = corev1.SecretTypeOpaque
 
-	// A user provided OcneConfig with a non-KCP owner reference.
+	// A user provided OCNEConfig with a non-KCP owner reference.
 	userProvidedKubeadmConfigSecretOtherOwner := userProvidedKubeadmConfigSecretNoOwner.DeepCopy()
 	userProvidedKubeadmConfigSecretOtherOwner.OwnerReferences = []metav1.OwnerReference{otherOwner}
 
-	kcp := &controlplanev1.OcneControlPlane{
+	ocnecp := &controlplanev1.OCNEControlPlane{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			APIVersion: controlplanev1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -680,10 +680,10 @@ func TestKubeadmControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 			name:         "add KCP owner reference on kubeconfig secret generated by CAPI",
 			configSecret: capiKubeadmConfigSecretNoOwner,
 			expectedOwnerRef: metav1.OwnerReference{
-				Name:               kcp.Name,
-				UID:                kcp.UID,
-				Kind:               kcp.Kind,
-				APIVersion:         kcp.APIVersion,
+				Name:               ocnecp.Name,
+				UID:                ocnecp.UID,
+				Kind:               ocnecp.Kind,
+				APIVersion:         ocnecp.APIVersion,
 				Controller:         pointer.Bool(true),
 				BlockOwnerDeletion: pointer.Bool(true),
 			},
@@ -692,10 +692,10 @@ func TestKubeadmControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 			name:         "replace owner reference with KCP on kubeconfig secret generated by CAPI with other owner",
 			configSecret: capiKubeadmConfigSecretOtherOwner,
 			expectedOwnerRef: metav1.OwnerReference{
-				Name:               kcp.Name,
-				UID:                kcp.UID,
-				Kind:               kcp.Kind,
-				APIVersion:         kcp.APIVersion,
+				Name:               ocnecp.Name,
+				UID:                ocnecp.UID,
+				Kind:               ocnecp.Kind,
+				APIVersion:         ocnecp.APIVersion,
 				Controller:         pointer.Bool(true),
 				BlockOwnerDeletion: pointer.Bool(true),
 			},
@@ -713,12 +713,12 @@ func TestKubeadmControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeClient := newFakeClient(cluster, kcp, tt.configSecret)
+			fakeClient := newFakeClient(cluster, ocnecp, tt.configSecret)
 			r := &OcneControlPlaneReconciler{
 				APIReader: fakeClient,
 				Client:    fakeClient,
 			}
-			g.Expect(r.adoptKubeconfigSecret(ctx, cluster, tt.configSecret, kcp)).To(Succeed())
+			g.Expect(r.adoptKubeconfigSecret(ctx, cluster, tt.configSecret, ocnecp)).To(Succeed())
 			actualSecret := &corev1.Secret{}
 			g.Expect(fakeClient.Get(ctx, client.ObjectKey{Namespace: tt.configSecret.Namespace, Name: tt.configSecret.Namespace}, actualSecret))
 			g.Expect(tt.configSecret.GetOwnerReferences()).To(ConsistOf(tt.expectedOwnerRef))

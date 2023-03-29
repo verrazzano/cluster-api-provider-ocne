@@ -18,10 +18,10 @@ limitations under the License.
 
 package v1beta1
 
-func (*OcneConfig) Hub()             {}
-func (*OcneConfigList) Hub()         {}
-func (*OcneConfigTemplate) Hub()     {}
-func (*OcneConfigTemplateList) Hub() {}
+func (*OCNEConfig) Hub()             {}
+func (*OCNEConfigList) Hub()         {}
+func (*OCNEConfigTemplate) Hub()     {}
+func (*OCNEConfigTemplateList) Hub() {}
 
 func (*ClusterConfiguration) Hub() {}
 func (*ClusterStatus) Hub()        {}

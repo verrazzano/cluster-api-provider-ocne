@@ -19,7 +19,7 @@ limitations under the License.
 // Package upstreamv1beta2 contains a mirror of kubeadm API v1beta2 API, required because it is not possible to import k/K.
 //
 // IMPORTANT: Do not change these files!
-// IMPORTANT: only for OcneConfig serialization/deserialization, and should not be used for other purposes.
+// IMPORTANT: only for OCNEConfig serialization/deserialization, and should not be used for other purposes.
 //
 // +k8s:conversion-gen=github.com/verrazzano/cluster-api-provider-ocne/bootstrap/kubeadm/api/v1beta1
 // +k8s:deepcopy-gen=package

@@ -39,7 +39,7 @@ func TestControlPlane(t *testing.T) {
 
 	t.Run("Failure domains", func(t *testing.T) {
 		controlPlane := &ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{},
+			KCP: &controlplanev1.OCNEControlPlane{},
 			Cluster: &clusterv1.Cluster{
 				Status: clusterv1.ClusterStatus{
 					FailureDomains: clusterv1.FailureDomains{
@@ -69,7 +69,7 @@ func TestControlPlane(t *testing.T) {
 
 	t.Run("Generating components", func(t *testing.T) {
 		controlPlane := &ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "cp",
 					UID:  types.UID("test-uid"),
@@ -82,8 +82,8 @@ func TestControlPlane(t *testing.T) {
 			},
 		}
 
-		t.Run("Should generate OcneConfig without a controller reference", func(t *testing.T) {
-			spec := &bootstrapv1.OcneConfigSpec{}
+		t.Run("Should generate OCNEConfig without a controller reference", func(t *testing.T) {
+			spec := &bootstrapv1.OCNEConfigSpec{}
 			ocneConfig := controlPlane.GenerateOcneConfig(spec)
 			g.Expect(ocneConfig.Labels["cluster.x-k8s.io/cluster-name"]).To(Equal("test-cluster"))
 			g.Expect(ocneConfig.OwnerReferences[0].Controller).To(BeNil())

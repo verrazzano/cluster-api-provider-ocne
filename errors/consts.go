@@ -133,28 +133,28 @@ const (
 	InvalidConfigurationMachinePoolError MachinePoolStatusFailure = "InvalidConfiguration"
 )
 
-// OcneControlPlaneStatusError defines errors states for KubeadmControlPlane objects.
-type OcneControlPlaneStatusError string
+// OCNEControlPlaneStatusError defines errors states for KubeadmControlPlane objects.
+type OCNEControlPlaneStatusError string
 
 const (
 	// InvalidConfigurationKubeadmControlPlaneError indicates that the kubeadm control plane
 	// configuration is invalid.
-	InvalidConfigurationKubeadmControlPlaneError OcneControlPlaneStatusError = "InvalidConfiguration"
+	InvalidConfigurationKubeadmControlPlaneError OCNEControlPlaneStatusError = "InvalidConfiguration"
 
 	// UnsupportedChangeKubeadmControlPlaneError indicates that the kubeadm control plane
 	// spec has been updated in an unsupported way that cannot be
 	// reconciled.
-	UnsupportedChangeKubeadmControlPlaneError OcneControlPlaneStatusError = "UnsupportedChange"
+	UnsupportedChangeKubeadmControlPlaneError OCNEControlPlaneStatusError = "UnsupportedChange"
 
 	// CreateKubeadmControlPlaneError indicates that an error was encountered
 	// when trying to create the kubeadm control plane.
-	CreateKubeadmControlPlaneError OcneControlPlaneStatusError = "CreateError"
+	CreateKubeadmControlPlaneError OCNEControlPlaneStatusError = "CreateError"
 
 	// UpdateKubeadmControlPlaneError indicates that an error was encountered
 	// when trying to update the kubeadm control plane.
-	UpdateKubeadmControlPlaneError OcneControlPlaneStatusError = "UpdateError"
+	UpdateKubeadmControlPlaneError OCNEControlPlaneStatusError = "UpdateError"
 
 	// DeleteKubeadmControlPlaneError indicates that an error was encountered
 	// when trying to delete the kubeadm control plane.
-	DeleteKubeadmControlPlaneError OcneControlPlaneStatusError = "DeleteError"
+	DeleteKubeadmControlPlaneError OCNEControlPlaneStatusError = "DeleteError"
 )

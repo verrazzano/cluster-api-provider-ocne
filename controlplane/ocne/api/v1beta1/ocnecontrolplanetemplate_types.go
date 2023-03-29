@@ -28,7 +28,7 @@ import (
 
 // OcneControlPlaneTemplateSpec defines the desired state of OcneControlPlaneTemplate.
 type OcneControlPlaneTemplateSpec struct {
-	Template OcneControlPlaneTemplateResource `json:"template"`
+	Template OCNEControlPlaneTemplateResource `json:"template"`
 }
 
 // +kubebuilder:object:root=true
@@ -57,25 +57,25 @@ func init() {
 	SchemeBuilder.Register(&OcneControlPlaneTemplate{}, &OcneControlPlaneTemplateList{})
 }
 
-// OcneControlPlaneTemplateResource describes the data needed to create a OcneControlPlane from a template.
-type OcneControlPlaneTemplateResource struct {
-	Spec OcneControlPlaneTemplateResourceSpec `json:"spec"`
+// OCNEControlPlaneTemplateResource describes the data needed to create a OCNEControlPlane from a template.
+type OCNEControlPlaneTemplateResource struct {
+	Spec OCNEControlPlaneTemplateResourceSpec `json:"spec"`
 }
 
-// OcneControlPlaneTemplateResourceSpec defines the desired state of OcneControlPlane.
-// NOTE: OcneControlPlaneTemplateResourceSpec is similar to OcneControlPlaneSpec but
+// OCNEControlPlaneTemplateResourceSpec defines the desired state of OCNEControlPlane.
+// NOTE: OCNEControlPlaneTemplateResourceSpec is similar to OcneControlPlaneSpec but
 // omits Replicas and Version fields. These fields do not make sense on the OcneControlPlaneTemplate,
 // because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
 // be configured on the OcneControlPlaneTemplate.
-type OcneControlPlaneTemplateResourceSpec struct {
+type OCNEControlPlaneTemplateResourceSpec struct {
 	// MachineTemplate contains information about how machines
 	// should be shaped when creating or updating a control plane.
 	// +optional
-	MachineTemplate *OcneControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
+	MachineTemplate *OCNEControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
 
-	// OcneConfigSpec is a OcneConfigSpec
+	// OCNEConfigSpec is a OCNEConfigSpec
 	// to use for initializing and joining machines to the control plane.
-	OcneConfigSpec bootstrapv1.OcneConfigSpec `json:"ocneConfigSpec"`
+	OCNEConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
 
 	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.
@@ -85,7 +85,7 @@ type OcneControlPlaneTemplateResourceSpec struct {
 
 	// RolloutAfter is a field to indicate a rollout should be performed
 	// after the specified time even if no changes have been made to the
-	// OcneControlPlane.
+	// OCNEControlPlane.
 	//
 	// +optional
 	RolloutAfter *metav1.Time `json:"rolloutAfter,omitempty"`
@@ -97,13 +97,13 @@ type OcneControlPlaneTemplateResourceSpec struct {
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 }
 
-// OcneControlPlaneTemplateMachineTemplate defines the template for Machines
-// in a OcneControlPlaneTemplate object.
-// NOTE: OcneControlPlaneTemplateMachineTemplate is similar to OcneControlPlaneMachineTemplate but
-// omits ObjectMeta and InfrastructureRef fields. These fields do not make sense on the OcneControlPlaneTemplate,
+// OCNEControlPlaneTemplateMachineTemplate defines the template for Machines
+// in a OCNEControlPlaneTemplate object.
+// NOTE: OCNEControlPlaneTemplateMachineTemplate is similar to OCNEControlPlaneMachineTemplate but
+// omits ObjectMeta and InfrastructureRef fields. These fields do not make sense on the OCNEControlPlaneTemplate,
 // because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
-// be configured on the OcneControlPlaneTemplate.
-type OcneControlPlaneTemplateMachineTemplate struct {
+// be configured on the OCNEControlPlaneTemplate.
+type OCNEControlPlaneTemplateMachineTemplate struct {
 	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
 	// The default value is 0, meaning that the node can be drained without any time limitations.
 	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`

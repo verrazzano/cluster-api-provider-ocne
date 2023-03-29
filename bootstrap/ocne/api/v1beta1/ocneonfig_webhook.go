@@ -40,7 +40,7 @@ var (
 	pathConflictMsg                                  = "path property must be unique among all files"
 )
 
-func (c *OcneConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (c *OCNEConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(c).
 		Complete()
@@ -48,15 +48,15 @@ func (c *OcneConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfig,mutating=true,failurePolicy=fail,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigs,versions=v1beta1,name=default.ocneconfig.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &OcneConfig{}
+var _ webhook.Defaulter = &OCNEConfig{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (c *OcneConfig) Default() {
+func (c *OCNEConfig) Default() {
 	DefaultOcneConfigSpec(&c.Spec)
 }
 
-// DefaultOcneConfigSpec defaults a OcneConfigSpec.
-func DefaultOcneConfigSpec(r *OcneConfigSpec) {
+// DefaultOcneConfigSpec defaults a OCNEConfigSpec.
+func DefaultOcneConfigSpec(r *OCNEConfigSpec) {
 	if r.Format == "" {
 		r.Format = CloudConfig
 	}
@@ -64,35 +64,35 @@ func DefaultOcneConfigSpec(r *OcneConfigSpec) {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfig,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigs,versions=v1beta1,name=validation.ocneconfig.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &OcneConfig{}
+var _ webhook.Validator = &OCNEConfig{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *OcneConfig) ValidateCreate() error {
+func (c *OCNEConfig) ValidateCreate() error {
 	return c.Spec.validate(c.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *OcneConfig) ValidateUpdate(_ runtime.Object) error {
+func (c *OCNEConfig) ValidateUpdate(_ runtime.Object) error {
 	return c.Spec.validate(c.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *OcneConfig) ValidateDelete() error {
+func (c *OCNEConfig) ValidateDelete() error {
 	return nil
 }
 
-func (c *OcneConfigSpec) validate(name string) error {
+func (c *OCNEConfigSpec) validate(name string) error {
 	allErrs := c.Validate(field.NewPath("spec"))
 
 	if len(allErrs) == 0 {
 		return nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("OcneConfig").GroupKind(), name, allErrs)
+	return apierrors.NewInvalid(GroupVersion.WithKind("OCNEConfig").GroupKind(), name, allErrs)
 }
 
-// Validate ensures the OcneConfigSpec is valid.
-func (c *OcneConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
+// Validate ensures the OCNEConfigSpec is valid.
+func (c *OCNEConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, c.validateFiles(pathPrefix)...)
@@ -102,7 +102,7 @@ func (c *OcneConfigSpec) Validate(pathPrefix *field.Path) field.ErrorList {
 	return allErrs
 }
 
-func (c *OcneConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
+func (c *OCNEConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	knownPaths := map[string]struct{}{}
@@ -159,7 +159,7 @@ func (c *OcneConfigSpec) validateFiles(pathPrefix *field.Path) field.ErrorList {
 	return allErrs
 }
 
-func (c *OcneConfigSpec) validateUsers(pathPrefix *field.Path) field.ErrorList {
+func (c *OCNEConfigSpec) validateUsers(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	for i := range c.Users {
@@ -202,7 +202,7 @@ func (c *OcneConfigSpec) validateUsers(pathPrefix *field.Path) field.ErrorList {
 	return allErrs
 }
 
-func (c *OcneConfigSpec) validateIgnition(pathPrefix *field.Path) field.ErrorList {
+func (c *OCNEConfigSpec) validateIgnition(pathPrefix *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if !feature.Gates.Enabled(feature.KubeadmBootstrapFormatIgnition) {

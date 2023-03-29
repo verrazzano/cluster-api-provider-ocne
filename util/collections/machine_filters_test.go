@@ -438,7 +438,7 @@ func testControlPlaneMachine(name string) *clusterv1.Machine {
 	owned := true
 	ownedRef := []metav1.OwnerReference{
 		{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			Name:       "my-control-plane",
 			Controller: &owned,
 		},

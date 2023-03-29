@@ -36,9 +36,9 @@ const (
 	Ignition Format = "ignition"
 )
 
-// OcneConfigSpec defines the desired state of OcneConfig.
+// OCNEConfigSpec defines the desired state of OCNEConfig.
 // Either ClusterConfiguration and InitConfiguration should be defined or the JoinConfiguration should be defined.
-type OcneConfigSpec struct {
+type OCNEConfigSpec struct {
 	// ClusterConfiguration along with InitConfiguration are the configurations necessary for the init command
 	// +optional
 	ClusterConfiguration *ClusterConfiguration `json:"clusterConfiguration,omitempty"`
@@ -63,13 +63,13 @@ type OcneConfigSpec struct {
 	// +optional
 	Mounts []MountPoints `json:"mounts,omitempty"`
 
-	// PreOcneCommands specifies extra commands to run before kubeadm runs
+	// PreOCNECommands specifies extra commands to run before kubeadm runs
 	// +optional
-	PreOcneCommands []string `json:"preOcneCommands,omitempty"`
+	PreOCNECommands []string `json:"preOCNECommands,omitempty"`
 
-	// PostOcneCommands specifies extra commands to run after kubeadm runs
+	// PostOCNECommands specifies extra commands to run after kubeadm runs
 	// +optional
-	PostOcneCommands []string `json:"postOcneCommands,omitempty"`
+	PostOCNECommands []string `json:"postOCNECommands,omitempty"`
 
 	// Users specifies extra users to add
 	// +optional
@@ -109,24 +109,24 @@ type OcneConfigSpec struct {
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
 
 	// Proxy contains proxy server info that may be required for installing dependencies.
-	// The value, if specified is used in conjunction with preOcneCommands to install and configure repositories.
+	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	Proxy ProxySpec `json:"proxy,omitempty"`
 }
 
 type ProxySpec struct {
 	// HttpProxy contains http proxy server info that may be required for installing dependencies.
-	// The value, if specified is used in conjunction with preOcneCommands to install and configure repositories.
+	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	HttpProxy string `json:"httpProxy,omitempty"`
 
 	// HttpsProxy contains https proxy server info that may be required for installing dependencies.
-	// The value, if specified is used in conjunction with preOcneCommands to install and configure repositories.
+	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	HttpsProxy string `json:"httpsProxy,omitempty"`
 
 	// NoProxy contains addresses that needs to be skipped when proxy server is being used.
-	// The value, if specified is used in conjunction with preOcneCommands to install and configure repositories.
+	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	NoProxy string `json:"noProxy,omitempty"`
 }
@@ -154,7 +154,7 @@ type ContainerLinuxConfig struct {
 	Strict bool `json:"strict,omitempty"`
 }
 
-// OcneConfigStatus defines the observed state of OcneConfig.
+// OcneConfigStatus defines the observed state of OCNEConfig.
 type OcneConfigStatus struct {
 	// Ready indicates the BootstrapData field is ready to be consumed
 	// +optional
@@ -176,7 +176,7 @@ type OcneConfigStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Conditions defines current service state of the OcneConfig.
+	// Conditions defines current service state of the OCNEConfig.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
@@ -186,38 +186,38 @@ type OcneConfigStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OcneConfig"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OCNEConfig"
 
-// OcneConfig is the Schema for the ocneconfigs API.
-type OcneConfig struct {
+// OCNEConfig is the Schema for the ocneconfigs API.
+type OCNEConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   OcneConfigSpec   `json:"spec,omitempty"`
+	Spec   OCNEConfigSpec   `json:"spec,omitempty"`
 	Status OcneConfigStatus `json:"status,omitempty"`
 }
 
 // GetConditions returns the set of conditions for this object.
-func (c *OcneConfig) GetConditions() clusterv1.Conditions {
+func (c *OCNEConfig) GetConditions() clusterv1.Conditions {
 	return c.Status.Conditions
 }
 
 // SetConditions sets the conditions on this object.
-func (c *OcneConfig) SetConditions(conditions clusterv1.Conditions) {
+func (c *OCNEConfig) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true
 
-// OcneConfigList contains a list of OcneConfig.
-type OcneConfigList struct {
+// OCNEConfigList contains a list of OCNEConfig.
+type OCNEConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []OcneConfig `json:"items"`
+	Items           []OCNEConfig `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&OcneConfig{}, &OcneConfigList{})
+	SchemeBuilder.Register(&OCNEConfig{}, &OCNEConfigList{})
 }
 
 // Encoding specifies the cloud-init file encoding.

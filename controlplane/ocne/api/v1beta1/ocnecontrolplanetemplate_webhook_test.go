@@ -33,80 +33,80 @@ import (
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
 )
 
-func TestKubeadmControlPlaneTemplateDefault(t *testing.T) {
+func TestOCNEControlPlaneTemplateDefault(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
 
 	g := NewWithT(t)
 
-	kcpTemplate := &OcneControlPlaneTemplate{
+	ocnecpTemplate := &OcneControlPlaneTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
 		Spec: OcneControlPlaneTemplateSpec{
-			Template: OcneControlPlaneTemplateResource{
-				Spec: OcneControlPlaneTemplateResourceSpec{
-					MachineTemplate: &OcneControlPlaneTemplateMachineTemplate{
+			Template: OCNEControlPlaneTemplateResource{
+				Spec: OCNEControlPlaneTemplateResourceSpec{
+					MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{
 						NodeDrainTimeout: &metav1.Duration{Duration: 10 * time.Second},
 					},
 				},
 			},
 		},
 	}
-	updateDefaultingValidationKCPTemplate := kcpTemplate.DeepCopy()
+	updateDefaultingValidationKCPTemplate := ocnecpTemplate.DeepCopy()
 	updateDefaultingValidationKCPTemplate.Spec.Template.Spec.MachineTemplate.NodeDrainTimeout = &metav1.Duration{Duration: 20 * time.Second}
 	t.Run("for OcneControlPlaneTemplate", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCPTemplate))
-	kcpTemplate.Default()
+	ocnecpTemplate.Default()
 
-	g.Expect(kcpTemplate.Spec.Template.Spec.OcneConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
-	g.Expect(kcpTemplate.Spec.Template.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
-	g.Expect(kcpTemplate.Spec.Template.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
+	g.Expect(ocnecpTemplate.Spec.Template.Spec.OCNEConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
+	g.Expect(ocnecpTemplate.Spec.Template.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
+	g.Expect(ocnecpTemplate.Spec.Template.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
 }
 
-func TestKubeadmControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
+func TestOCNEControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
 
 	t.Run("create ocnecontrolplanetemplate should pass if gate enabled and valid ocnecontrolplanetemplate", func(t *testing.T) {
 		testnamespace := "test"
 		g := NewWithT(t)
-		kcpTemplate := &OcneControlPlaneTemplate{
+		ocnecpTemplate := &OcneControlPlaneTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
 			},
 			Spec: OcneControlPlaneTemplateSpec{
-				Template: OcneControlPlaneTemplateResource{
-					Spec: OcneControlPlaneTemplateResourceSpec{
-						MachineTemplate: &OcneControlPlaneTemplateMachineTemplate{
+				Template: OCNEControlPlaneTemplateResource{
+					Spec: OCNEControlPlaneTemplateResourceSpec{
+						MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{
 							NodeDrainTimeout: &metav1.Duration{Duration: time.Second},
 						},
 					},
 				},
 			},
 		}
-		g.Expect(kcpTemplate.ValidateCreate()).To(Succeed())
+		g.Expect(ocnecpTemplate.ValidateCreate()).To(Succeed())
 	})
 }
 
-func TestKubeadmControlPlaneTemplateValidationFeatureGateDisabled(t *testing.T) {
+func TestOCNEControlPlaneTemplateValidationFeatureGateDisabled(t *testing.T) {
 	// NOTE: ClusterTopology feature flag is disabled by default, thus preventing to create OcneControlPlaneTemplate.
 	t.Run("create ocnecontrolplanetemplate should not pass if gate disabled and valid ocnecontrolplanetemplate", func(t *testing.T) {
 		testnamespace := "test"
 		g := NewWithT(t)
-		kcpTemplate := &OcneControlPlaneTemplate{
+		ocnecpTemplate := &OcneControlPlaneTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
 			},
 			Spec: OcneControlPlaneTemplateSpec{
-				Template: OcneControlPlaneTemplateResource{
-					Spec: OcneControlPlaneTemplateResourceSpec{
-						MachineTemplate: &OcneControlPlaneTemplateMachineTemplate{
+				Template: OCNEControlPlaneTemplateResource{
+					Spec: OCNEControlPlaneTemplateResourceSpec{
+						MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{
 							NodeDrainTimeout: &metav1.Duration{Duration: time.Second},
 						},
 					},
 				},
 			},
 		}
-		g.Expect(kcpTemplate.ValidateCreate()).NotTo(Succeed())
+		g.Expect(ocnecpTemplate.ValidateCreate()).NotTo(Succeed())
 	})
 }

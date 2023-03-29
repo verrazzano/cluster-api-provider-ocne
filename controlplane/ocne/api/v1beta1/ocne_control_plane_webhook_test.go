@@ -36,10 +36,10 @@ import (
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
 )
 
-func TestKubeadmControlPlaneDefault(t *testing.T) {
+func TestOCNEControlPlaneDefault(t *testing.T) {
 	g := NewWithT(t)
 
-	kcp := &OcneControlPlane{
+	ocnecp := &OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
@@ -55,7 +55,7 @@ func TestKubeadmControlPlaneDefault(t *testing.T) {
 			RolloutStrategy: &RolloutStrategy{},
 		},
 	}
-	updateDefaultingValidationKCP := kcp.DeepCopy()
+	updateDefaultingValidationKCP := ocnecp.DeepCopy()
 	updateDefaultingValidationKCP.Spec.Version = "v1.18.3"
 	updateDefaultingValidationKCP.Spec.MachineTemplate.InfrastructureRef = corev1.ObjectReference{
 		APIVersion: "test/v1alpha1",
@@ -63,18 +63,18 @@ func TestKubeadmControlPlaneDefault(t *testing.T) {
 		Name:       "foo",
 		Namespace:  "foo",
 	}
-	t.Run("for OcneControlPlane", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCP))
-	kcp.Default()
+	t.Run("for OCNEControlPlane", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCP))
+	ocnecp.Default()
 
-	g.Expect(kcp.Spec.OcneConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
-	g.Expect(kcp.Spec.MachineTemplate.InfrastructureRef.Namespace).To(Equal(kcp.Namespace))
-	g.Expect(kcp.Spec.Version).To(Equal("v1.18.3"))
-	g.Expect(kcp.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
-	g.Expect(kcp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
+	g.Expect(ocnecp.Spec.OcneConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
+	g.Expect(ocnecp.Spec.MachineTemplate.InfrastructureRef.Namespace).To(Equal(ocnecp.Namespace))
+	g.Expect(ocnecp.Spec.Version).To(Equal("v1.18.3"))
+	g.Expect(ocnecp.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
+	g.Expect(ocnecp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
 }
 
-func TestKubeadmControlPlaneValidateCreate(t *testing.T) {
-	valid := &OcneControlPlane{
+func TestOCNEControlPlaneValidateCreate(t *testing.T) {
+	valid := &OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "foo",
@@ -88,7 +88,7 @@ func TestKubeadmControlPlaneValidateCreate(t *testing.T) {
 					Name:       "infraTemplate",
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 			},
 			Replicas: pointer.Int32(1),
@@ -124,7 +124,7 @@ func TestKubeadmControlPlaneValidateCreate(t *testing.T) {
 	evenReplicas.Spec.Replicas = pointer.Int32(2)
 
 	evenReplicasExternalEtcd := evenReplicas.DeepCopy()
-	evenReplicasExternalEtcd.Spec.OcneConfigSpec = bootstrapv1.OcneConfigSpec{
+	evenReplicasExternalEtcd.Spec.OcneConfigSpec = bootstrapv1.OCNEConfigSpec{
 		ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 			Etcd: bootstrapv1.Etcd{
 				External: &bootstrapv1.ExternalEtcd{},
@@ -160,85 +160,85 @@ func TestKubeadmControlPlaneValidateCreate(t *testing.T) {
 		name                  string
 		enableIgnitionFeature bool
 		expectErr             bool
-		kcp                   *OcneControlPlane
+		ocnecp                *OCNEControlPlane
 	}{
 		{
 			name:      "should succeed when given a valid config",
 			expectErr: false,
-			kcp:       valid,
+			ocnecp:    valid,
 		},
 		{
 			name:      "should return error when kubeadmControlPlane namespace and infrastructureTemplate  namespace mismatch",
 			expectErr: true,
-			kcp:       invalidNamespace,
+			ocnecp:    invalidNamespace,
 		},
 		{
 			name:      "should return error when replicas is nil",
 			expectErr: true,
-			kcp:       missingReplicas,
+			ocnecp:    missingReplicas,
 		},
 		{
 			name:      "should return error when replicas is zero",
 			expectErr: true,
-			kcp:       zeroReplicas,
+			ocnecp:    zeroReplicas,
 		},
 		{
 			name:      "should return error when replicas is even",
 			expectErr: true,
-			kcp:       evenReplicas,
+			ocnecp:    evenReplicas,
 		},
 		{
 			name:      "should allow even replicas when using external etcd",
 			expectErr: false,
-			kcp:       evenReplicasExternalEtcd,
+			ocnecp:    evenReplicasExternalEtcd,
 		},
 		{
 			name:      "should succeed when given a valid semantic version with prepended 'v'",
 			expectErr: false,
-			kcp:       validVersion,
+			ocnecp:    validVersion,
 		},
 		{
 			name:      "should error when given a valid semantic version without 'v'",
 			expectErr: true,
-			kcp:       invalidVersion2,
+			ocnecp:    invalidVersion2,
 		},
 		{
 			name:      "should return error when given an invalid semantic version",
 			expectErr: true,
-			kcp:       invalidVersion1,
+			ocnecp:    invalidVersion1,
 		},
 		{
 			name:      "should return error when given an invalid semantic CoreDNS version",
 			expectErr: true,
-			kcp:       invalidCoreDNSVersion,
+			ocnecp:    invalidCoreDNSVersion,
 		},
 		{
 			name:      "should return error when maxSurge is not 1",
 			expectErr: true,
-			kcp:       invalidMaxSurge,
+			ocnecp:    invalidMaxSurge,
 		},
 		{
 			name:      "should succeed when maxSurge is a string",
 			expectErr: false,
-			kcp:       stringMaxSurge,
+			ocnecp:    stringMaxSurge,
 		},
 		{
 			name:      "should return error when given an invalid rolloutBefore.certificatesExpiryDays value",
 			expectErr: true,
-			kcp:       invalidRolloutBeforeCertificateExpiryDays,
+			ocnecp:    invalidRolloutBeforeCertificateExpiryDays,
 		},
 
 		{
 			name:                  "should return error when Ignition configuration is invalid",
 			enableIgnitionFeature: true,
 			expectErr:             true,
-			kcp:                   invalidIgnitionConfiguration,
+			ocnecp:                invalidIgnitionConfiguration,
 		},
 		{
 			name:                  "should succeed when Ignition configuration is valid",
 			enableIgnitionFeature: true,
 			expectErr:             false,
-			kcp:                   validIgnitionConfiguration,
+			ocnecp:                validIgnitionConfiguration,
 		},
 	}
 
@@ -253,16 +253,16 @@ func TestKubeadmControlPlaneValidateCreate(t *testing.T) {
 			g := NewWithT(t)
 
 			if tt.expectErr {
-				g.Expect(tt.kcp.ValidateCreate()).NotTo(Succeed())
+				g.Expect(tt.ocnecp.ValidateCreate()).NotTo(Succeed())
 			} else {
-				g.Expect(tt.kcp.ValidateCreate()).To(Succeed())
+				g.Expect(tt.ocnecp.ValidateCreate()).To(Succeed())
 			}
 		})
 	}
 }
 
-func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
-	before := &OcneControlPlane{
+func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
+	before := &OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "foo",
@@ -288,7 +288,7 @@ func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 				InitConfiguration: &bootstrapv1.InitConfiguration{
 					LocalAPIEndpoint: bootstrapv1.APIEndpoint{
 						AdvertiseAddress: "127.0.0.1",
@@ -317,10 +317,10 @@ func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
 						Name: "test",
 					},
 				},
-				PreOcneCommands: []string{
+				PreOCNECommands: []string{
 					"test", "foo",
 				},
-				PostOcneCommands: []string{
+				PostOCNECommands: []string{
 					"test", "foo",
 				},
 				Files: []bootstrapv1.File{
@@ -374,8 +374,8 @@ func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
 
 	validUpdate := before.DeepCopy()
 	validUpdate.Labels = map[string]string{"blue": "green"}
-	validUpdate.Spec.OcneConfigSpec.PreOcneCommands = []string{"ab", "abc"}
-	validUpdate.Spec.OcneConfigSpec.PostOcneCommands = []string{"ab", "abc"}
+	validUpdate.Spec.OcneConfigSpec.PreOCNECommands = []string{"ab", "abc"}
+	validUpdate.Spec.OcneConfigSpec.PostOCNECommands = []string{"ab", "abc"}
 	validUpdate.Spec.OcneConfigSpec.Files = []bootstrapv1.File{
 		{
 			Path: "ab",
@@ -660,333 +660,333 @@ func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
 		name                  string
 		enableIgnitionFeature bool
 		expectErr             bool
-		before                *OcneControlPlane
-		kcp                   *OcneControlPlane
+		before                *OCNEControlPlane
+		ocnecp                *OCNEControlPlane
 	}{
 		{
 			name:      "should succeed when given a valid config",
 			expectErr: false,
 			before:    before,
-			kcp:       validUpdate,
+			ocnecp:    validUpdate,
 		},
 		{
 			name:      "should return error when trying to mutate the kubeadmconfigspec initconfiguration",
 			expectErr: true,
 			before:    before,
-			kcp:       invalidUpdateKubeadmConfigInit,
+			ocnecp:    invalidUpdateKubeadmConfigInit,
 		},
 		{
 			name:      "should not return an error when trying to mutate the kubeadmconfigspec initconfiguration noderegistration",
 			expectErr: false,
 			before:    before,
-			kcp:       validUpdateKubeadmConfigInit,
+			ocnecp:    validUpdateKubeadmConfigInit,
 		},
 		{
 			name:      "should return error when trying to mutate the kubeadmconfigspec clusterconfiguration",
 			expectErr: true,
 			before:    before,
-			kcp:       invalidUpdateKubeadmConfigCluster,
+			ocnecp:    invalidUpdateKubeadmConfigCluster,
 		},
 		{
 			name:      "should return error when trying to mutate the kubeadmconfigspec joinconfiguration",
 			expectErr: true,
 			before:    before,
-			kcp:       invalidUpdateKubeadmConfigJoin,
+			ocnecp:    invalidUpdateKubeadmConfigJoin,
 		},
 		{
 			name:      "should not return an error when trying to mutate the kubeadmconfigspec joinconfiguration noderegistration",
 			expectErr: false,
 			before:    before,
-			kcp:       validUpdateKubeadmConfigJoin,
+			ocnecp:    validUpdateKubeadmConfigJoin,
 		},
 		{
 			name:      "should return error when trying to mutate the kubeadmconfigspec format from cloud-config to ignition",
 			expectErr: true,
 			before:    beforeKubeadmConfigFormatSet,
-			kcp:       invalidUpdateKubeadmConfigFormat,
+			ocnecp:    invalidUpdateKubeadmConfigFormat,
 		},
 		{
 			name:      "should return error when trying to scale to zero",
 			expectErr: true,
 			before:    before,
-			kcp:       scaleToZero,
+			ocnecp:    scaleToZero,
 		},
 		{
 			name:      "should return error when trying to scale to an even number",
 			expectErr: true,
 			before:    before,
-			kcp:       scaleToEven,
+			ocnecp:    scaleToEven,
 		},
 		{
 			name:      "should return error when trying to reference cross namespace",
 			expectErr: true,
 			before:    before,
-			kcp:       invalidNamespace,
+			ocnecp:    invalidNamespace,
 		},
 		{
 			name:      "should return error when trying to scale to nil",
 			expectErr: true,
 			before:    before,
-			kcp:       missingReplicas,
+			ocnecp:    missingReplicas,
 		},
 		{
 			name:      "should succeed when trying to scale to an even number with external etcd defined in ClusterConfiguration",
 			expectErr: false,
 			before:    beforeExternalEtcdCluster,
-			kcp:       scaleToEvenExternalEtcdCluster,
+			ocnecp:    scaleToEvenExternalEtcdCluster,
 		},
 		{
 			name:      "should succeed when making a change to the local etcd image tag",
 			expectErr: false,
 			before:    before,
-			kcp:       etcdLocalImageTag,
+			ocnecp:    etcdLocalImageTag,
 		},
 		{
 			name:      "should succeed when making a change to the local etcd image tag",
 			expectErr: false,
 			before:    before,
-			kcp:       etcdLocalImageBuildTag,
+			ocnecp:    etcdLocalImageBuildTag,
 		},
 		{
 			name:      "should fail when using an invalid etcd image tag",
 			expectErr: true,
 			before:    before,
-			kcp:       etcdLocalImageInvalidTag,
+			ocnecp:    etcdLocalImageInvalidTag,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's networking struct",
 			expectErr: true,
 			before:    before,
-			kcp:       networking,
+			ocnecp:    networking,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's kubernetes version",
 			expectErr: true,
 			before:    before,
-			kcp:       kubernetesVersion,
+			ocnecp:    kubernetesVersion,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's controlPlaneEndpoint",
 			expectErr: true,
 			before:    before,
-			kcp:       controlPlaneEndpoint,
+			ocnecp:    controlPlaneEndpoint,
 		},
 		{
 			name:      "should allow changes to the cluster config's apiServer",
 			expectErr: false,
 			before:    before,
-			kcp:       apiServer,
+			ocnecp:    apiServer,
 		},
 		{
 			name:      "should allow changes to the cluster config's controllerManager",
 			expectErr: false,
 			before:    before,
-			kcp:       controllerManager,
+			ocnecp:    controllerManager,
 		},
 		{
 			name:      "should allow changes to the cluster config's scheduler",
 			expectErr: false,
 			before:    before,
-			kcp:       scheduler,
+			ocnecp:    scheduler,
 		},
 		{
 			name:      "should succeed when making a change to the cluster config's dns",
 			expectErr: false,
 			before:    before,
-			kcp:       dns,
+			ocnecp:    dns,
 		},
 		{
 			name:      "should succeed when changing to a valid custom CoreDNS version",
 			expectErr: false,
 			before:    dns,
-			kcp:       validCoreDNSCustomToVersion,
+			ocnecp:    validCoreDNSCustomToVersion,
 		},
 		{
 			name:      "should succeed when CoreDNS ImageTag is unset",
 			expectErr: false,
 			before:    dns,
-			kcp:       unsetCoreDNSToVersion,
+			ocnecp:    unsetCoreDNSToVersion,
 		},
 		{
 			name:      "should succeed when using an valid DNS build",
 			expectErr: false,
 			before:    before,
-			kcp:       dnsBuildTag,
+			ocnecp:    dnsBuildTag,
 		},
 		{
 			name:   "should succeed when using the same CoreDNS version",
 			before: dns,
-			kcp:    dns.DeepCopy(),
+			ocnecp: dns.DeepCopy(),
 		},
 		{
 			name:   "should succeed when using the same CoreDNS version - not supported",
 			before: validUnsupportedCoreDNSVersion,
-			kcp:    validUnsupportedCoreDNSVersion,
+			ocnecp: validUnsupportedCoreDNSVersion,
 		},
 		{
 			name:      "should fail when using an invalid DNS build",
 			expectErr: true,
 			before:    before,
-			kcp:       dnsInvalidTag,
+			ocnecp:    dnsInvalidTag,
 		},
 		{
 			name:      "should fail when using an invalid CoreDNS version",
 			expectErr: true,
 			before:    dns,
-			kcp:       dnsInvalidCoreDNSToVersion,
+			ocnecp:    dnsInvalidCoreDNSToVersion,
 		},
 
 		{
 			name:      "should fail when making a change to the cluster config's certificatesDir",
 			expectErr: true,
 			before:    before,
-			kcp:       certificatesDir,
+			ocnecp:    certificatesDir,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's imageRepository",
 			expectErr: false,
 			before:    before,
-			kcp:       imageRepository,
+			ocnecp:    imageRepository,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's featureGates",
 			expectErr: true,
 			before:    before,
-			kcp:       featureGates,
+			ocnecp:    featureGates,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's local etcd's configuration localDataDir field",
 			expectErr: true,
 			before:    before,
-			kcp:       localDataDir,
+			ocnecp:    localDataDir,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's local etcd's configuration localPeerCertSANs field",
 			expectErr: true,
 			before:    before,
-			kcp:       localPeerCertSANs,
+			ocnecp:    localPeerCertSANs,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's local etcd's configuration localServerCertSANs field",
 			expectErr: true,
 			before:    before,
-			kcp:       localServerCertSANs,
+			ocnecp:    localServerCertSANs,
 		},
 		{
 			name:      "should succeed when making a change to the cluster config's local etcd's configuration localExtraArgs field",
 			expectErr: false,
 			before:    before,
-			kcp:       localExtraArgs,
+			ocnecp:    localExtraArgs,
 		},
 		{
 			name:      "should fail when making a change to the cluster config's external etcd's configuration",
 			expectErr: true,
 			before:    before,
-			kcp:       externalEtcd,
+			ocnecp:    externalEtcd,
 		},
 		{
 			name:      "should fail when attempting to unset the etcd local object",
 			expectErr: true,
 			before:    etcdLocalImageTag,
-			kcp:       unsetEtcd,
+			ocnecp:    unsetEtcd,
 		},
 		{
 			name:      "should fail when modifying a field that is not the local etcd image metadata",
 			expectErr: true,
 			before:    localDataDir,
-			kcp:       modifyLocalDataDir,
+			ocnecp:    modifyLocalDataDir,
 		},
 		{
 			name:      "should fail if both local and external etcd are set",
 			expectErr: true,
 			before:    beforeInvalidEtcdCluster,
-			kcp:       afterInvalidEtcdCluster,
+			ocnecp:    afterInvalidEtcdCluster,
 		},
 		{
 			name:      "should pass if ClusterConfiguration is nil",
 			expectErr: false,
 			before:    withoutClusterConfiguration,
-			kcp:       withoutClusterConfiguration,
+			ocnecp:    withoutClusterConfiguration,
 		},
 		{
 			name:      "should fail if etcd local dir is changed from missing ClusterConfiguration",
 			expectErr: true,
 			before:    withoutClusterConfiguration,
-			kcp:       afterEtcdLocalDirAddition,
+			ocnecp:    afterEtcdLocalDirAddition,
 		},
 		{
 			name:      "should not return an error when maxSurge value is updated to 0",
 			expectErr: false,
 			before:    before,
-			kcp:       updateMaxSurgeVal,
+			ocnecp:    updateMaxSurgeVal,
 		},
 		{
 			name:      "should return an error when maxSurge value is updated to 0, but replica count is < 3",
 			expectErr: true,
 			before:    before,
-			kcp:       wrongReplicaCountForScaleIn,
+			ocnecp:    wrongReplicaCountForScaleIn,
 		},
 		{
 			name:      "should pass if NTP servers are updated",
 			expectErr: false,
 			before:    before,
-			kcp:       updateNTPServers,
+			ocnecp:    updateNTPServers,
 		},
 		{
 			name:      "should pass if NTP servers is disabled during update",
 			expectErr: false,
 			before:    before,
-			kcp:       disableNTPServers,
+			ocnecp:    disableNTPServers,
 		},
 		{
 			name:      "should allow changes to initConfiguration.patches",
 			expectErr: false,
 			before:    before,
-			kcp:       updateInitConfigurationPatches,
+			ocnecp:    updateInitConfigurationPatches,
 		},
 		{
 			name:      "should allow changes to joinConfiguration.patches",
 			expectErr: false,
 			before:    before,
-			kcp:       updateJoinConfigurationPatches,
+			ocnecp:    updateJoinConfigurationPatches,
 		},
 		{
 			name:      "should allow changes to initConfiguration.skipPhases",
 			expectErr: false,
 			before:    before,
-			kcp:       updateInitConfigurationSkipPhases,
+			ocnecp:    updateInitConfigurationSkipPhases,
 		},
 		{
 			name:      "should allow changes to joinConfiguration.skipPhases",
 			expectErr: false,
 			before:    before,
-			kcp:       updateJoinConfigurationSkipPhases,
+			ocnecp:    updateJoinConfigurationSkipPhases,
 		},
 		{
 			name:      "should allow changes to diskSetup",
 			expectErr: false,
 			before:    before,
-			kcp:       updateDiskSetup,
+			ocnecp:    updateDiskSetup,
 		},
 		{
 			name:      "should return error when rolloutBefore.certificatesExpiryDays is invalid",
 			expectErr: true,
 			before:    before,
-			kcp:       invalidRolloutBeforeCertificateExpiryDays,
+			ocnecp:    invalidRolloutBeforeCertificateExpiryDays,
 		},
 		{
 			name:                  "should return error when Ignition configuration is invalid",
 			enableIgnitionFeature: true,
 			expectErr:             true,
 			before:                invalidIgnitionConfiguration,
-			kcp:                   invalidIgnitionConfiguration,
+			ocnecp:                invalidIgnitionConfiguration,
 		},
 		{
 			name:                  "should succeed when Ignition configuration is modified",
 			enableIgnitionFeature: true,
 			expectErr:             false,
 			before:                validIgnitionConfigurationBefore,
-			kcp:                   validIgnitionConfigurationAfter,
+			ocnecp:                validIgnitionConfigurationAfter,
 		},
 	}
 
@@ -1000,7 +1000,7 @@ func TestKubeadmControlPlaneValidateUpdate(t *testing.T) {
 
 			g := NewWithT(t)
 
-			err := tt.kcp.ValidateUpdate(tt.before.DeepCopy())
+			err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1148,16 +1148,16 @@ func TestValidateVersion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			kcp := OcneControlPlane{
+			ocnecp := OCNEControlPlane{
 				Spec: OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: tt.clusterConfiguration,
 					},
 					Version: tt.newVersion,
 				},
 			}
 
-			allErrs := kcp.validateVersion(tt.oldVersion)
+			allErrs := ocnecp.validateVersion(tt.oldVersion)
 			if tt.expectErr {
 				g.Expect(allErrs).ToNot(HaveLen(0))
 			} else {
@@ -1166,8 +1166,8 @@ func TestValidateVersion(t *testing.T) {
 		})
 	}
 }
-func TestKubeadmControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
-	before := &OcneControlPlane{
+func TestOCNEControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
+	before := &OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "foo",
@@ -1191,30 +1191,30 @@ func TestKubeadmControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
 	tests := []struct {
 		name      string
 		expectErr bool
-		before    *OcneControlPlane
-		kcp       *OcneControlPlane
+		before    *OCNEControlPlane
+		ocnecp    *OCNEControlPlane
 	}{
 		{
 			name:      "update should succeed after defaulting",
 			expectErr: false,
 			before:    before,
-			kcp:       afterDefault,
+			ocnecp:    afterDefault,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
-			err := tt.kcp.ValidateUpdate(tt.before.DeepCopy())
+			err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).To(Succeed())
-				g.Expect(tt.kcp.Spec.MachineTemplate.InfrastructureRef.Namespace).To(Equal(tt.before.Namespace))
-				g.Expect(tt.kcp.Spec.Version).To(Equal("v1.19.0"))
-				g.Expect(tt.kcp.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
-				g.Expect(tt.kcp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
-				g.Expect(tt.kcp.Spec.Replicas).To(Equal(pointer.Int32(1)))
+				g.Expect(tt.ocnecp.Spec.MachineTemplate.InfrastructureRef.Namespace).To(Equal(tt.before.Namespace))
+				g.Expect(tt.ocnecp.Spec.Version).To(Equal("v1.19.0"))
+				g.Expect(tt.ocnecp.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
+				g.Expect(tt.ocnecp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
+				g.Expect(tt.ocnecp.Spec.Replicas).To(Equal(pointer.Int32(1)))
 			}
 		})
 	}

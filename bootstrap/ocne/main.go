@@ -234,18 +234,18 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		WatchFilterValue: watchFilterValue,
 		TokenTTL:         tokenTTL,
 	}).SetupWithManager(ctx, mgr, concurrency(kubeadmConfigConcurrency)); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OcneConfig")
+		setupLog.Error(err, "unable to create controller", "controller", "OCNEConfig")
 		os.Exit(1)
 	}
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
-	if err := (&bootstrapv1.OcneConfig{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "OcneConfig")
+	if err := (&bootstrapv1.OCNEConfig{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "OCNEConfig")
 		os.Exit(1)
 	}
-	if err := (&bootstrapv1.OcneConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "OcneConfigTemplate")
+	if err := (&bootstrapv1.OCNEConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "OCNEConfigTemplate")
 		os.Exit(1)
 	}
 }

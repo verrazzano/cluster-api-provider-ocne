@@ -23,7 +23,7 @@ package errors
 // enum-style constants meant to be interpreted by control planes. The "Message"
 // field is meant to be read by humans.
 type KubeadmControlPlaneError struct {
-	Reason  OcneControlPlaneStatusError
+	Reason  OCNEControlPlaneStatusError
 	Message string
 }
 

@@ -37,14 +37,14 @@ const (
 	DefaultTokenTTL = kubeadmbootstrapcontrollers.DefaultTokenTTL
 )
 
-// OcneConfigReconciler reconciles a OcneConfig object.
+// OcneConfigReconciler reconciles a OCNEConfig object.
 type OcneConfigReconciler struct {
 	Client client.Client
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
 
-	// TokenTTL is the amount of time a bootstrap token (and therefore a OcneConfig) will be valid.
+	// TokenTTL is the amount of time a bootstrap token (and therefore a OCNEConfig) will be valid.
 	TokenTTL time.Duration
 }
 

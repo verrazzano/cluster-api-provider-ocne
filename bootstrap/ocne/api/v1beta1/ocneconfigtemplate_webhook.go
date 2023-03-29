@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (r *OcneConfigTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *OCNEConfigTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -34,33 +34,33 @@ func (r *OcneConfigTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate,mutating=true,failurePolicy=fail,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1beta1,name=default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &OcneConfigTemplate{}
+var _ webhook.Defaulter = &OCNEConfigTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (r *OcneConfigTemplate) Default() {
+func (r *OCNEConfigTemplate) Default() {
 	DefaultOcneConfigSpec(&r.Spec.Template.Spec)
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1beta1,name=validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &OcneConfigTemplate{}
+var _ webhook.Validator = &OCNEConfigTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneConfigTemplate) ValidateCreate() error {
+func (r *OCNEConfigTemplate) ValidateCreate() error {
 	return r.Spec.validate(r.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneConfigTemplate) ValidateUpdate(_ runtime.Object) error {
+func (r *OCNEConfigTemplate) ValidateUpdate(_ runtime.Object) error {
 	return r.Spec.validate(r.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneConfigTemplate) ValidateDelete() error {
+func (r *OCNEConfigTemplate) ValidateDelete() error {
 	return nil
 }
 
-func (r *OcneConfigTemplateSpec) validate(name string) error {
+func (r *OCNEConfigTemplateSpec) validate(name string) error {
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, r.Template.Spec.Validate(field.NewPath("spec", "template", "spec"))...)
@@ -69,5 +69,5 @@ func (r *OcneConfigTemplateSpec) validate(name string) error {
 		return nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("OcneConfigTemplate").GroupKind(), name, allErrs)
+	return apierrors.NewInvalid(GroupVersion.WithKind("OCNEConfigTemplate").GroupKind(), name, allErrs)
 }

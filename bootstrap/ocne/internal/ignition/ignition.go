@@ -64,7 +64,7 @@ func NewNode(input *NodeInput) ([]byte, string, error) {
 	}
 
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
-	input.OcneCommand = fmt.Sprintf(ocneCommandTemplate, joinSubcommand, input.OcneVerbosity)
+	input.OCNECommand = fmt.Sprintf(ocneCommandTemplate, joinSubcommand, input.OCNEVerbosity)
 
 	return render(&input.BaseUserData, input.Ignition, input.JoinConfiguration)
 }
@@ -81,7 +81,7 @@ func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, string, error) {
 
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
-	input.OcneCommand = fmt.Sprintf(ocneCommandTemplate, joinSubcommand, input.OcneVerbosity)
+	input.OCNECommand = fmt.Sprintf(ocneCommandTemplate, joinSubcommand, input.OCNEVerbosity)
 
 	return render(&input.BaseUserData, input.Ignition, input.JoinConfiguration)
 }
@@ -98,7 +98,7 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, string, error) {
 
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
-	input.OcneCommand = fmt.Sprintf(ocneCommandTemplate, initSubcommand, input.OcneVerbosity)
+	input.OCNECommand = fmt.Sprintf(ocneCommandTemplate, initSubcommand, input.OCNEVerbosity)
 
 	ocneConfig := fmt.Sprintf("%s\n---\n%s", input.ClusterConfiguration, input.InitConfiguration)
 

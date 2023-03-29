@@ -52,13 +52,13 @@ storage:
 func TestRender(t *testing.T) {
 	t.Parallel()
 
-	preOcneCommands := []string{
+	PreOCNECommands := []string{
 		"pre-command",
 		"another-pre-command",
 		// Test multi-line commands as well.
 		"cat <<EOF > /etc/modules-load.d/containerd.conf\noverlay\nbr_netfilter\nEOF\n",
 	}
-	postOcneCommands := []string{
+	PostOCNECommands := []string{
 		"post-kubeadm-command",
 		"another-post-kubeamd-command",
 		// Test multi-line commands as well.
@@ -73,9 +73,9 @@ func TestRender(t *testing.T) {
 		{
 			desc: "renders valid Ignition JSON",
 			input: &cloudinit.BaseUserData{
-				PreOcneCommands:  preOcneCommands,
-				PostOcneCommands: postOcneCommands,
-				OcneCommand:      "kubeadm join",
+				PreOCNECommands:  PreOCNECommands,
+				PostOCNECommands: PostOCNECommands,
+				OCNECommand:      "kubeadm join",
 				NTP: &bootstrapv1.NTP{
 					Enabled: pointer.Bool(true),
 					Servers: []string{
@@ -269,9 +269,9 @@ func TestRender(t *testing.T) {
 		{
 			desc: "multiple users with password auth",
 			input: &cloudinit.BaseUserData{
-				PreOcneCommands:  preOcneCommands,
-				PostOcneCommands: postOcneCommands,
-				OcneCommand:      "kubeadm join",
+				PreOCNECommands:  PreOCNECommands,
+				PostOCNECommands: PostOCNECommands,
+				OCNECommand:      "kubeadm join",
 				Users: []bootstrapv1.User{
 					{
 						Name:         "foo",
@@ -351,9 +351,9 @@ func TestRender(t *testing.T) {
 		{
 			desc: "base64 encoded content",
 			input: &cloudinit.BaseUserData{
-				PreOcneCommands:  preOcneCommands,
-				PostOcneCommands: postOcneCommands,
-				OcneCommand:      "kubeadm join",
+				PreOCNECommands:  PreOCNECommands,
+				PostOCNECommands: PostOCNECommands,
+				OCNECommand:      "kubeadm join",
 				WriteFiles: []bootstrapv1.File{
 					{
 						Path:        "/etc/base64encodedcontent.yaml",
@@ -434,9 +434,9 @@ func TestRender(t *testing.T) {
 		{
 			desc: "all file ownership combinations",
 			input: &cloudinit.BaseUserData{
-				PreOcneCommands:  preOcneCommands,
-				PostOcneCommands: postOcneCommands,
-				OcneCommand:      "kubeadm join",
+				PreOCNECommands:  PreOCNECommands,
+				PostOCNECommands: PostOCNECommands,
+				OCNECommand:      "kubeadm join",
 				WriteFiles: []bootstrapv1.File{
 					{
 						Path:        "/etc/username-group-name-owner.yaml",

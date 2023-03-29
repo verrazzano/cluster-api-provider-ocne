@@ -29,36 +29,36 @@ import (
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
 )
 
-func TestKubeadmConfigTemplateDefault(t *testing.T) {
+func TestOCNEConfigTemplateDefault(t *testing.T) {
 	g := NewWithT(t)
 
-	kubeadmConfigTemplate := &bootstrapv1.OcneConfigTemplate{
+	kubeadmConfigTemplate := &bootstrapv1.OCNEConfigTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
 	}
 	updateDefaultingKubeadmConfigTemplate := kubeadmConfigTemplate.DeepCopy()
 	updateDefaultingKubeadmConfigTemplate.Spec.Template.Spec.Verbosity = pointer.Int32(4)
-	t.Run("for OcneConfigTemplate", utildefaulting.DefaultValidateTest(updateDefaultingKubeadmConfigTemplate))
+	t.Run("for OCNEConfigTemplate", utildefaulting.DefaultValidateTest(updateDefaultingKubeadmConfigTemplate))
 
 	kubeadmConfigTemplate.Default()
 
 	g.Expect(kubeadmConfigTemplate.Spec.Template.Spec.Format).To(Equal(bootstrapv1.CloudConfig))
 }
 
-func TestKubeadmConfigTemplateValidation(t *testing.T) {
+func TestOCNEConfigTemplateValidation(t *testing.T) {
 	cases := map[string]struct {
-		in *bootstrapv1.OcneConfigTemplate
+		in *bootstrapv1.OCNEConfigTemplate
 	}{
 		"valid configuration": {
-			in: &bootstrapv1.OcneConfigTemplate{
+			in: &bootstrapv1.OCNEConfigTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: bootstrapv1.OcneConfigTemplateSpec{
-					Template: bootstrapv1.OcneConfigTemplateResource{
-						Spec: bootstrapv1.OcneConfigSpec{},
+				Spec: bootstrapv1.OCNEConfigTemplateSpec{
+					Template: bootstrapv1.OCNEConfigTemplateResource{
+						Spec: bootstrapv1.OCNEConfigSpec{},
 					},
 				},
 			},

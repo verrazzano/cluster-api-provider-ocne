@@ -59,7 +59,7 @@ func TestGetConfigOwner(t *testing.T) {
 		}
 
 		c := fake.NewClientBuilder().WithObjects(myMachine).Build()
-		obj := &bootstrapv1.OcneConfig{
+		obj := &bootstrapv1.OCNEConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -109,7 +109,7 @@ func TestGetConfigOwner(t *testing.T) {
 		}
 
 		c := fake.NewClientBuilder().WithObjects(myPool).Build()
-		obj := &bootstrapv1.OcneConfig{
+		obj := &bootstrapv1.OCNEConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -136,7 +136,7 @@ func TestGetConfigOwner(t *testing.T) {
 	t.Run("return an error when not found", func(t *testing.T) {
 		g := NewWithT(t)
 		c := fake.NewClientBuilder().Build()
-		obj := &bootstrapv1.OcneConfig{
+		obj := &bootstrapv1.OCNEConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -156,7 +156,7 @@ func TestGetConfigOwner(t *testing.T) {
 	t.Run("return nothing when there is no owner", func(t *testing.T) {
 		g := NewWithT(t)
 		c := fake.NewClientBuilder().Build()
-		obj := &bootstrapv1.OcneConfig{
+		obj := &bootstrapv1.OCNEConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				OwnerReferences: []metav1.OwnerReference{},
 				Namespace:       metav1.NamespaceDefault,

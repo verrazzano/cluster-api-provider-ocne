@@ -37,7 +37,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// reconcileUnhealthyMachines tries to remediate OcneControlPlane unhealthy machines
+// reconcileUnhealthyMachines tries to remediate OCNEControlPlane unhealthy machines
 // based on the process described in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20191017-kubeadm-based-control-plane.md#remediation-using-delete-and-recreate
 func (r *OcneControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Context, controlPlane *internal.ControlPlane) (ret ctrl.Result, retErr error) {
 	log := ctrl.LoggerFrom(ctx)

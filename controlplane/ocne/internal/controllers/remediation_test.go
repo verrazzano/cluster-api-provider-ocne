@@ -61,7 +61,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m := createMachine(ctx, g, ns.Name, "m1-unhealthy-", withStuckRemediation())
 
 		controlPlane := &internal.ControlPlane{
-			KCP:      &controlplanev1.OcneControlPlane{},
+			KCP:      &controlplanev1.OCNEControlPlane{},
 			Cluster:  &clusterv1.Cluster{},
 			Machines: collections.FromMachines(m),
 		}
@@ -85,7 +85,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		g := NewWithT(t)
 
 		controlPlane := &internal.ControlPlane{
-			KCP:      &controlplanev1.OcneControlPlane{},
+			KCP:      &controlplanev1.OCNEControlPlane{},
 			Cluster:  &clusterv1.Cluster{},
 			Machines: collections.New(),
 		}
@@ -101,7 +101,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		conditions.MarkFalse(m, clusterv1.MachineHealthCheckSucceededCondition, clusterv1.MachineHasFailureReason, clusterv1.ConditionSeverityWarning, "")
 		conditions.MarkFalse(m, clusterv1.MachineOwnerRemediatedCondition, clusterv1.WaitingForRemediationReason, clusterv1.ConditionSeverityWarning, "")
 		controlPlane := &internal.ControlPlane{
-			KCP:      &controlplanev1.OcneControlPlane{},
+			KCP:      &controlplanev1.OCNEControlPlane{},
 			Cluster:  &clusterv1.Cluster{},
 			Machines: collections.FromMachines(m),
 		}
@@ -115,7 +115,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 
 		m := createMachine(ctx, g, ns.Name, "m1-unhealthy-", withMachineHealthCheckFailed())
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(1),
 				RolloutStrategy: &controlplanev1.RolloutStrategy{
 					RollingUpdate: &controlplanev1.RollingUpdate{
@@ -142,7 +142,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m1 := createMachine(ctx, g, ns.Name, "m1-unhealthy-", withMachineHealthCheckFailed())
 		m2 := createMachine(ctx, g, ns.Name, "m2-healthy-")
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas:        utilpointer.Int32(3),
 				RolloutStrategy: &controlplanev1.RolloutStrategy{},
 			}},
@@ -164,7 +164,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m2 := createMachine(ctx, g, ns.Name, "m2-healthy-")
 		m3 := getDeletingMachine(ns.Name, "m3-deleting") // NB. This machine is not created, it gets only added to control plane
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -186,7 +186,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m3 := createMachine(ctx, g, ns.Name, "m3-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -221,7 +221,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m5 := createMachine(ctx, g, ns.Name, "m5-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(5),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -258,7 +258,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m2 := createMachine(ctx, g, ns.Name, "m2-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(2),
 				Version:  "v1.19.1",
 			}},
@@ -307,7 +307,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m3 := createMachine(ctx, g, ns.Name, "m3-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 				Version:  "v1.19.1",
 			}},
@@ -357,7 +357,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m4 := createMachine(ctx, g, ns.Name, "m4-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(4),
 				Version:  "v1.19.1",
 			}},
@@ -407,7 +407,7 @@ func TestReconcileUnhealthyMachines(t *testing.T) {
 		m4 := createMachine(ctx, g, ns.Name, "m4-healthy-", withMachineHealthCheckFailed(), withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(4),
 				Version:  "v1.19.1",
 			}},
@@ -455,7 +455,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m1 := createMachine(ctx, g, ns.Name, "m1-mhc-unhealthy-", withMachineHealthCheckFailed())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(1),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -486,7 +486,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m2 := createMachine(ctx, g, ns.Name, "m2-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -516,7 +516,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m2 := createMachine(ctx, g, ns.Name, "m2-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -553,7 +553,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m2 := createMachine(ctx, g, ns.Name, "m2-etcd-unhealthy-", withUnhealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -584,7 +584,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m3 := createMachine(ctx, g, ns.Name, "m3-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -615,7 +615,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m3 := createMachine(ctx, g, ns.Name, "m3-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -653,7 +653,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m3 := createMachine(ctx, g, ns.Name, "m3-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(3),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -686,7 +686,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m5 := createMachine(ctx, g, ns.Name, "m5-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(5),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -719,7 +719,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m5 := createMachine(ctx, g, ns.Name, "m5-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(7),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -754,7 +754,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m7 := createMachine(ctx, g, ns.Name, "m7-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(7),
 			}},
 			Cluster:  &clusterv1.Cluster{},
@@ -789,7 +789,7 @@ func TestCanSafelyRemoveEtcdMember(t *testing.T) {
 		m7 := createMachine(ctx, g, ns.Name, "m7-etcd-healthy-", withHealthyEtcdMember())
 
 		controlPlane := &internal.ControlPlane{
-			KCP: &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
+			KCP: &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{
 				Replicas: utilpointer.Int32(5),
 			}},
 			Cluster:  &clusterv1.Cluster{},

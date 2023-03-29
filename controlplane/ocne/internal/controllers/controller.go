@@ -64,7 +64,7 @@ import (
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
-// OcneControlPlaneReconciler reconciles a OcneControlPlane object.
+// OcneControlPlaneReconciler reconciles a OCNEControlPlane object.
 type OcneControlPlaneReconciler struct {
 	Client          client.Client
 	APIReader       client.Reader
@@ -82,7 +82,7 @@ type OcneControlPlaneReconciler struct {
 
 func (r *OcneControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	c, err := ctrl.NewControllerManagedBy(mgr).
-		For(&controlplanev1.OcneControlPlane{}).
+		For(&controlplanev1.OCNEControlPlane{}).
 		Owns(&clusterv1.Machine{}).
 		WithOptions(options).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
@@ -127,9 +127,9 @@ func (r *OcneControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr c
 func (r *OcneControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	// Fetch the OcneControlPlane instance.
-	kcp := &controlplanev1.OcneControlPlane{}
-	if err := r.Client.Get(ctx, req.NamespacedName, kcp); err != nil {
+	// Fetch the OCNEControlPlane instance.
+	ocnecp := &controlplanev1.OCNEControlPlane{}
+	if err := r.Client.Get(ctx, req.NamespacedName, ocnecp); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
@@ -137,11 +137,12 @@ func (r *OcneControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Fetch the Cluster.
-	cluster, err := util.GetOwnerCluster(ctx, r.Client, kcp.ObjectMeta)
+	cluster, err := util.GetOwnerCluster(ctx, r.Client, ocnecp.ObjectMeta)
 	if err != nil {
 		log.Error(err, "Failed to retrieve owner Cluster from the API Server")
 		return ctrl.Result{}, err
 	}
+
 	if cluster == nil {
 		log.Info("Cluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
@@ -149,65 +150,64 @@ func (r *OcneControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	log = log.WithValues("Cluster", klog.KObj(cluster))
 	ctx = ctrl.LoggerInto(ctx, log)
 
-	if annotations.IsPaused(cluster, kcp) {
+	if annotations.IsPaused(cluster, ocnecp) {
 		log.Info("Reconciliation is paused for this object")
 		return ctrl.Result{}, nil
 	}
 
 	// Initialize the patch helper.
-	patchHelper, err := patch.NewHelper(kcp, r.Client)
+	patchHelper, err := patch.NewHelper(ocnecp, r.Client)
 	if err != nil {
 		log.Error(err, "Failed to configure the patch helper")
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Add finalizer first if not exist to avoid the race condition between init and delete
-	if !controllerutil.ContainsFinalizer(kcp, controlplanev1.OcneControlPlaneFinalizer) {
-		controllerutil.AddFinalizer(kcp, controlplanev1.OcneControlPlaneFinalizer)
+	if !controllerutil.ContainsFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer) {
+		controllerutil.AddFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
 
 		// patch and return right away instead of reusing the main defer,
 		// because the main defer may take too much time to get cluster status
 		// Patch ObservedGeneration only if the reconciliation completed successfully
 		patchOpts := []patch.Option{patch.WithStatusObservedGeneration{}}
-		if err := patchHelper.Patch(ctx, kcp, patchOpts...); err != nil {
-			log.Error(err, "Failed to patch OcneControlPlane to add finalizer")
+		if err := patchHelper.Patch(ctx, ocnecp, patchOpts...); err != nil {
+			log.Error(err, "Failed to patch OCNEControlPlane to add finalizer")
 			return ctrl.Result{}, err
 		}
-
 		return ctrl.Result{}, nil
 	}
 
 	defer func() {
 		// Always attempt to update status.
-		if err := r.updateStatus(ctx, kcp, cluster); err != nil {
+		if err := r.updateStatus(ctx, ocnecp, cluster); err != nil {
 			var connFailure *internal.RemoteClusterConnectionError
 			if errors.As(err, &connFailure) {
 				log.Info("Could not connect to workload cluster to fetch status", "err", err.Error())
 			} else {
-				log.Error(err, "Failed to update OcneControlPlane Status")
+				log.Error(err, "Failed to update OCNEControlPlane Status")
 				reterr = kerrors.NewAggregate([]error{reterr, err})
 			}
 		}
 
-		// Always attempt to Patch the OcneControlPlane object and status after each reconciliation.
-		if err := patchKubeadmControlPlane(ctx, patchHelper, kcp); err != nil {
-			log.Error(err, "Failed to patch OcneControlPlane")
+		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
+		if err := patchKubeadmControlPlane(ctx, patchHelper, ocnecp); err != nil {
+			log.Error(err, "Failed to patch OCNEControlPlane")
 			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
 		// TODO: remove this as soon as we have a proper remote cluster cache in place.
 		// Make KCP to requeue in case status is not ready, so we can check for node status without waiting for a full resync (by default 10 minutes).
 		// Only requeue if we are not going in exponential backoff due to error, or if we are not already re-queueing, or if the object has a deletion timestamp.
-		if reterr == nil && !res.Requeue && res.RequeueAfter <= 0 && kcp.ObjectMeta.DeletionTimestamp.IsZero() {
-			if !kcp.Status.Ready {
+		if reterr == nil && !res.Requeue && res.RequeueAfter <= 0 && ocnecp.ObjectMeta.DeletionTimestamp.IsZero() {
+			if !ocnecp.Status.Ready {
 				res = ctrl.Result{RequeueAfter: 20 * time.Second}
 			}
 		}
 	}()
 
-	if !kcp.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !ocnecp.ObjectMeta.DeletionTimestamp.IsZero() {
 		// Handle deletion reconciliation loop.
-		res, err = r.reconcileDelete(ctx, cluster, kcp)
+		res, err = r.reconcileDelete(ctx, cluster, ocnecp)
 		// Requeue if the reconcile failed because the ClusterCacheTracker was locked for
 		// the current cluster because of concurrent access.
 		if errors.Is(err, remote.ErrClusterLocked) {
@@ -218,7 +218,7 @@ func (r *OcneControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Handle normal reconciliation loop.
-	res, err = r.reconcile(ctx, cluster, kcp)
+	res, err = r.reconcile(ctx, cluster, ocnecp)
 	// Requeue if the reconcile failed because the ClusterCacheTracker was locked for
 	// the current cluster because of concurrent access.
 	if errors.Is(err, remote.ErrClusterLocked) {
@@ -228,9 +228,9 @@ func (r *OcneControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return res, err
 }
 
-func patchKubeadmControlPlane(ctx context.Context, patchHelper *patch.Helper, kcp *controlplanev1.OcneControlPlane) error {
+func patchKubeadmControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnecp *controlplanev1.OCNEControlPlane) error {
 	// Always update the readyCondition by summarizing the state of other conditions.
-	conditions.SetSummary(kcp,
+	conditions.SetSummary(ocnecp,
 		conditions.WithConditions(
 			controlplanev1.MachinesCreatedCondition,
 			controlplanev1.MachinesSpecUpToDateCondition,
@@ -244,7 +244,7 @@ func patchKubeadmControlPlane(ctx context.Context, patchHelper *patch.Helper, kc
 	// Patch the object, ignoring conflicts on the conditions owned by this controller.
 	return patchHelper.Patch(
 		ctx,
-		kcp,
+		ocnecp,
 		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
 			controlplanev1.MachinesCreatedCondition,
 			clusterv1.ReadyCondition,
@@ -258,13 +258,13 @@ func patchKubeadmControlPlane(ctx context.Context, patchHelper *patch.Helper, kc
 	)
 }
 
-// reconcile handles OcneControlPlane reconciliation.
-func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane) (res ctrl.Result, reterr error) {
+// reconcile handles OCNEControlPlane reconciliation.
+func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.Info("Reconcile OcneControlPlane")
+	log.Info("Reconcile OCNEControlPlane")
 
 	// Make sure to reconcile the external infrastructure reference.
-	if err := r.reconcileExternalReference(ctx, cluster, &kcp.Spec.MachineTemplate.InfrastructureRef); err != nil {
+	if err := r.reconcileExternalReference(ctx, cluster, &ocnecp.Spec.MachineTemplate.InfrastructureRef); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -275,19 +275,19 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	// Generate Cluster Certificates if needed
-	config := kcp.Spec.OcneConfigSpec.DeepCopy()
+	config := ocnecp.Spec.OcneConfigSpec.DeepCopy()
 	config.JoinConfiguration = nil
 	if config.ClusterConfiguration == nil {
 		config.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
 	}
 	certificates := secret.NewCertificatesForInitialControlPlane(config.ClusterConfiguration)
-	controllerRef := metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))
+	controllerRef := metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))
 	if err := certificates.LookupOrGenerate(ctx, r.Client, util.ObjectKey(cluster), *controllerRef); err != nil {
 		log.Error(err, "unable to lookup or create cluster certificates")
-		conditions.MarkFalse(kcp, controlplanev1.CertificatesAvailableCondition, controlplanev1.CertificatesGenerationFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
+		conditions.MarkFalse(ocnecp, controlplanev1.CertificatesAvailableCondition, controlplanev1.CertificatesGenerationFailedReason, clusterv1.ConditionSeverityWarning, err.Error())
 		return ctrl.Result{}, err
 	}
-	conditions.MarkTrue(kcp, controlplanev1.CertificatesAvailableCondition)
+	conditions.MarkTrue(ocnecp, controlplanev1.CertificatesAvailableCondition)
 
 	// If ControlPlaneEndpoint is not set, return early
 	if !cluster.Spec.ControlPlaneEndpoint.IsValid() {
@@ -296,7 +296,7 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	// Generate Cluster Kubeconfig if needed
-	if result, err := r.reconcileKubeconfig(ctx, cluster, kcp); !result.IsZero() || err != nil {
+	if result, err := r.reconcileKubeconfig(ctx, cluster, ocnecp); !result.IsZero() || err != nil {
 		if err != nil {
 			log.Error(err, "failed to reconcile Kubeconfig")
 		}
@@ -312,20 +312,20 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	adoptableMachines := controlPlaneMachines.Filter(collections.AdoptableControlPlaneMachines(cluster.Name))
 	if len(adoptableMachines) > 0 {
 		// We adopt the Machines and then wait for the update event for the ownership reference to re-queue them so the cache is up-to-date
-		err = r.adoptMachines(ctx, kcp, adoptableMachines, cluster)
+		err = r.adoptMachines(ctx, ocnecp, adoptableMachines, cluster)
 		return ctrl.Result{}, err
 	}
 	if err := ensureCertificatesOwnerRef(ctx, r.Client, util.ObjectKey(cluster), certificates, *controllerRef); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	ownedMachines := controlPlaneMachines.Filter(collections.OwnedMachines(kcp))
+	ownedMachines := controlPlaneMachines.Filter(collections.OwnedMachines(ocnecp))
 	if len(ownedMachines) != len(controlPlaneMachines) {
-		log.Info("Not all control plane machines are owned by this OcneControlPlane, refusing to operate in mixed management mode")
+		log.Info("Not all control plane machines are owned by this OCNEControlPlane, refusing to operate in mixed management mode")
 		return ctrl.Result{}, nil
 	}
 
-	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, kcp, ownedMachines)
+	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, ocnecp, ownedMachines)
 	if err != nil {
 		log.Error(err, "failed to initialize control plane")
 		return ctrl.Result{}, err
@@ -345,8 +345,8 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		machine := controlPlane.Machines[i]
 		// Note: MustEqualValue and MustFormatValue is used here as the label value can be a hash if the control plane
 		// name is longer than 63 characters.
-		if value, ok := machine.Labels[clusterv1.MachineControlPlaneNameLabel]; !ok || !labels.MustEqualValue(kcp.Name, value) {
-			machine.Labels[clusterv1.MachineControlPlaneNameLabel] = labels.MustFormatValue(kcp.Name)
+		if value, ok := machine.Labels[clusterv1.MachineControlPlaneNameLabel]; !ok || !labels.MustEqualValue(ocnecp.Name, value) {
+			machine.Labels[clusterv1.MachineControlPlaneNameLabel] = labels.MustFormatValue(ocnecp.Name)
 		}
 	}
 
@@ -368,7 +368,7 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return result, err
 	}
 
-	// Reconcile certificate expiry for machines that don't have the expiry annotation on OcneConfig yet.
+	// Reconcile certificate expiry for machines that don't have the expiry annotation on OCNEConfig yet.
 	if result, err := r.reconcileCertificateExpiries(ctx, controlPlane); err != nil || !result.IsZero() {
 		return result, err
 	}
@@ -379,7 +379,7 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	case len(needRollout) > 0:
 		log.Info("Rolling out Control Plane machines", "needRollout", needRollout.Names())
 		conditions.MarkFalse(controlPlane.KCP, controlplanev1.MachinesSpecUpToDateCondition, controlplanev1.RollingUpdateInProgressReason, clusterv1.ConditionSeverityWarning, "Rolling %d replicas with outdated spec (%d replicas up to date)", len(needRollout), len(controlPlane.Machines)-len(needRollout))
-		return r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, needRollout)
+		return r.upgradeControlPlane(ctx, cluster, ocnecp, controlPlane, needRollout)
 	default:
 		// make sure last upgrade operation is marked as completed.
 		// NOTE: we are checking the condition already exists in order to avoid to set this condition at the first
@@ -391,7 +391,7 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 
 	// If we've made it this far, we can assume that all ownedMachines are up to date
 	numMachines := len(ownedMachines)
-	desiredReplicas := int(*kcp.Spec.Replicas)
+	desiredReplicas := int(*ocnecp.Spec.Replicas)
 
 	switch {
 	// We are creating the first replica
@@ -399,17 +399,17 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		// Create new Machine w/ init
 		log.Info("Initializing control plane", "Desired", desiredReplicas, "Existing", numMachines)
 		conditions.MarkFalse(controlPlane.KCP, controlplanev1.AvailableCondition, controlplanev1.WaitingForOcneInitReason, clusterv1.ConditionSeverityInfo, "")
-		return r.initializeControlPlane(ctx, cluster, kcp, controlPlane)
+		return r.initializeControlPlane(ctx, cluster, ocnecp, controlPlane)
 	// We are scaling up
 	case numMachines < desiredReplicas && numMachines > 0:
 		// Create a new Machine w/ join
 		log.Info("Scaling up control plane", "Desired", desiredReplicas, "Existing", numMachines)
-		return r.scaleUpControlPlane(ctx, cluster, kcp, controlPlane)
+		return r.scaleUpControlPlane(ctx, cluster, ocnecp, controlPlane)
 	// We are scaling down
 	case numMachines > desiredReplicas:
 		log.Info("Scaling down control plane", "Desired", desiredReplicas, "Existing", numMachines)
 		// The last parameter (i.e. machines needing to be rolled out) should always be empty here.
-		return r.scaleDownControlPlane(ctx, cluster, kcp, controlPlane, collections.Machines{})
+		return r.scaleDownControlPlane(ctx, cluster, ocnecp, controlPlane, collections.Machines{})
 	}
 
 	// Get the workload cluster client.
@@ -426,46 +426,46 @@ func (r *OcneControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 
 	// We intentionally only parse major/minor/patch so that the subsequent code
 	// also already applies to beta versions of new releases.
-	parsedVersion, err := version.ParseMajorMinorPatchTolerant(kcp.Spec.Version)
+	parsedVersion, err := version.ParseMajorMinorPatchTolerant(ocnecp.Spec.Version)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kcp.Spec.Version)
+		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 	}
 
 	// Update kube-proxy daemonset.
-	if err := workloadCluster.UpdateKubeProxyImageInfo(ctx, kcp, parsedVersion); err != nil {
+	if err := workloadCluster.UpdateKubeProxyImageInfo(ctx, ocnecp, parsedVersion); err != nil {
 		log.Error(err, "failed to update kube-proxy daemonset")
 		return ctrl.Result{}, err
 	}
 
 	// Update CoreDNS deployment.
-	if err := workloadCluster.UpdateCoreDNS(ctx, kcp, parsedVersion); err != nil {
+	if err := workloadCluster.UpdateCoreDNS(ctx, ocnecp, parsedVersion); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to update CoreDNS deployment")
 	}
 
 	return ctrl.Result{}, nil
 }
 
-// reconcileDelete handles OcneControlPlane deletion.
+// reconcileDelete handles OCNEControlPlane deletion.
 // The implementation does not take non-control plane workloads into consideration. This may or may not change in the future.
 // Please see https://github.com/kubernetes-sigs/cluster-api/issues/2064.
-func (r *OcneControlPlaneReconciler) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane) (ctrl.Result, error) {
+func (r *OcneControlPlaneReconciler) reconcileDelete(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.Info("Reconcile OcneControlPlane deletion")
+	log.Info("Reconcile OCNEControlPlane deletion")
 
 	// Gets all machines, not just control plane machines.
 	allMachines, err := r.managementCluster.GetMachinesForCluster(ctx, cluster)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	ownedMachines := allMachines.Filter(collections.OwnedMachines(kcp))
+	ownedMachines := allMachines.Filter(collections.OwnedMachines(ocnecp))
 
 	// If no control plane machines remain, remove the finalizer
 	if len(ownedMachines) == 0 {
-		controllerutil.RemoveFinalizer(kcp, controlplanev1.OcneControlPlaneFinalizer)
+		controllerutil.RemoveFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
 		return ctrl.Result{}, nil
 	}
 
-	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, kcp, ownedMachines)
+	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, ocnecp, ownedMachines)
 	if err != nil {
 		log.Error(err, "failed to initialize control plane")
 		return ctrl.Result{}, err
@@ -481,7 +481,7 @@ func (r *OcneControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	// source ref (reason@machine/name) so the problem can be easily tracked down to its source machine.
 	// However, during delete we are hiding the counter (1 of x) because it does not make sense given that
 	// all the machines are deleted in parallel.
-	conditions.SetAggregate(kcp, controlplanev1.MachinesReadyCondition, ownedMachines.ConditionGetters(), conditions.AddSourceRef(), conditions.WithStepCounterIf(false))
+	conditions.SetAggregate(ocnecp, controlplanev1.MachinesReadyCondition, ownedMachines.ConditionGetters(), conditions.AddSourceRef(), conditions.WithStepCounterIf(false))
 
 	allMachinePools := &expv1.MachinePoolList{}
 	// Get all machine pools.
@@ -494,7 +494,7 @@ func (r *OcneControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	// Verify that only control plane machines remain
 	if len(allMachines) != len(ownedMachines) || len(allMachinePools.Items) != 0 {
 		log.Info("Waiting for worker nodes to be deleted first")
-		conditions.MarkFalse(kcp, controlplanev1.ResizedCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "Waiting for worker nodes to be deleted first")
+		conditions.MarkFalse(ocnecp, controlplanev1.ResizedCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "Waiting for worker nodes to be deleted first")
 		return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
 	}
 
@@ -511,16 +511,16 @@ func (r *OcneControlPlaneReconciler) reconcileDelete(ctx context.Context, cluste
 	}
 	if len(errs) > 0 {
 		err := kerrors.NewAggregate(errs)
-		r.recorder.Eventf(kcp, corev1.EventTypeWarning, "FailedDelete",
+		r.recorder.Eventf(ocnecp, corev1.EventTypeWarning, "FailedDelete",
 			"Failed to delete control plane Machines for cluster %s/%s control plane: %v", cluster.Namespace, cluster.Name, err)
 		return ctrl.Result{}, err
 	}
-	conditions.MarkFalse(kcp, controlplanev1.ResizedCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
+	conditions.MarkFalse(ocnecp, controlplanev1.ResizedCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
 	return ctrl.Result{RequeueAfter: deleteRequeueAfter}, nil
 }
 
 // ClusterToKubeadmControlPlane is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
-// for OcneControlPlane based on updates to a Cluster.
+// for OCNEControlPlane based on updates to a Cluster.
 func (r *OcneControlPlaneReconciler) ClusterToKubeadmControlPlane(o client.Object) []ctrl.Request {
 	c, ok := o.(*clusterv1.Cluster)
 	if !ok {
@@ -528,7 +528,7 @@ func (r *OcneControlPlaneReconciler) ClusterToKubeadmControlPlane(o client.Objec
 	}
 
 	controlPlaneRef := c.Spec.ControlPlaneRef
-	if controlPlaneRef != nil && controlPlaneRef.Kind == "OcneControlPlane" {
+	if controlPlaneRef != nil && controlPlaneRef.Kind == "OCNEControlPlane" {
 		return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
 	}
 
@@ -644,7 +644,7 @@ func (r *OcneControlPlaneReconciler) reconcileCertificateExpiries(ctx context.Co
 
 		ocneConfig, ok := controlPlane.GetOcneConfig(m.Name)
 		if !ok {
-			// Skip if the Machine doesn't have a OcneConfig.
+			// Skip if the Machine doesn't have a OCNEConfig.
 			continue
 		}
 
@@ -671,7 +671,7 @@ func (r *OcneControlPlaneReconciler) reconcileCertificateExpiries(ctx context.Co
 		log.V(2).Info(fmt.Sprintf("Setting certificate expiry to %s", expiry))
 		patchHelper, err := patch.NewHelper(ocneConfig, r.Client)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile certificate expiry for Machine/%s: failed to create PatchHelper for OcneConfig/%s", m.Name, ocneConfig.Name)
+			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile certificate expiry for Machine/%s: failed to create PatchHelper for OCNEConfig/%s", m.Name, ocneConfig.Name)
 		}
 
 		if annotations == nil {
@@ -681,41 +681,41 @@ func (r *OcneControlPlaneReconciler) reconcileCertificateExpiries(ctx context.Co
 		ocneConfig.SetAnnotations(annotations)
 
 		if err := patchHelper.Patch(ctx, ocneConfig); err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile certificate expiry for Machine/%s: failed to patch OcneConfig/%s", m.Name, ocneConfig.Name)
+			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile certificate expiry for Machine/%s: failed to patch OCNEConfig/%s", m.Name, ocneConfig.Name)
 		}
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, kcp *controlplanev1.OcneControlPlane, machines collections.Machines, cluster *clusterv1.Cluster) error {
+func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, machines collections.Machines, cluster *clusterv1.Cluster) error {
 	// We do an uncached full quorum read against the KCP to avoid re-adopting Machines the garbage collector just intentionally orphaned
 	// See https://github.com/kubernetes/kubernetes/issues/42639
-	uncached := controlplanev1.OcneControlPlane{}
-	err := r.managementClusterUncached.Get(ctx, client.ObjectKey{Namespace: kcp.Namespace, Name: kcp.Name}, &uncached)
+	uncached := controlplanev1.OCNEControlPlane{}
+	err := r.managementClusterUncached.Get(ctx, client.ObjectKey{Namespace: ocnecp.Namespace, Name: ocnecp.Name}, &uncached)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check whether %v/%v was deleted before adoption", kcp.GetNamespace(), kcp.GetName())
+		return errors.Wrapf(err, "failed to check whether %v/%v was deleted before adoption", ocnecp.GetNamespace(), ocnecp.GetName())
 	}
 	if !uncached.DeletionTimestamp.IsZero() {
-		return errors.Errorf("%v/%v has just been deleted at %v", kcp.GetNamespace(), kcp.GetName(), kcp.GetDeletionTimestamp())
+		return errors.Errorf("%v/%v has just been deleted at %v", ocnecp.GetNamespace(), ocnecp.GetName(), ocnecp.GetDeletionTimestamp())
 	}
 
-	kcpVersion, err := semver.ParseTolerant(kcp.Spec.Version)
+	ocnecpVersion, err := semver.ParseTolerant(ocnecp.Spec.Version)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse kubernetes version %q", kcp.Spec.Version)
+		return errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 	}
 
 	for _, m := range machines {
 		ref := m.Spec.Bootstrap.ConfigRef
 
 		// TODO instead of returning error here, we should instead Event and add a watch on potentially adoptable Machines
-		if ref == nil || ref.Kind != "OcneConfig" {
-			return errors.Errorf("unable to adopt Machine %v/%v: expected a ConfigRef of kind OcneConfig but instead found %v", m.Namespace, m.Name, ref)
+		if ref == nil || ref.Kind != "OCNEConfig" {
+			return errors.Errorf("unable to adopt Machine %v/%v: expected a ConfigRef of kind OCNEConfig but instead found %v", m.Namespace, m.Name, ref)
 		}
 
 		// TODO instead of returning error here, we should instead Event and add a watch on potentially adoptable Machines
-		if ref.Namespace != "" && ref.Namespace != kcp.Namespace {
-			return errors.Errorf("could not adopt resources from OcneConfig %v/%v: cannot adopt across namespaces", ref.Namespace, ref.Name)
+		if ref.Namespace != "" && ref.Namespace != ocnecp.Namespace {
+			return errors.Errorf("could not adopt resources from OCNEConfig %v/%v: cannot adopt across namespaces", ref.Namespace, ref.Name)
 		}
 
 		if m.Spec.Version == nil {
@@ -728,8 +728,8 @@ func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, kcp *con
 			return errors.Wrapf(err, "failed to parse kubernetes version %q", *m.Spec.Version)
 		}
 
-		if !util.IsSupportedVersionSkew(kcpVersion, machineVersion) {
-			r.recorder.Eventf(kcp, corev1.EventTypeWarning, "AdoptionFailed", "Could not adopt Machine %s/%s: its version (%q) is outside supported +/- one minor version skew from KCP's (%q)", m.Namespace, m.Name, *m.Spec.Version, kcp.Spec.Version)
+		if !util.IsSupportedVersionSkew(ocnecpVersion, machineVersion) {
+			r.recorder.Eventf(ocnecp, corev1.EventTypeWarning, "AdoptionFailed", "Could not adopt Machine %s/%s: its version (%q) is outside supported +/- one minor version skew from KCP's (%q)", m.Namespace, m.Name, *m.Spec.Version, ocnecp.Spec.Version)
 			// avoid returning an error here so we don't cause the KCP controller to spin until the operator clarifies their intent
 			return nil
 		}
@@ -737,13 +737,13 @@ func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, kcp *con
 
 	for _, m := range machines {
 		ref := m.Spec.Bootstrap.ConfigRef
-		cfg := &bootstrapv1.OcneConfig{}
+		cfg := &bootstrapv1.OCNEConfig{}
 
-		if err := r.Client.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: kcp.Namespace}, cfg); err != nil {
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: ref.Name, Namespace: ocnecp.Namespace}, cfg); err != nil {
 			return err
 		}
 
-		if err := r.adoptOwnedSecrets(ctx, kcp, cfg, cluster.Name); err != nil {
+		if err := r.adoptOwnedSecrets(ctx, ocnecp, cfg, cluster.Name); err != nil {
 			return err
 		}
 
@@ -752,7 +752,7 @@ func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, kcp *con
 			return err
 		}
 
-		if err := controllerutil.SetControllerReference(kcp, m, r.Client.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(ocnecp, m, r.Client.Scheme()); err != nil {
 			return err
 		}
 
@@ -765,9 +765,9 @@ func (r *OcneControlPlaneReconciler) adoptMachines(ctx context.Context, kcp *con
 	return nil
 }
 
-func (r *OcneControlPlaneReconciler) adoptOwnedSecrets(ctx context.Context, kcp *controlplanev1.OcneControlPlane, currentOwner *bootstrapv1.OcneConfig, clusterName string) error {
+func (r *OcneControlPlaneReconciler) adoptOwnedSecrets(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, currentOwner *bootstrapv1.OCNEConfig, clusterName string) error {
 	secrets := corev1.SecretList{}
-	if err := r.Client.List(ctx, &secrets, client.InNamespace(kcp.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
+	if err := r.Client.List(ctx, &secrets, client.InNamespace(ocnecp.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
 		return errors.Wrap(err, "error finding secrets for adoption")
 	}
 
@@ -785,15 +785,15 @@ func (r *OcneControlPlaneReconciler) adoptOwnedSecrets(ctx context.Context, kcp 
 
 		ss.SetOwnerReferences(util.ReplaceOwnerRef(ss.GetOwnerReferences(), currentOwner, metav1.OwnerReference{
 			APIVersion:         controlplanev1.GroupVersion.String(),
-			Kind:               "OcneControlPlane",
-			Name:               kcp.Name,
-			UID:                kcp.UID,
+			Kind:               "OCNEControlPlane",
+			Name:               ocnecp.Name,
+			UID:                ocnecp.UID,
 			Controller:         pointer.Bool(true),
 			BlockOwnerDeletion: pointer.Bool(true),
 		}))
 
 		if err := r.Client.Update(ctx, ss); err != nil {
-			return errors.Wrapf(err, "error changing secret %v ownership from OcneConfig/%v to OcneControlPlane/%v", s.Name, currentOwner.GetName(), kcp.Name)
+			return errors.Wrapf(err, "error changing secret %v ownership from OCNEConfig/%v to OCNEControlPlane/%v", s.Name, currentOwner.GetName(), ocnecp.Name)
 		}
 	}
 

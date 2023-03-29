@@ -136,9 +136,6 @@ GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(abspath $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER))
 GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
 
-HADOLINT_VER := v2.10.0
-HADOLINT_FAILURE_THRESHOLD = warning
-
 SHELLCHECK_VER := v0.9.0
 
 KPROMO_VER := v3.4.5
@@ -146,10 +143,6 @@ KPROMO_BIN := kpromo
 KPROMO :=  $(abspath $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER))
 KPROMO_PKG := sigs.k8s.io/promo-tools/v3/cmd/kpromo
 
-YQ_VER := v4.25.2
-YQ_BIN := yq
-YQ :=  $(abspath $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER))
-YQ_PKG := github.com/mikefarah/yq/v4
 
 GINGKO_VER := v2.5.0
 GINKGO_BIN := ginkgo
@@ -169,19 +162,12 @@ OPENAPI_GEN_PKG := k8s.io/kube-openapi/cmd/openapi-gen
 RUNTIME_OPENAPI_GEN_BIN := runtime-openapi-gen
 RUNTIME_OPENAPI_GEN := $(abspath $(TOOLS_BIN_DIR)/$(RUNTIME_OPENAPI_GEN_BIN))
 
-TILT_PREPARE_BIN := tilt-prepare
-TILT_PREPARE := $(abspath $(TOOLS_BIN_DIR)/$(TILT_PREPARE_BIN))
 
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN))
 
 # Define Docker related variables. Releases should modify and double check these vars.
 REGISTRY ?= ghcr.io/verrazzano
-PROD_REGISTRY ?= registry.k8s.io/cluster-api
-
-STAGING_REGISTRY ?= gcr.io/k8s-staging-cluster-api
-STAGING_BUCKET ?= artifacts.k8s-staging-cluster-api.appspot.com
-
 # core
 IMAGE_NAME ?= cluster-api-controller
 CONTROLLER_IMG ?= $(REGISTRY)/$(IMAGE_NAME)
@@ -194,21 +180,11 @@ OCNE_BOOTSTRAP_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_BOOTSTRAP_IMAGE_NAME)
 OCNE_CONTROL_PLANE_IMAGE_NAME ?= cluster-api-ocne-control-plane-controller
 OCNE_CONTROL_PLANE_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_CONTROL_PLANE_IMAGE_NAME)
 
-# capd
-CAPD_IMAGE_NAME ?= capd-manager
-CAPD_CONTROLLER_IMG ?= $(REGISTRY)/$(CAPD_IMAGE_NAME)
-
-# clusterctl
-CLUSTERCTL_MANIFEST_DIR := cmd/clusterctl/config
-CLUSTERCTL_IMAGE_NAME ?= clusterctl
-CLUSTERCTL_IMG ?= $(REGISTRY)/$(CLUSTERCTL_IMAGE_NAME)
 
 # test extension
 TEST_EXTENSION_IMAGE_NAME ?= test-extension
 TEST_EXTENSION_IMG ?= $(REGISTRY)/$(TEST_EXTENSION_IMAGE_NAME)
 
-# kind
-CAPI_KIND_CLUSTER_NAME ?= capi-test
 
 # It is set by Prow GIT_TAG, a git-based tag of the form vYYYYMMDD-hash, e.g., v20210120-v0.3.10-308-gc61521971
 
@@ -233,7 +209,7 @@ endif
 # Set build time variables including version details
 LDFLAGS := $(shell hack/version.sh)
 
-all: test managers clusterctl
+all: test managers
 
 help:  # Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[0-9A-Za-z_-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-7)), $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -314,30 +290,17 @@ lint: $(GOLANGCI_LINT) ## Lint the codebase
 	$(GOLANGCI_LINT) run -v $(GOLANGCI_LINT_EXTRA_ARGS)
 	cd $(TEST_DIR); $(GOLANGCI_LINT) run --path-prefix $(TEST_DIR) -v $(GOLANGCI_LINT_EXTRA_ARGS)
 	cd $(TOOLS_DIR); $(GOLANGCI_LINT) run --path-prefix $(TOOLS_DIR) -v $(GOLANGCI_LINT_EXTRA_ARGS)
-	./scripts/ci-lint-dockerfiles.sh $(HADOLINT_VER) $(HADOLINT_FAILURE_THRESHOLD)
 
-.PHONY: lint-dockerfiles
-lint-dockerfiles:
-	./scripts/ci-lint-dockerfiles.sh $(HADOLINT_VER) $(HADOLINT_FAILURE_THRESHOLD)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
-.PHONY: tiltfile-fix
-tiltfile-fix: ## Format the Tiltfile
-	TRACE=$(TRACE) ./hack/verify-starlark.sh fix
 
-APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
-
-.PHONY: apidiff
-apidiff: $(GO_APIDIFF) ## Check for API differences
-	$(GO_APIDIFF) $(APIDIFF_OLD_COMMIT) --print-compatible
-
-ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck tiltfile modules gen conversions capi-book-summary
+ALL_VERIFY_CHECKS = modules gen
 
 .PHONY: verify
-verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) lint-dockerfiles ## Run all verify-* targets
+verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS))  ## Run all verify-* targets
 
 .PHONY: verify-modules
 verify-modules: generate-modules  ## Verify go modules are up to date
@@ -357,33 +320,6 @@ verify-gen: generate  ## Verify go generated files are up to date
 		echo "generated files are out of date, run make generate"; exit 1; \
 	fi
 
-.PHONY: verify-conversions
-verify-conversions: $(CONVERSION_VERIFIER)  ## Verifies expected API conversion are in place
-	$(CONVERSION_VERIFIER)
-
-.PHONY: verify-doctoc
-verify-doctoc:
-	TRACE=$(TRACE) ./hack/verify-doctoc.sh
-
-.PHONY: verify-capi-book-summary
-verify-capi-book-summary:
-	TRACE=$(TRACE) ./hack/verify-capi-book-summary.sh
-
-.PHONY: verify-boilerplate
-verify-boilerplate: ## Verify boilerplate text exists in each file
-	TRACE=$(TRACE) ./hack/verify-boilerplate.sh
-
-.PHONY: verify-shellcheck
-verify-shellcheck: ## Verify shell files
-	TRACE=$(TRACE) ./hack/verify-shellcheck.sh $(SHELLCHECK_VER)
-
-.PHONY: verify-tiltfile
-verify-tiltfile: ## Verify Tiltfile format
-	TRACE=$(TRACE) ./hack/verify-starlark.sh
-
-.PHONY: verify-container-images
-verify-container-images: ## Verify container images
-	TRACE=$(TRACE) ./hack/verify-container-images.sh
 
 ## --------------------------------------
 ## Binaries
@@ -588,46 +524,18 @@ set-manifest-image:
 .PHONY: clean
 clean: ## Remove generated binaries, GitBook files, Helm charts, and Tilt build files
 	$(MAKE) clean-bin
-	$(MAKE) clean-book
-	$(MAKE) clean-charts
-	$(MAKE) clean-tilt
-
-.PHONY: clean-kind
-clean-kind: ## Cleans up the kind cluster with the name $CAPI_KIND_CLUSTER_NAME
-	kind delete cluster --name="$(CAPI_KIND_CLUSTER_NAME)" || true
+	$(MAKE) clean-release
+	$(MAKE) clean-generated-yaml
+	$(MAKE) clean-generated-deepcopy
 
 .PHONY: clean-bin
 clean-bin: ## Remove all generated binaries
 	rm -rf $(BIN_DIR)
 	rm -rf $(TOOLS_BIN_DIR)
 
-.PHONY: clean-tilt
-clean-tilt: clean-charts clean-kind ## Remove all files generated by Tilt
-	rm -rf ./.tiltbuild
-	rm -rf ./controlplane/ocne/.tiltbuild
-	rm -rf ./bootstrap/ocne/.tiltbuild
-	rm -rf ./test/infrastructure/docker/.tiltbuild
-
-.PHONY: clean-charts
-clean-charts: ## Remove all local copies of Helm charts in ./hack/observability
-	(for path in "./hack/observability/*"; do rm -rf $$path/charts ; done)
-
-.PHONY: clean-book
-clean-book: ## Remove all generated GitBook files
-	rm -rf ./docs/book/_book
-
 .PHONY: clean-release
 clean-release: ## Remove the release folder
 	rm -rf $(RELEASE_DIR)
-
-.PHONY: clean-manifests ## Reset manifests in config directories back to main
-clean-manifests:
-	@read -p "WARNING: This will reset all config directories to local main. Press [ENTER] to continue."
-	git checkout main config bootstrap/ocne/config controlplane/ocne/config $(CAPD_DIR)/config
-
-.PHONY: clean-release-git
-clean-release-git: ## Restores the git files usually modified during a release
-	git restore ./*manager_image_patch.yaml ./*manager_pull_policy.yaml
 
 .PHONY: clean-generated-yaml
 clean-generated-yaml: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
@@ -636,14 +544,6 @@ clean-generated-yaml: ## Remove files generated by conversion-gen from the menti
 .PHONY: clean-generated-deepcopy
 clean-generated-deepcopy: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
 	(IFS=','; for i in $(SRC_DIRS); do find $$i -type f -name 'zz_generated.deepcopy*' -exec rm -f {} \;; done)
-
-.PHONY: clean-generated-conversions
-clean-generated-conversions: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
-	(IFS=','; for i in $(SRC_DIRS); do find $$i -type f -name 'zz_generated.conversion*' -exec rm -f {} \;; done)
-
-.PHONY: clean-generated-openapi-definitions
-clean-generated-openapi-definitions: ## Remove files generated by openapi-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
-	(IFS=','; for i in $(SRC_DIRS); do find $$i -type f -name 'zz_generated.openapi*' -exec rm -f {} \;; done)
 
 ## --------------------------------------
 ## Hack / Tools
@@ -654,24 +554,6 @@ clean-generated-openapi-definitions: ## Remove files generated by openapi-gen fr
 .PHONY: $(CONTROLLER_GEN_BIN)
 $(CONTROLLER_GEN_BIN): $(CONTROLLER_GEN) ## Build a local copy of controller-gen.
 
-.PHONY: $(CONVERSION_GEN_BIN)
-$(CONVERSION_GEN_BIN): $(CONVERSION_GEN) ## Build a local copy of conversion-gen.
-
-.PHONY: $(OPENAPI_GEN_BIN)
-$(OPENAPI_GEN_BIN): $(OPENAPI_GEN) ## Build a local copy of openapi-gen.
-
-.PHONY: $(RUNTIME_OPENAPI_GEN_BIN)
-$(RUNTIME_OPENAPI_GEN_BIN): $(RUNTIME_OPENAPI_GEN) ## Build a local copy of runtime-openapi-gen.
-
-.PHONY: $(CONVERSION_VERIFIER_BIN)
-$(CONVERSION_VERIFIER_BIN): $(CONVERSION_VERIFIER) ## Build a local copy of conversion-verifier.
-
-.PHONY: $(GOTESTSUM_BIN)
-$(GOTESTSUM_BIN): $(GOTESTSUM) ## Build a local copy of gotestsum.
-
-.PHONY: $(GO_APIDIFF_BIN)
-$(GO_APIDIFF_BIN): $(GO_APIDIFF) ## Build a local copy of go-apidiff
-
 .PHONY: $(ENVSUBST_BIN)
 $(ENVSUBST_BIN): $(ENVSUBST) ## Build a local copy of envsubst.
 
@@ -680,15 +562,6 @@ $(KUSTOMIZE_BIN): $(KUSTOMIZE) ## Build a local copy of kustomize.
 
 .PHONY: $(SETUP_ENVTEST_BIN)
 $(SETUP_ENVTEST_BIN): $(SETUP_ENVTEST) ## Build a local copy of setup-envtest.
-
-.PHONY: $(KPROMO_BIN)
-$(KPROMO_BIN): $(KPROMO) ## Build a local copy of kpromo
-
-.PHONY: $(YQ_BIN)
-$(YQ_BIN): $(YQ) ## Build a local copy of yq
-
-.PHONY: $(TILT_PREPARE_BIN)
-$(TILT_PREPARE_BIN): $(TILT_PREPARE) ## Build a local copy of tilt-prepare.
 
 .PHONY: $(GOLANGCI_LINT_BIN)
 $(GOLANGCI_LINT_BIN): $(GOLANGCI_LINT) ## Build a local copy of golangci-lint
@@ -699,29 +572,6 @@ $(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo
 $(CONTROLLER_GEN): # Build controller-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(CONTROLLER_GEN_PKG) $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
 
-## We are forcing a rebuilt of conversion-gen via PHONY so that we're always using an up-to-date version.
-## We can't use a versioned name for the binary, because that would be reflected in generated files.
-.PHONY: $(CONVERSION_GEN)
-$(CONVERSION_GEN): # Build conversion-gen from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(CONVERSION_GEN_PKG) $(CONVERSION_GEN_BIN) $(CONVERSION_GEN_VER)
-
-$(CONVERSION_VERIFIER): $(TOOLS_DIR)/go.mod # Build conversion-verifier from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/$(CONVERSION_VERIFIER_BIN) github.com/verrazzano/cluster-api-provider-ocne/hack/tools/conversion-verifier
-
-.PHONY: $(OPENAPI_GEN)
-$(OPENAPI_GEN): # Build openapi-gen from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(OPENAPI_GEN_PKG) $(OPENAPI_GEN_BIN) $(OPENAPI_GEN_VER)
-
-## We are forcing a rebuilt of runtime-openapi-gen via PHONY so that we're always using an up-to-date version.
-.PHONY: $(RUNTIME_OPENAPI_GEN)
-$(RUNTIME_OPENAPI_GEN): $(TOOLS_DIR)/go.mod # Build openapi-gen from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/$(RUNTIME_OPENAPI_GEN_BIN) github.com/verrazzano/cluster-api-provider-ocne/hack/tools/runtime-openapi-gen
-
-$(GOTESTSUM): # Build gotestsum from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOTESTSUM_PKG) $(GOTESTSUM_BIN) $(GOTESTSUM_VER)
-
-$(GO_APIDIFF): # Build go-apidiff from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
 $(ENVSUBST): # Build gotestsum from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(ENVSUBST_PKG) $(ENVSUBST_BIN) $(ENVSUBST_VER)
@@ -731,15 +581,6 @@ $(KUSTOMIZE): # Build kustomize from tools folder.
 
 $(SETUP_ENVTEST): # Build setup-envtest from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(SETUP_ENVTEST_PKG) $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
-
-$(TILT_PREPARE): $(TOOLS_DIR)/go.mod # Build tilt-prepare from tools folder.
-	cd $(TOOLS_DIR); go build -tags=tools -o $(BIN_DIR)/tilt-prepare github.com/verrazzano/cluster-api-provider-ocne/hack/tools/tilt-prepare
-
-$(KPROMO):
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(KPROMO_PKG) $(KPROMO_BIN) ${KPROMO_VER}
-
-$(YQ):
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(YQ_PKG) $(YQ_BIN) ${YQ_VER}
 
 $(GOLANGCI_LINT): .github/workflows/golangci-lint.yml # Download golangci-lint using hack script into tools folder.
 	hack/ensure-golangci-lint.sh \
@@ -751,18 +592,18 @@ $(GINKGO): # Build ginkgo from tools folder.
 
 
 ## --------------------------------------
-## devtest
+## Build OCNE Artifacts
 ## --------------------------------------
 
 RELEASE_BOOTSTRAP_DIR := release/bootstrap-ocne/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
 RELEASE_CONTROL_PLANE_DIR := release/control-plane-ocne/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
-##@ devtest:
+##@ Build OCNE Artifacts:
 .PHONY:
-devtest: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
+ocnebuild: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
 	rm -rf $(RELEASE_BOOTSTRAP_DIR) $(RELEASE_CONTROL_PLANE_DIR) out bin
 	mkdir -p $(RELEASE_BOOTSTRAP_DIR)
 	mkdir -p $(RELEASE_CONTROL_PLANE_DIR)
-	$(MAKE) clean-bin
+	$(MAKE) clean
 	$(MAKE) generate
 	$(MAKE) docker-build
 	$(MAKE) docker-push

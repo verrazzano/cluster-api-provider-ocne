@@ -43,7 +43,7 @@ import (
 func TestUpdateEtcdConditions(t *testing.T) {
 	tests := []struct {
 		name                      string
-		kcp                       *controlplanev1.OcneControlPlane
+		ocnecp                    *controlplanev1.OCNEControlPlane
 		machines                  []*clusterv1.Machine
 		injectClient              client.Client // This test is injecting a fake client because it is required to create nodes with a controlled Status or to fail with a specific error.
 		injectEtcdClientGenerator etcdClientFor // This test is injecting a fake etcdClientGenerator because it is required to nodes with a controlled Status or to fail with a specific error.
@@ -450,9 +450,9 @@ func TestUpdateEtcdConditions(t *testing.T) {
 		},
 		{
 			name: "Eternal etcd should set a condition at KCP level",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							Etcd: bootstrapv1.Etcd{
 								External: &bootstrapv1.ExternalEtcd{},
@@ -468,21 +468,21 @@ func TestUpdateEtcdConditions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			if tt.kcp == nil {
-				tt.kcp = &controlplanev1.OcneControlPlane{}
+			if tt.ocnecp == nil {
+				tt.ocnecp = &controlplanev1.OCNEControlPlane{}
 			}
 			w := &Workload{
 				Client:              tt.injectClient,
 				etcdClientGenerator: tt.injectEtcdClientGenerator,
 			}
 			controlPane := &ControlPlane{
-				KCP:      tt.kcp,
+				KCP:      tt.ocnecp,
 				Machines: collections.FromMachines(tt.machines...),
 			}
 			w.UpdateEtcdConditions(ctx, controlPane)
 
 			if tt.expectedKCPCondition != nil {
-				g.Expect(*conditions.Get(tt.kcp, controlplanev1.EtcdClusterHealthyCondition)).To(conditions.MatchCondition(*tt.expectedKCPCondition))
+				g.Expect(*conditions.Get(tt.ocnecp, controlplanev1.EtcdClusterHealthyCondition)).To(conditions.MatchCondition(*tt.expectedKCPCondition))
 			}
 			for _, m := range tt.machines {
 				g.Expect(tt.expectedMachineConditions).To(HaveKey(m.Name))
@@ -515,7 +515,7 @@ func TestUpdateStaticPodConditions(t *testing.T) {
 	}.String()
 	tests := []struct {
 		name                      string
-		kcp                       *controlplanev1.OcneControlPlane
+		ocnecp                    *controlplanev1.OCNEControlPlane
 		machines                  []*clusterv1.Machine
 		injectClient              client.Client // This test is injecting a fake client because it is required to create nodes with a controlled Status or to fail with a specific error.
 		expectedKCPCondition      *clusterv1.Condition
@@ -691,9 +691,9 @@ func TestUpdateStaticPodConditions(t *testing.T) {
 		},
 		{
 			name: "Should surface control plane components health with eternal etcd",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							Etcd: bootstrapv1.Etcd{
 								External: &bootstrapv1.ExternalEtcd{},
@@ -741,20 +741,20 @@ func TestUpdateStaticPodConditions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			if tt.kcp == nil {
-				tt.kcp = &controlplanev1.OcneControlPlane{}
+			if tt.ocnecp == nil {
+				tt.ocnecp = &controlplanev1.OCNEControlPlane{}
 			}
 			w := &Workload{
 				Client: tt.injectClient,
 			}
 			controlPane := &ControlPlane{
-				KCP:      tt.kcp,
+				KCP:      tt.ocnecp,
 				Machines: collections.FromMachines(tt.machines...),
 			}
 			w.UpdateStaticPodConditions(ctx, controlPane)
 
 			if tt.expectedKCPCondition != nil {
-				g.Expect(*conditions.Get(tt.kcp, controlplanev1.ControlPlaneComponentsHealthyCondition)).To(conditions.MatchCondition(*tt.expectedKCPCondition))
+				g.Expect(*conditions.Get(tt.ocnecp, controlplanev1.ControlPlaneComponentsHealthyCondition)).To(conditions.MatchCondition(*tt.expectedKCPCondition))
 			}
 			for _, m := range tt.machines {
 				g.Expect(tt.expectedMachineConditions).To(HaveKey(m.Name))

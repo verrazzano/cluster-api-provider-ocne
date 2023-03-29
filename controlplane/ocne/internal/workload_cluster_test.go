@@ -120,44 +120,44 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 		expectImage string
 		clientGet   map[string]interface{}
 		patchErr    error
-		KCP         *controlplanev1.OcneControlPlane
+		KCP         *controlplanev1.OCNEControlPlane
 	}{
 		{
 			name:        "succeeds if patch correctly",
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3",
-			KCP:         &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "returns error if image in kube-proxy ds was in digest format",
 			ds:          newKubeProxyDSWithImage("k8s.gcr.io/kube-proxy@sha256:47bfd"),
 			expectErr:   true,
 			expectImage: "k8s.gcr.io/kube-proxy@sha256:47bfd",
-			KCP:         &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "expects OCI compatible format of tag",
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3_build1",
-			KCP:         &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3+build1"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3+build1"}},
 		},
 		{
 			name:      "returns error if image in kube-proxy ds was in wrong format",
 			ds:        newKubeProxyDSWithImage(""),
 			expectErr: true,
-			KCP:       &controlplanev1.OcneControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:       &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "updates image repository if one has been set on the control plane",
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "foo.bar.example/baz/qux/kube-proxy:v1.16.3",
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "foo.bar.example/baz/qux",
 						},
@@ -169,10 +169,10 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3",
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "",
 						},
@@ -184,7 +184,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			ds:          newKubeProxyDSWithImage("k8s.gcr.io/kube-proxy:v1.24.0"),
 			expectErr:   false,
 			expectImage: "registry.k8s.io/kube-proxy:v1.25.0-alpha.1",
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
 					Version: "v1.25.0-alpha.1",
 				}},
@@ -193,10 +193,10 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			name:      "returns error if image repository is invalid",
 			ds:        newKubeProxyDS(),
 			expectErr: true,
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "%%%",
 						},
@@ -208,7 +208,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			ds:          newKubeProxyDSWithImage(""), // Using the same image name that would otherwise lead to an error
 			expectErr:   false,
 			expectImage: "",
-			KCP: &controlplanev1.OcneControlPlane{
+			KCP: &controlplanev1.OCNEControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						controlplanev1.SkipKubeProxyAnnotation: "",

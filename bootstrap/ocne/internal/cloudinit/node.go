@@ -32,9 +32,9 @@ const (
     permissions: '0640'
     content: "This placeholder file is used to create the /run/cluster-api sub directory in a way that is compatible with both Linux and Windows (mkdir -p /run/cluster-api does not work with Windows)"
 runcmd:
-{{- template "commands" .PreOcneCommands }}
-  - {{ .OcneCommand }} && {{ .SentinelFileCommand }}
-{{- template "commands" .PostOcneCommands }}
+{{- template "commands" .PreOCNECommands }}
+  - {{ .OCNECommand }} && {{ .SentinelFileCommand }}
+{{- template "commands" .PostOCNECommands }}
 {{- template "ntp" .NTP }}
 {{- template "users" .Users }}
 {{- template "disk_setup" .DiskSetup}}

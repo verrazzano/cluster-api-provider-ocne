@@ -4,7 +4,7 @@ repo: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne
 resources:
 - group: bootstrap
   version: v1beta1
-  kind: OcneConfig
+  kind: OCNEConfig
 - group: bootstrap
   version: v1beta1
-  kind: OcneConfigTemplate
+  kind: OCNEConfigTemplate

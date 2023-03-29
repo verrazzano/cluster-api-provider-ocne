@@ -211,14 +211,14 @@ storage:
         inline: |
           #!/bin/bash
           set -e
-          {{ range .PreOcneCommands }}
+          {{ range .PreOCNECommands }}
           {{ . | Indent 10 }}
           {{- end }}
 
-          {{ .OcneCommand }}
+          {{ .OCNECommand }}
           mkdir -p /run/cluster-api && echo success > /run/cluster-api/bootstrap-success.complete
           mv /etc/kubeadm.yml /tmp/
-          {{range .PostOcneCommands }}
+          {{range .PostOCNECommands }}
           {{ . | Indent 10 }}
           {{- end }}
     - path: /etc/kubeadm.yml
@@ -226,7 +226,7 @@ storage:
       contents:
         inline: |
           ---
-          {{ .OcneConfig | Indent 10 }}
+          {{ .OCNEConfig | Indent 10 }}
     {{- if .NTP }}{{- if and .NTP.Enabled .NTP.Servers }}
     - path: /etc/ntp.conf
       mode: 0644
@@ -257,7 +257,7 @@ storage:
 type render struct {
 	*cloudinit.BaseUserData
 
-	OcneConfig               string
+	OCNEConfig               string
 	UsersWithPasswordAuth    string
 	FilesystemDevicesByLabel map[string]string
 }
@@ -335,7 +335,7 @@ func renderCLC(input *cloudinit.BaseUserData, ocneConfig string) ([]byte, error)
 
 	data := render{
 		BaseUserData:             input,
-		OcneConfig:               ocneConfig,
+		OCNEConfig:               ocneConfig,
 		UsersWithPasswordAuth:    strings.Join(usersWithPasswordAuth, ","),
 		FilesystemDevicesByLabel: filesystemDevicesByLabel,
 	}

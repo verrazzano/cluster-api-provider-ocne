@@ -22,38 +22,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// OcneConfigTemplateSpec defines the desired state of OcneConfigTemplate.
-type OcneConfigTemplateSpec struct {
-	Template OcneConfigTemplateResource `json:"template"`
+// OCNEConfigTemplateSpec defines the desired state of OCNEConfigTemplate.
+type OCNEConfigTemplateSpec struct {
+	Template OCNEConfigTemplateResource `json:"template"`
 }
 
-// OcneConfigTemplateResource defines the Template structure.
-type OcneConfigTemplateResource struct {
-	Spec OcneConfigSpec `json:"spec,omitempty"`
+// OCNEConfigTemplateResource defines the Template structure.
+type OCNEConfigTemplateResource struct {
+	Spec OCNEConfigSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=ocneconfigtemplates,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OcneConfigTemplate"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OCNEConfigTemplate"
 
-// OcneConfigTemplate is the Schema for the ocneconfigtemplates API.
-type OcneConfigTemplate struct {
+// OCNEConfigTemplate is the Schema for the ocneconfigtemplates API.
+type OCNEConfigTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec OcneConfigTemplateSpec `json:"spec,omitempty"`
+	Spec OCNEConfigTemplateSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// OcneConfigTemplateList contains a list of OcneConfigTemplate.
-type OcneConfigTemplateList struct {
+// OCNEConfigTemplateList contains a list of OCNEConfigTemplate.
+type OCNEConfigTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []OcneConfigTemplate `json:"items"`
+	Items           []OCNEConfigTemplate `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&OcneConfigTemplate{}, &OcneConfigTemplateList{})
+	SchemeBuilder.Register(&OCNEConfigTemplate{}, &OCNEConfigTemplateList{})
 }

@@ -51,7 +51,7 @@ import (
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1"
 	ocnecontrolplanecontrollers "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/controllers"
-	kcpwebhooks "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/webhooks"
+	ocnecpwebhooks "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/webhooks"
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/flags"
 	"github.com/verrazzano/cluster-api-provider-ocne/version"
@@ -267,21 +267,21 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		WatchFilterValue: watchFilterValue,
 		EtcdDialTimeout:  etcdDialTimeout,
 	}).SetupWithManager(ctx, mgr, concurrency(ocneControlPlaneConcurrency)); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OcneControlPlane")
+		setupLog.Error(err, "unable to create controller", "controller", "OCNEControlPlane")
 		os.Exit(1)
 	}
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
-	if err := (&controlplanev1.OcneControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "OcneControlPlane")
+	if err := (&controlplanev1.OCNEControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "OCNEControlPlane")
 		os.Exit(1)
 	}
 
-	if err := (&kcpwebhooks.ScaleValidator{
+	if err := (&ocnecpwebhooks.ScaleValidator{
 		Client: mgr.GetClient(),
 	}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "OcneControlPlane scale")
+		setupLog.Error(err, "unable to create webhook", "webhook", "OCNEControlPlane scale")
 		os.Exit(1)
 	}
 

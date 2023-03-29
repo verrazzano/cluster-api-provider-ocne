@@ -72,10 +72,10 @@ func (k *OcneConfigBuilder) Unstructured() *unstructured.Unstructured {
 }
 
 // Build produces a OcneConfig from the variable in the OcneConfigBuilder.
-func (k *OcneConfigBuilder) Build() *bootstrapv1.OcneConfig {
-	config := &bootstrapv1.OcneConfig{
+func (k *OcneConfigBuilder) Build() *bootstrapv1.OCNEConfig {
+	config := &bootstrapv1.OCNEConfig{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "OcneConfig",
+			Kind:       "OCNEConfig",
 			APIVersion: bootstrapv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{

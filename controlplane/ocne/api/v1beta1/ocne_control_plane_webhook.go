@@ -42,7 +42,7 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/util/version"
 )
 
-func (in *OcneControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (in *OCNEControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(in).
 		Complete()
@@ -51,11 +51,11 @@ func (in *OcneControlPlane) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-controlplane-cluster-x-k8s-io-v1beta1-ocnecontrolplane,mutating=true,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ocnecontrolplanes,versions=v1beta1,name=default.ocnecontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 // +kubebuilder:webhook:verbs=create;update,path=/validate-controlplane-cluster-x-k8s-io-v1beta1-ocnecontrolplane,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=controlplane.cluster.x-k8s.io,resources=ocnecontrolplanes,versions=v1beta1,name=validation.ocnecontrolplane.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &OcneControlPlane{}
-var _ webhook.Validator = &OcneControlPlane{}
+var _ webhook.Defaulter = &OCNEControlPlane{}
+var _ webhook.Validator = &OCNEControlPlane{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (in *OcneControlPlane) Default() {
+func (in *OCNEControlPlane) Default() {
 	defaultKubeadmControlPlaneSpec(&in.Spec, in.Namespace)
 }
 
@@ -102,13 +102,13 @@ func defaultRolloutStrategy(rolloutStrategy *RolloutStrategy) *RolloutStrategy {
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (in *OcneControlPlane) ValidateCreate() error {
+func (in *OCNEControlPlane) ValidateCreate() error {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(spec.OcneConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, spec.OcneConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("OcneControlPlane").GroupKind(), in.Name, allErrs)
+		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
 	return nil
 }
@@ -123,8 +123,8 @@ const (
 	skipPhases           = "skipPhases"
 	patches              = "patches"
 	directory            = "directory"
-	preOcneCommands      = "preOcneCommands"
-	postOcneCommands     = "postOcneCommands"
+	preOCNECommands      = "preOCNECommands"
+	postOCNECommands     = "postOCNECommands"
 	files                = "files"
 	users                = "users"
 	apiServer            = "apiServer"
@@ -138,7 +138,7 @@ const (
 const minimumCertificatesExpiryDays = 7
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (in *OcneControlPlane) ValidateUpdate(old runtime.Object) error {
+func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	// add a * to indicate everything beneath is ok.
 	// For example, {"spec", "*"} will allow any path under "spec" to change.
 	allowedPaths := [][]string{
@@ -158,8 +158,8 @@ func (in *OcneControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, ocneConfigSpec, joinConfiguration, nodeRegistration, "*"},
 		{spec, ocneConfigSpec, joinConfiguration, patches, directory},
 		{spec, ocneConfigSpec, joinConfiguration, skipPhases},
-		{spec, ocneConfigSpec, preOcneCommands},
-		{spec, ocneConfigSpec, postOcneCommands},
+		{spec, ocneConfigSpec, preOCNECommands},
+		{spec, ocneConfigSpec, postOCNECommands},
 		{spec, ocneConfigSpec, files},
 		{spec, ocneConfigSpec, "verbosity"},
 		{spec, ocneConfigSpec, users},
@@ -182,9 +182,9 @@ func (in *OcneControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	allErrs := validateKubeadmControlPlaneSpec(in.Spec, in.Namespace, field.NewPath("spec"))
 
-	prev, ok := old.(*OcneControlPlane)
+	prev, ok := old.(*OCNEControlPlane)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expecting OcneControlPlane but got a %T", old))
+		return apierrors.NewBadRequest(fmt.Sprintf("expecting OCNEControlPlane but got a %T", old))
 	}
 
 	// NOTE: Defaulting for the format field has been added in v1.1.0 after implementing ignition support.
@@ -233,7 +233,7 @@ func (in *OcneControlPlane) ValidateUpdate(old runtime.Object) error {
 	allErrs = append(allErrs, in.Spec.OcneConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
 
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("OcneControlPlane").GroupKind(), in.Name, allErrs)
+		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
 
 	return nil
@@ -374,7 +374,7 @@ func validateRolloutStrategy(rolloutStrategy *RolloutStrategy, replicas *int32, 
 			allErrs,
 			field.Required(
 				pathPrefix.Child("rollingUpdate"),
-				"when OcneControlPlane is configured to scale-in, replica count needs to be at least 3",
+				"when OCNEControlPlane is configured to scale-in, replica count needs to be at least 3",
 			),
 		)
 	}
@@ -519,7 +519,7 @@ func paths(path []string, diff map[string]interface{}) [][]string {
 	return allPaths
 }
 
-func (in *OcneControlPlane) validateCoreDNSVersion(prev *OcneControlPlane) (allErrs field.ErrorList) {
+func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allErrs field.ErrorList) {
 	if in.Spec.OcneConfigSpec.ClusterConfiguration == nil || prev.Spec.OcneConfigSpec.ClusterConfiguration == nil {
 		return allErrs
 	}
@@ -570,7 +570,7 @@ func (in *OcneControlPlane) validateCoreDNSVersion(prev *OcneControlPlane) (allE
 	return allErrs
 }
 
-func (in *OcneControlPlane) validateVersion(previousVersion string) (allErrs field.ErrorList) {
+func (in *OCNEControlPlane) validateVersion(previousVersion string) (allErrs field.ErrorList) {
 	fromVersion, err := version.ParseMajorMinorPatch(previousVersion)
 	if err != nil {
 		allErrs = append(allErrs,
@@ -653,6 +653,6 @@ func (in *OcneControlPlane) validateVersion(previousVersion string) (allErrs fie
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (in *OcneControlPlane) ValidateDelete() error {
+func (in *OCNEControlPlane) ValidateDelete() error {
 	return nil
 }

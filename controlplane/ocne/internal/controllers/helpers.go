@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 )
 
-func (r *OcneControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane) (ctrl.Result, error) {
+func (r *OcneControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	endpoint := cluster.Spec.ControlPlaneEndpoint
@@ -55,7 +55,7 @@ func (r *OcneControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cl
 		return ctrl.Result{}, nil
 	}
 
-	controllerOwnerRef := *metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane"))
+	controllerOwnerRef := *metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))
 	clusterName := util.ObjectKey(cluster)
 	configSecret, err := secret.GetFromNamespacedName(ctx, r.Client, clusterName, secret.Kubeconfig)
 	switch {
@@ -76,12 +76,12 @@ func (r *OcneControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cl
 		return ctrl.Result{}, errors.Wrap(err, "failed to retrieve kubeconfig Secret")
 	}
 
-	if err := r.adoptKubeconfigSecret(ctx, cluster, configSecret, kcp); err != nil {
+	if err := r.adoptKubeconfigSecret(ctx, cluster, configSecret, ocnecp); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	// only do rotation on owned secrets
-	if !util.IsControlledBy(configSecret, kcp) {
+	if !util.IsControlledBy(configSecret, ocnecp) {
 		return ctrl.Result{}, nil
 	}
 
@@ -101,7 +101,7 @@ func (r *OcneControlPlaneReconciler) reconcileKubeconfig(ctx context.Context, cl
 }
 
 // Ensure the KubeadmConfigSecret has an owner reference to the control plane if it is not a user-provided secret.
-func (r *OcneControlPlaneReconciler) adoptKubeconfigSecret(ctx context.Context, cluster *clusterv1.Cluster, configSecret *corev1.Secret, kcp *controlplanev1.OcneControlPlane) error {
+func (r *OcneControlPlaneReconciler) adoptKubeconfigSecret(ctx context.Context, cluster *clusterv1.Cluster, configSecret *corev1.Secret, ocnecp *controlplanev1.OCNEControlPlane) error {
 	log := ctrl.LoggerFrom(ctx)
 	controller := metav1.GetControllerOf(configSecret)
 
@@ -110,7 +110,7 @@ func (r *OcneControlPlaneReconciler) adoptKubeconfigSecret(ctx context.Context, 
 		return nil
 	}
 	// If the secret is already controlled by KCP this is a no-op.
-	if controller != nil && controller.Kind == "OcneControlPlane" {
+	if controller != nil && controller.Kind == "OCNEControlPlane" {
 		return nil
 	}
 	log.Info("Adopting KubeConfig secret", "Secret", klog.KObj(configSecret))
@@ -135,9 +135,9 @@ func (r *OcneControlPlaneReconciler) adoptKubeconfigSecret(ctx context.Context, 
 		configSecret.SetOwnerReferences(util.RemoveOwnerRef(configSecret.OwnerReferences, *controller))
 	}
 
-	// Add the OcneControlPlane as the controller for this secret.
+	// Add the OCNEControlPlane as the controller for this secret.
 	configSecret.OwnerReferences = util.EnsureOwnerRef(configSecret.OwnerReferences,
-		*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane")))
+		*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane")))
 
 	if err := patch.Patch(ctx, configSecret); err != nil {
 		return errors.Wrap(err, "failed to patch the kubeconfig secret")
@@ -176,47 +176,47 @@ func (r *OcneControlPlaneReconciler) reconcileExternalReference(ctx context.Cont
 	return patchHelper.Patch(ctx, obj)
 }
 
-func (r *OcneControlPlaneReconciler) cloneConfigsAndGenerateMachine(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane, bootstrapSpec *bootstrapv1.OcneConfigSpec, failureDomain *string) error {
+func (r *OcneControlPlaneReconciler) cloneConfigsAndGenerateMachine(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, bootstrapSpec *bootstrapv1.OCNEConfigSpec, failureDomain *string) error {
 	var errs []error
 
 	// Since the cloned resource should eventually have a controller ref for the Machine, we create an
 	// OwnerReference here without the Controller field set
 	infraCloneOwner := &metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
-		Kind:       "OcneControlPlane",
-		Name:       kcp.Name,
-		UID:        kcp.UID,
+		Kind:       "OCNEControlPlane",
+		Name:       ocnecp.Name,
+		UID:        ocnecp.UID,
 	}
 
 	// Clone the infrastructure template
 	infraRef, err := external.CreateFromTemplate(ctx, &external.CreateFromTemplateInput{
 		Client:      r.Client,
-		TemplateRef: &kcp.Spec.MachineTemplate.InfrastructureRef,
-		Namespace:   kcp.Namespace,
+		TemplateRef: &ocnecp.Spec.MachineTemplate.InfrastructureRef,
+		Namespace:   ocnecp.Namespace,
 		OwnerRef:    infraCloneOwner,
 		ClusterName: cluster.Name,
-		Labels:      internal.ControlPlaneMachineLabelsForCluster(kcp, cluster.Name),
-		Annotations: kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
+		Labels:      internal.ControlPlaneMachineLabelsForCluster(ocnecp, cluster.Name),
+		Annotations: ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations,
 	})
 	if err != nil {
 		// Safe to return early here since no resources have been created yet.
-		conditions.MarkFalse(kcp, controlplanev1.MachinesCreatedCondition, controlplanev1.InfrastructureTemplateCloningFailedReason,
+		conditions.MarkFalse(ocnecp, controlplanev1.MachinesCreatedCondition, controlplanev1.InfrastructureTemplateCloningFailedReason,
 			clusterv1.ConditionSeverityError, err.Error())
 		return errors.Wrap(err, "failed to clone infrastructure template")
 	}
 
 	// Clone the bootstrap configuration
-	bootstrapRef, err := r.generateKubeadmConfig(ctx, kcp, cluster, bootstrapSpec)
+	bootstrapRef, err := r.generateKubeadmConfig(ctx, ocnecp, cluster, bootstrapSpec)
 	if err != nil {
-		conditions.MarkFalse(kcp, controlplanev1.MachinesCreatedCondition, controlplanev1.BootstrapTemplateCloningFailedReason,
+		conditions.MarkFalse(ocnecp, controlplanev1.MachinesCreatedCondition, controlplanev1.BootstrapTemplateCloningFailedReason,
 			clusterv1.ConditionSeverityError, err.Error())
 		errs = append(errs, errors.Wrap(err, "failed to generate bootstrap config"))
 	}
 
 	// Only proceed to generating the Machine if we haven't encountered an error
 	if len(errs) == 0 {
-		if err := r.generateMachine(ctx, kcp, cluster, infraRef, bootstrapRef, failureDomain); err != nil {
-			conditions.MarkFalse(kcp, controlplanev1.MachinesCreatedCondition, controlplanev1.MachineGenerationFailedReason,
+		if err := r.generateMachine(ctx, ocnecp, cluster, infraRef, bootstrapRef, failureDomain); err != nil {
+			conditions.MarkFalse(ocnecp, controlplanev1.MachinesCreatedCondition, controlplanev1.MachineGenerationFailedReason,
 				clusterv1.ConditionSeverityError, err.Error())
 			errs = append(errs, errors.Wrap(err, "failed to create Machine"))
 		}
@@ -255,21 +255,21 @@ func (r *OcneControlPlaneReconciler) cleanupFromGeneration(ctx context.Context, 
 	return kerrors.NewAggregate(errs)
 }
 
-func (r *OcneControlPlaneReconciler) generateKubeadmConfig(ctx context.Context, kcp *controlplanev1.OcneControlPlane, cluster *clusterv1.Cluster, spec *bootstrapv1.OcneConfigSpec) (*corev1.ObjectReference, error) {
+func (r *OcneControlPlaneReconciler) generateKubeadmConfig(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, cluster *clusterv1.Cluster, spec *bootstrapv1.OCNEConfigSpec) (*corev1.ObjectReference, error) {
 	// Create an owner reference without a controller reference because the owning controller is the machine controller
 	owner := metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
-		Kind:       "OcneControlPlane",
-		Name:       kcp.Name,
-		UID:        kcp.UID,
+		Kind:       "OCNEControlPlane",
+		Name:       ocnecp.Name,
+		UID:        ocnecp.UID,
 	}
 
-	bootstrapConfig := &bootstrapv1.OcneConfig{
+	bootstrapConfig := &bootstrapv1.OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            names.SimpleNameGenerator.GenerateName(kcp.Name + "-"),
-			Namespace:       kcp.Namespace,
-			Labels:          internal.ControlPlaneMachineLabelsForCluster(kcp, cluster.Name),
-			Annotations:     kcp.Spec.MachineTemplate.ObjectMeta.Annotations,
+			Name:            names.SimpleNameGenerator.GenerateName(ocnecp.Name + "-"),
+			Namespace:       ocnecp.Namespace,
+			Labels:          internal.ControlPlaneMachineLabelsForCluster(ocnecp, cluster.Name),
+			Annotations:     ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations,
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},
 		Spec: *spec,
@@ -281,7 +281,7 @@ func (r *OcneControlPlaneReconciler) generateKubeadmConfig(ctx context.Context, 
 
 	bootstrapRef := &corev1.ObjectReference{
 		APIVersion: bootstrapv1.GroupVersion.String(),
-		Kind:       "OcneConfig",
+		Kind:       "OCNEConfig",
 		Name:       bootstrapConfig.GetName(),
 		Namespace:  bootstrapConfig.GetNamespace(),
 		UID:        bootstrapConfig.GetUID(),
@@ -290,43 +290,43 @@ func (r *OcneControlPlaneReconciler) generateKubeadmConfig(ctx context.Context, 
 	return bootstrapRef, nil
 }
 
-func (r *OcneControlPlaneReconciler) generateMachine(ctx context.Context, kcp *controlplanev1.OcneControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) error {
+func (r *OcneControlPlaneReconciler) generateMachine(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, cluster *clusterv1.Cluster, infraRef, bootstrapRef *corev1.ObjectReference, failureDomain *string) error {
 	machine := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        names.SimpleNameGenerator.GenerateName(kcp.Name + "-"),
-			Namespace:   kcp.Namespace,
-			Labels:      internal.ControlPlaneMachineLabelsForCluster(kcp, cluster.Name),
+			Name:        names.SimpleNameGenerator.GenerateName(ocnecp.Name + "-"),
+			Namespace:   ocnecp.Namespace,
+			Labels:      internal.ControlPlaneMachineLabelsForCluster(ocnecp, cluster.Name),
 			Annotations: map[string]string{},
 			// Note: by setting the ownerRef on creation we signal to the Machine controller that this is not a stand-alone Machine.
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(kcp, controlplanev1.GroupVersion.WithKind("OcneControlPlane")),
+				*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane")),
 			},
 		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName:       cluster.Name,
-			Version:           &kcp.Spec.Version,
+			Version:           &ocnecp.Spec.Version,
 			InfrastructureRef: *infraRef,
 			Bootstrap: clusterv1.Bootstrap{
 				ConfigRef: bootstrapRef,
 			},
 			FailureDomain:    failureDomain,
-			NodeDrainTimeout: kcp.Spec.MachineTemplate.NodeDrainTimeout,
+			NodeDrainTimeout: ocnecp.Spec.MachineTemplate.NodeDrainTimeout,
 		},
 	}
-	if kcp.Spec.MachineTemplate.NodeDeletionTimeout != nil {
-		machine.Spec.NodeDeletionTimeout = kcp.Spec.MachineTemplate.NodeDeletionTimeout
+	if ocnecp.Spec.MachineTemplate.NodeDeletionTimeout != nil {
+		machine.Spec.NodeDeletionTimeout = ocnecp.Spec.MachineTemplate.NodeDeletionTimeout
 	}
 
 	// Machine's bootstrap config may be missing ClusterConfiguration if it is not the first machine in the control plane.
 	// We store ClusterConfiguration as annotation here to detect any changes in KCP ClusterConfiguration and rollout the machine if any.
-	clusterConfig, err := json.Marshal(kcp.Spec.OcneConfigSpec.ClusterConfiguration)
+	clusterConfig, err := json.Marshal(ocnecp.Spec.OcneConfigSpec.ClusterConfiguration)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal cluster configuration")
 	}
 
 	// Add the annotations from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Annotations {
+	for k, v := range ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations {
 		machine.Annotations[k] = v
 	}
 	machine.Annotations[controlplanev1.OcneClusterConfigurationAnnotation] = string(clusterConfig)

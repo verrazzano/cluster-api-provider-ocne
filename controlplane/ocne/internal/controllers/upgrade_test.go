@@ -40,18 +40,18 @@ import (
 const UpdatedVersion string = "v1.17.4"
 const Host string = "nodomain.example.com"
 
-func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
+func TestOCNEControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	g := NewWithT(t)
 
-	cluster, kcp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
+	cluster, ocnecp, genericMachineTemplate := createClusterWithControlPlane(metav1.NamespaceDefault)
 	cluster.Spec.ControlPlaneEndpoint.Host = Host
 	cluster.Spec.ControlPlaneEndpoint.Port = 6443
 	cluster.Status.InfrastructureReady = true
-	kcp.Spec.OcneConfigSpec.ClusterConfiguration = nil
-	kcp.Spec.Replicas = pointer.Int32(1)
-	setKCPHealthy(kcp)
+	ocnecp.Spec.OcneConfigSpec.ClusterConfiguration = nil
+	ocnecp.Spec.Replicas = pointer.Int32(1)
+	setKCPHealthy(ocnecp)
 
-	fakeClient := newFakeClient(fakeGenericMachineTemplateCRD, cluster.DeepCopy(), kcp.DeepCopy(), genericMachineTemplate.DeepCopy())
+	fakeClient := newFakeClient(fakeGenericMachineTemplateCRD, cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
 	r := &OcneControlPlaneReconciler{
 		Client:    fakeClient,
@@ -71,12 +71,12 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 		},
 	}
 	controlPlane := &internal.ControlPlane{
-		KCP:      kcp,
+		KCP:      ocnecp,
 		Cluster:  cluster,
 		Machines: nil,
 	}
 
-	result, err := r.initializeControlPlane(ctx, cluster, kcp, controlPlane)
+	result, err := r.initializeControlPlane(ctx, cluster, ocnecp, controlPlane)
 	g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -89,12 +89,12 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	}
 
 	// change the KCP spec so the machine becomes outdated
-	kcp.Spec.Version = UpdatedVersion
+	ocnecp.Spec.Version = UpdatedVersion
 
 	// run upgrade the first time, expect we scale up
 	needingUpgrade := collections.FromMachineList(initialMachine)
 	controlPlane.Machines = needingUpgrade
-	result, err = r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, needingUpgrade)
+	result, err = r.upgradeControlPlane(ctx, cluster, ocnecp, controlPlane, needingUpgrade)
 	g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 	g.Expect(err).To(BeNil())
 	bothMachines := &clusterv1.MachineList{}
@@ -104,7 +104,7 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	// run upgrade a second time, simulate that the node has not appeared yet but the machine exists
 
 	// Unhealthy control plane will be detected during reconcile loop and upgrade will never be called.
-	result, err = r.reconcile(context.Background(), cluster, kcp)
+	result, err = r.reconcile(context.Background(), cluster, ocnecp)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: preflightFailedRequeueAfter}))
 	g.Expect(fakeClient.List(context.Background(), bothMachines, client.InNamespace(cluster.Namespace))).To(Succeed())
@@ -118,7 +118,7 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	controlPlane.Machines = collections.FromMachineList(bothMachines)
 
 	// run upgrade the second time, expect we scale down
-	result, err = r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, controlPlane.Machines)
+	result, err = r.upgradeControlPlane(ctx, cluster, ocnecp, controlPlane, controlPlane.Machines)
 	g.Expect(err).To(BeNil())
 	g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 	finalMachine := &clusterv1.MachineList{}
@@ -130,16 +130,16 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	g.Expect(finalMachine.Items[0].CreationTimestamp.Time).To(BeTemporally(">", initialMachine.Items[0].CreationTimestamp.Time))
 }
 
-func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
+func TestOCNEControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
 	version := "v1.17.3"
 	g := NewWithT(t)
 
-	cluster, kcp, tmpl := createClusterWithControlPlane(metav1.NamespaceDefault)
+	cluster, ocnecp, tmpl := createClusterWithControlPlane(metav1.NamespaceDefault)
 	cluster.Spec.ControlPlaneEndpoint.Host = "nodomain.example.com1"
 	cluster.Spec.ControlPlaneEndpoint.Port = 6443
-	kcp.Spec.Replicas = pointer.Int32(3)
-	kcp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal = 0
-	setKCPHealthy(kcp)
+	ocnecp.Spec.Replicas = pointer.Int32(3)
+	ocnecp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal = 0
+	setKCPHealthy(ocnecp)
 
 	fmc := &fakeManagementCluster{
 		Machines: collections.Machines{},
@@ -147,27 +147,27 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
 			Status: internal.ClusterStatus{Nodes: 3},
 		},
 	}
-	objs := []client.Object{fakeGenericMachineTemplateCRD, cluster.DeepCopy(), kcp.DeepCopy(), tmpl.DeepCopy()}
+	objs := []client.Object{fakeGenericMachineTemplateCRD, cluster.DeepCopy(), ocnecp.DeepCopy(), tmpl.DeepCopy()}
 	for i := 0; i < 3; i++ {
 		name := fmt.Sprintf("test-%d", i)
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: cluster.Namespace,
 				Name:      name,
-				Labels:    internal.ControlPlaneMachineLabelsForCluster(kcp, cluster.Name),
+				Labels:    internal.ControlPlaneMachineLabelsForCluster(ocnecp, cluster.Name),
 			},
 			Spec: clusterv1.MachineSpec{
 				Bootstrap: clusterv1.Bootstrap{
 					ConfigRef: &corev1.ObjectReference{
 						APIVersion: bootstrapv1.GroupVersion.String(),
-						Kind:       "OcneConfig",
+						Kind:       "OCNEConfig",
 						Name:       name,
 					},
 				},
 				Version: &version,
 			},
 		}
-		cfg := &bootstrapv1.OcneConfig{
+		cfg := &bootstrapv1.OCNEConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: cluster.Namespace,
 				Name:      name,
@@ -186,12 +186,12 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
 	}
 
 	controlPlane := &internal.ControlPlane{
-		KCP:      kcp,
+		KCP:      ocnecp,
 		Cluster:  cluster,
 		Machines: nil,
 	}
 
-	result, err := r.reconcile(ctx, cluster, kcp)
+	result, err := r.reconcile(ctx, cluster, ocnecp)
 	g.Expect(result).To(Equal(ctrl.Result{}))
 	g.Expect(err).NotTo(HaveOccurred())
 
@@ -203,12 +203,12 @@ func TestKubeadmControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
 	}
 
 	// change the KCP spec so the machine becomes outdated
-	kcp.Spec.Version = UpdatedVersion
+	ocnecp.Spec.Version = UpdatedVersion
 
 	// run upgrade, expect we scale down
 	needingUpgrade := collections.FromMachineList(machineList)
 	controlPlane.Machines = needingUpgrade
-	result, err = r.upgradeControlPlane(ctx, cluster, kcp, controlPlane, needingUpgrade)
+	result, err = r.upgradeControlPlane(ctx, cluster, ocnecp, controlPlane, needingUpgrade)
 	g.Expect(result).To(Equal(ctrl.Result{Requeue: true}))
 	g.Expect(err).To(BeNil())
 	remainingMachines := &clusterv1.MachineList{}

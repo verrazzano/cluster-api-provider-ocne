@@ -29,8 +29,8 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/test/builder"
 )
 
-func TestKubeadmConfigReconciler(t *testing.T) {
-	t.Run("Reconcile a OcneConfig", func(t *testing.T) {
+func TestOCNEConfigReconciler(t *testing.T) {
+	t.Run("Reconcile a OCNEConfig", func(t *testing.T) {
 		t.Run("should wait until infrastructure is ready", func(t *testing.T) {
 			g := NewWithT(t)
 
@@ -64,13 +64,13 @@ func TestKubeadmConfigReconciler(t *testing.T) {
 	})
 }
 
-// getKubeadmConfig returns a OcneConfig object from the cluster.
-func getKubeadmConfig(c client.Client, name, namespace string) (*bootstrapv1.OcneConfig, error) {
+// getKubeadmConfig returns a OCNEConfig object from the cluster.
+func getKubeadmConfig(c client.Client, name, namespace string) (*bootstrapv1.OCNEConfig, error) {
 	controlplaneConfigKey := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
-	config := &bootstrapv1.OcneConfig{}
+	config := &bootstrapv1.OCNEConfig{}
 	err := c.Get(ctx, controlplaneConfigKey, config)
 	return config, err
 }

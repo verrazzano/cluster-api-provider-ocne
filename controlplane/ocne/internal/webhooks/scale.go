@@ -57,10 +57,10 @@ func (v *ScaleValidator) Handle(ctx context.Context, req admission.Request) admi
 		return admission.Errored(http.StatusBadRequest, errors.Wrapf(err, "failed to decode Scale resource"))
 	}
 
-	kcp := &controlplanev1.OcneControlPlane{}
-	kcpKey := types.NamespacedName{Namespace: scale.ObjectMeta.Namespace, Name: scale.ObjectMeta.Name}
-	if err = v.Client.Get(ctx, kcpKey, kcp); err != nil {
-		return admission.Errored(http.StatusInternalServerError, errors.Wrapf(err, "failed to get OcneControlPlane %s/%s", scale.ObjectMeta.Namespace, scale.ObjectMeta.Name))
+	ocnecp := &controlplanev1.OCNEControlPlane{}
+	ocnecpKey := types.NamespacedName{Namespace: scale.ObjectMeta.Namespace, Name: scale.ObjectMeta.Name}
+	if err = v.Client.Get(ctx, ocnecpKey, ocnecp); err != nil {
+		return admission.Errored(http.StatusInternalServerError, errors.Wrapf(err, "failed to get OCNEControlPlane %s/%s", scale.ObjectMeta.Namespace, scale.ObjectMeta.Name))
 	}
 
 	if scale.Spec.Replicas == 0 {
@@ -68,8 +68,8 @@ func (v *ScaleValidator) Handle(ctx context.Context, req admission.Request) admi
 	}
 
 	externalEtcd := false
-	if kcp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
-		if kcp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External != nil {
+	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
+		if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External != nil {
 			externalEtcd = true
 		}
 	}

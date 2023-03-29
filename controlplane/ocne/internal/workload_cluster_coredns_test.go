@@ -38,9 +38,9 @@ import (
 )
 
 func TestUpdateCoreDNS(t *testing.T) {
-	validKCP := &controlplanev1.OcneControlPlane{
+	validKCP := &controlplanev1.OCNEControlPlane{
 		Spec: controlplanev1.OcneControlPlaneSpec{
-			OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 					DNS: bootstrapv1.DNS{
 						ImageMeta: bootstrapv1.ImageMeta{
@@ -170,7 +170,7 @@ func TestUpdateCoreDNS(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		kcp           *controlplanev1.OcneControlPlane
+		ocnecp        *controlplanev1.OCNEControlPlane
 		migrator      coreDNSMigrator
 		semver        semver.Version
 		objs          []client.Object
@@ -181,14 +181,14 @@ func TestUpdateCoreDNS(t *testing.T) {
 	}{
 		{
 			name: "returns early without error if skip core dns annotation is present",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						controlplanev1.SkipCoreDNSAnnotation: "",
 					},
 				},
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{},
 						},
@@ -201,9 +201,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "returns early without error if KCP ClusterConfiguration is nil",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{},
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{},
 				},
 			},
 			semver:    semver1191,
@@ -212,29 +212,29 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name:      "returns early without error if CoreDNS info is not found",
-			kcp:       validKCP,
+			ocnecp:    validKCP,
 			semver:    semver1191,
 			expectErr: false,
 		},
 		{
 			name:      "returns error if there was a problem retrieving CoreDNS info",
-			kcp:       validKCP,
+			ocnecp:    validKCP,
 			semver:    semver1191,
 			objs:      []client.Object{badCM},
 			expectErr: true,
 		},
 		{
 			name:      "returns early without error if CoreDNS fromImage == ToImage",
-			kcp:       validKCP,
+			ocnecp:    validKCP,
 			semver:    semver1191,
 			objs:      []client.Object{depl, cm},
 			expectErr: false,
 		},
 		{
 			name: "returns error if validation of CoreDNS image tag fails",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -254,9 +254,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "returns error if unable to update CoreDNS image info in kubeadm config map",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -276,9 +276,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "returns error if unable to update CoreDNS corefile",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -300,9 +300,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "updates everything successfully",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -326,9 +326,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "updates everything successfully to v1.8.0 with a custom repo should not change the image name",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -352,9 +352,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "kubeadm defaults, upgrade from Kubernetes v1.18.x to v1.19.y (from k8s.gcr.io/coredns:1.6.7 to k8s.gcr.io/coredns:1.7.0)",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -377,9 +377,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "kubeadm defaults, upgrade from Kubernetes v1.19.x to v1.20.y (stay on k8s.gcr.io/coredns:1.7.0)",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -401,9 +401,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "kubeadm defaults, upgrade from Kubernetes v1.20.x to v1.21.y (from k8s.gcr.io/coredns:1.7.0 to k8s.gcr.io/coredns/coredns:v1.8.0)",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -426,9 +426,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "kubeadm defaults, upgrade from Kubernetes v1.21.x to v1.22.y (stay on k8s.gcr.io/coredns/coredns:v1.8.0)",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -451,9 +451,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "upgrade from Kubernetes v1.21.x to v1.22.y and update cluster role",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -477,9 +477,9 @@ func TestUpdateCoreDNS(t *testing.T) {
 		},
 		{
 			name: "returns early without error if kubernetes version is >= v1.23",
-			kcp: &controlplanev1.OcneControlPlane{
+			ocnecp: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							DNS: bootstrapv1.DNS{
 								ImageMeta: bootstrapv1.ImageMeta{
@@ -519,7 +519,7 @@ func TestUpdateCoreDNS(t *testing.T) {
 				Client:          env.GetClient(),
 				CoreDNSMigrator: tt.migrator,
 			}
-			err := w.UpdateCoreDNS(ctx, tt.kcp, tt.semver)
+			err := w.UpdateCoreDNS(ctx, tt.ocnecp, tt.semver)
 
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
@@ -533,8 +533,8 @@ func TestUpdateCoreDNS(t *testing.T) {
 				g.Eventually(func(g Gomega) error {
 					var expectedKubeadmConfigMap corev1.ConfigMap
 					g.Expect(env.Get(ctx, client.ObjectKey{Name: ocneConfigKey, Namespace: metav1.NamespaceSystem}, &expectedKubeadmConfigMap)).To(Succeed())
-					g.Expect(expectedKubeadmConfigMap.Data).To(HaveKeyWithValue("ClusterConfiguration", ContainSubstring(tt.kcp.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag)))
-					g.Expect(expectedKubeadmConfigMap.Data).To(HaveKeyWithValue("ClusterConfiguration", ContainSubstring(tt.kcp.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageRepository)))
+					g.Expect(expectedKubeadmConfigMap.Data).To(HaveKeyWithValue("ClusterConfiguration", ContainSubstring(tt.ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag)))
+					g.Expect(expectedKubeadmConfigMap.Data).To(HaveKeyWithValue("ClusterConfiguration", ContainSubstring(tt.ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageRepository)))
 					return nil
 				}, "5s").Should(Succeed())
 

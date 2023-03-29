@@ -35,8 +35,8 @@ func TestNewInitControlPlaneAdditionalFileEncodings(t *testing.T) {
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
-			PreOcneCommands:  nil,
-			PostOcneCommands: nil,
+			PreOCNECommands:  nil,
+			PostOCNECommands: nil,
 			AdditionalFiles: []bootstrapv1.File{
 				{
 					Path:     "/tmp/my-path",
@@ -96,8 +96,8 @@ func TestNewInitControlPlaneCommands(t *testing.T) {
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
-			PreOcneCommands:  []string{`"echo $(date) ': hello world!'"`},
-			PostOcneCommands: []string{"echo $(date) ': hello world!'"},
+			PreOCNECommands:  []string{`"echo $(date) ': hello world!'"`},
+			PostOCNECommands: []string{"echo $(date) ': hello world!'"},
 			AdditionalFiles:  nil,
 			WriteFiles:       nil,
 			Users:            nil,
@@ -133,8 +133,8 @@ func TestNewInitControlPlaneDiskMounts(t *testing.T) {
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
-			PreOcneCommands:  nil,
-			PostOcneCommands: nil,
+			PreOCNECommands:  nil,
+			PostOCNECommands: nil,
 			WriteFiles:       nil,
 			Users:            nil,
 			NTP:              nil,
@@ -196,8 +196,8 @@ func TestNewJoinControlPlaneAdditionalFileEncodings(t *testing.T) {
 	cpinput := &ControlPlaneJoinInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
-			PreOcneCommands:  nil,
-			PostOcneCommands: nil,
+			PreOCNECommands:  nil,
+			PostOCNECommands: nil,
 			AdditionalFiles: []bootstrapv1.File{
 				{
 					Path:     "/tmp/my-path",
@@ -248,8 +248,8 @@ func TestNewJoinControlPlaneExperimentalRetry(t *testing.T) {
 	cpinput := &ControlPlaneJoinInput{
 		BaseUserData: BaseUserData{
 			Header:               "test",
-			PreOcneCommands:      nil,
-			PostOcneCommands:     nil,
+			PreOCNECommands:      nil,
+			PostOCNECommands:     nil,
 			UseExperimentalRetry: true,
 			WriteFiles:           nil,
 			Users:                nil,

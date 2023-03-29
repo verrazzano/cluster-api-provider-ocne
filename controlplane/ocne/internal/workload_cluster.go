@@ -63,7 +63,7 @@ const (
 	ocneAPIServerCertCommonName  = "kube-apiserver"
 	kubeletConfigKey             = "kubelet"
 	cgroupDriverKey              = "cgroupDriver"
-	labelNodeRoleOldControlPlane = "node-role.kubernetes.io/master" // Deprecated: https://github.com/kubernetes/ocne/issues/2200
+	labelNodeRoleOldControlPlane = "node-role.kubernetes.io/master" // Deprecated: https://github.com/kubernetes/kubeadm/issues/2200
 	labelNodeRoleControlPlane    = "node-role.kubernetes.io/control-plane"
 	clusterStatusKey             = "ClusterStatus"
 	clusterConfigurationKey      = "ClusterConfiguration"
@@ -102,7 +102,7 @@ type WorkloadCluster interface {
 	UpdateStaticPodConditions(ctx context.Context, controlPlane *ControlPlane)
 	UpdateEtcdConditions(ctx context.Context, controlPlane *ControlPlane)
 	EtcdMembers(ctx context.Context) ([]string, error)
-	GetAPIServerCertificateExpiry(ctx context.Context, ocneConfig *bootstrapv1.OcneConfig, nodeName string) (*time.Time, error)
+	GetAPIServerCertificateExpiry(ctx context.Context, ocneConfig *bootstrapv1.OCNEConfig, nodeName string) (*time.Time, error)
 
 	// Upgrade related tasks.
 	ReconcileKubeletRBACBinding(ctx context.Context, version semver.Version) error
@@ -115,8 +115,8 @@ type WorkloadCluster interface {
 	UpdateControllerManagerInOcneConfigMap(ctx context.Context, controllerManager bootstrapv1.ControlPlaneComponent, version semver.Version) error
 	UpdateSchedulerInOcneConfigMap(ctx context.Context, scheduler bootstrapv1.ControlPlaneComponent, version semver.Version) error
 	UpdateKubeletConfigMap(ctx context.Context, version semver.Version) error
-	UpdateKubeProxyImageInfo(ctx context.Context, kcp *controlplanev1.OcneControlPlane, version semver.Version) error
-	UpdateCoreDNS(ctx context.Context, kcp *controlplanev1.OcneControlPlane, version semver.Version) error
+	UpdateKubeProxyImageInfo(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error
+	UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error
 	RemoveEtcdMemberForMachine(ctx context.Context, machine *clusterv1.Machine) error
 	RemoveMachineFromOcneConfigMap(ctx context.Context, machine *clusterv1.Machine, version semver.Version) error
 	RemoveNodeFromOcneConfigMap(ctx context.Context, nodeName string, version semver.Version) error
@@ -431,7 +431,7 @@ func (w *Workload) ClusterStatus(ctx context.Context) (ClusterStatus, error) {
 }
 
 // GetAPIServerCertificateExpiry returns the certificate expiry of the apiserver on the given node.
-func (w *Workload) GetAPIServerCertificateExpiry(ctx context.Context, ocneConfig *bootstrapv1.OcneConfig, nodeName string) (*time.Time, error) {
+func (w *Workload) GetAPIServerCertificateExpiry(ctx context.Context, ocneConfig *bootstrapv1.OCNEConfig, nodeName string) (*time.Time, error) {
 	// Create a proxy.
 	p := proxy.Proxy{
 		Kind:       "pods",
@@ -475,8 +475,8 @@ func (w *Workload) GetAPIServerCertificateExpiry(ctx context.Context, ocneConfig
 }
 
 // calculateAPIServerPort calculates the kube-apiserver bind port based
-// on a OcneConfig.
-func calculateAPIServerPort(config *bootstrapv1.OcneConfig) int32 {
+// on a OCNEConfig.
+func calculateAPIServerPort(config *bootstrapv1.OCNEConfig) int32 {
 	if config.Spec.InitConfiguration != nil &&
 		config.Spec.InitConfiguration.LocalAPIEndpoint.BindPort != 0 {
 		return config.Spec.InitConfiguration.LocalAPIEndpoint.BindPort
@@ -544,9 +544,9 @@ func staticPodName(component, nodeName string) string {
 }
 
 // UpdateKubeProxyImageInfo updates kube-proxy image in the kube-proxy DaemonSet.
-func (w *Workload) UpdateKubeProxyImageInfo(ctx context.Context, kcp *controlplanev1.OcneControlPlane, version semver.Version) error {
+func (w *Workload) UpdateKubeProxyImageInfo(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error {
 	// Return early if we've been asked to skip kube-proxy upgrades entirely.
-	if _, ok := kcp.Annotations[controlplanev1.SkipKubeProxyAnnotation]; ok {
+	if _, ok := ocnecp.Annotations[controlplanev1.SkipKubeProxyAnnotation]; ok {
 		return nil
 	}
 
@@ -565,13 +565,13 @@ func (w *Workload) UpdateKubeProxyImageInfo(ctx context.Context, kcp *controlpla
 		return nil
 	}
 
-	newImageName, err := containerutil.ModifyImageTag(container.Image, kcp.Spec.Version)
+	newImageName, err := containerutil.ModifyImageTag(container.Image, ocnecp.Spec.Version)
 	if err != nil {
 		return err
 	}
 
 	// Modify the image repository if a value was explicitly set or an upgrade is required.
-	imageRepository := ImageRepositoryFromClusterConfig(kcp.Spec.OcneConfigSpec.ClusterConfiguration, version)
+	imageRepository := ImageRepositoryFromClusterConfig(ocnecp.Spec.OcneConfigSpec.ClusterConfiguration, version)
 	if imageRepository != "" {
 		newImageName, err = containerutil.ModifyImageRepository(newImageName, imageRepository)
 		if err != nil {

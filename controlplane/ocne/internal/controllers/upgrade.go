@@ -36,13 +36,13 @@ import (
 func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 	ctx context.Context,
 	cluster *clusterv1.Cluster,
-	kcp *controlplanev1.OcneControlPlane,
+	ocnecp *controlplanev1.OCNEControlPlane,
 	controlPlane *internal.ControlPlane,
 	machinesRequireUpgrade collections.Machines,
 ) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if kcp.Spec.RolloutStrategy == nil || kcp.Spec.RolloutStrategy.RollingUpdate == nil {
+	if ocnecp.Spec.RolloutStrategy == nil || ocnecp.Spec.RolloutStrategy.RollingUpdate == nil {
 		return ctrl.Result{}, errors.New("rolloutStrategy is not set")
 	}
 
@@ -54,9 +54,9 @@ func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 		return ctrl.Result{}, err
 	}
 
-	parsedVersion, err := semver.ParseTolerant(kcp.Spec.Version)
+	parsedVersion, err := semver.ParseTolerant(ocnecp.Spec.Version)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kcp.Spec.Version)
+		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 	}
 
 	if err := workloadCluster.ReconcileKubeletRBACRole(ctx, parsedVersion); err != nil {
@@ -77,43 +77,43 @@ func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 		return ctrl.Result{}, errors.Wrap(err, "failed to update the kubernetes version in the kubeadm config map")
 	}
 
-	if kcp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
+	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
 		// We intentionally only parse major/minor/patch so that the subsequent code
 		// also already applies to beta versions of new releases.
-		parsedVersionTolerant, err := version.ParseMajorMinorPatchTolerant(kcp.Spec.Version)
+		parsedVersionTolerant, err := version.ParseMajorMinorPatchTolerant(ocnecp.Spec.Version)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kcp.Spec.Version)
+			return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 		}
 		// Get the imageRepository or the correct value if nothing is set and a migration is necessary.
-		imageRepository := internal.ImageRepositoryFromClusterConfig(kcp.Spec.OcneConfigSpec.ClusterConfiguration, parsedVersionTolerant)
+		imageRepository := internal.ImageRepositoryFromClusterConfig(ocnecp.Spec.OcneConfigSpec.ClusterConfiguration, parsedVersionTolerant)
 
 		if err := workloadCluster.UpdateImageRepositoryInOcneConfigMap(ctx, imageRepository, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the image repository in the kubeadm config map")
 		}
 	}
 
-	if kcp.Spec.OcneConfigSpec.ClusterConfiguration != nil && kcp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local != nil {
-		meta := kcp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
+	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil && ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local != nil {
+		meta := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
 		if err := workloadCluster.UpdateEtcdVersionInOcneConfigMap(ctx, meta.ImageRepository, meta.ImageTag, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the etcd version in the kubeadm config map")
 		}
 
-		extraArgs := kcp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ExtraArgs
+		extraArgs := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ExtraArgs
 		if err := workloadCluster.UpdateEtcdExtraArgsInOcneConfigMap(ctx, extraArgs, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the etcd extra args in the kubeadm config map")
 		}
 	}
 
-	if kcp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
-		if err := workloadCluster.UpdateAPIServerInOcneConfigMap(ctx, kcp.Spec.OcneConfigSpec.ClusterConfiguration.APIServer, parsedVersion); err != nil {
+	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
+		if err := workloadCluster.UpdateAPIServerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.APIServer, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update api server in the kubeadm config map")
 		}
 
-		if err := workloadCluster.UpdateControllerManagerInOcneConfigMap(ctx, kcp.Spec.OcneConfigSpec.ClusterConfiguration.ControllerManager, parsedVersion); err != nil {
+		if err := workloadCluster.UpdateControllerManagerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.ControllerManager, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update controller manager in the kubeadm config map")
 		}
 
-		if err := workloadCluster.UpdateSchedulerInOcneConfigMap(ctx, kcp.Spec.OcneConfigSpec.ClusterConfiguration.Scheduler, parsedVersion); err != nil {
+		if err := workloadCluster.UpdateSchedulerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Scheduler, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update scheduler in the kubeadm config map")
 		}
 	}
@@ -122,16 +122,16 @@ func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 		return ctrl.Result{}, errors.Wrap(err, "failed to upgrade kubelet config map")
 	}
 
-	switch kcp.Spec.RolloutStrategy.Type {
+	switch ocnecp.Spec.RolloutStrategy.Type {
 	case controlplanev1.RollingUpdateStrategyType:
 		// RolloutStrategy is currently defaulted and validated to be RollingUpdate
 		// We can ignore MaxUnavailable because we are enforcing health checks before we get here.
-		maxNodes := *kcp.Spec.Replicas + int32(kcp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntValue())
+		maxNodes := *ocnecp.Spec.Replicas + int32(ocnecp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntValue())
 		if int32(controlPlane.Machines.Len()) < maxNodes {
 			// scaleUp ensures that we don't continue scaling up while waiting for Machines to have NodeRefs
-			return r.scaleUpControlPlane(ctx, cluster, kcp, controlPlane)
+			return r.scaleUpControlPlane(ctx, cluster, ocnecp, controlPlane)
 		}
-		return r.scaleDownControlPlane(ctx, cluster, kcp, controlPlane, machinesRequireUpgrade)
+		return r.scaleDownControlPlane(ctx, cluster, ocnecp, controlPlane, machinesRequireUpgrade)
 	default:
 		logger.Info("RolloutStrategy type is not set to RollingUpdateStrategyType, unable to determine the strategy for rolling out machines")
 		return ctrl.Result{}, nil

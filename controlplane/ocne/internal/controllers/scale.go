@@ -38,12 +38,12 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
+func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// Perform an uncached read of all the owned machines. This check is in place to make sure
 	// that the controller cache is not misbehaving and we end up initializing the cluster more than once.
-	ownedMachines, err := r.managementClusterUncached.GetMachinesForCluster(ctx, cluster, collections.OwnedMachines(kcp))
+	ownedMachines, err := r.managementClusterUncached.GetMachinesForCluster(ctx, cluster, collections.OwnedMachines(ocnecp))
 	if err != nil {
 		logger.Error(err, "failed to perform an uncached read of control plane machines for cluster")
 		return ctrl.Result{}, err
@@ -57,9 +57,9 @@ func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context,
 
 	bootstrapSpec := controlPlane.InitialControlPlaneConfig()
 	fd := controlPlane.NextFailureDomainForScaleUp()
-	if err := r.cloneConfigsAndGenerateMachine(ctx, cluster, kcp, bootstrapSpec, fd); err != nil {
+	if err := r.cloneConfigsAndGenerateMachine(ctx, cluster, ocnecp, bootstrapSpec, fd); err != nil {
 		logger.Error(err, "Failed to create initial control plane Machine")
-		r.recorder.Eventf(kcp, corev1.EventTypeWarning, "FailedInitialization", "Failed to create initial control plane Machine for cluster %s/%s control plane: %v", cluster.Namespace, cluster.Name, err)
+		r.recorder.Eventf(ocnecp, corev1.EventTypeWarning, "FailedInitialization", "Failed to create initial control plane Machine for cluster %s/%s control plane: %v", cluster.Namespace, cluster.Name, err)
 		return ctrl.Result{}, err
 	}
 
@@ -67,7 +67,7 @@ func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context,
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
+func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// Run preflight checks to ensure that the control plane is stable before proceeding with a scale up/scale down operation; if not, wait.
@@ -78,9 +78,9 @@ func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cl
 	// Create the bootstrap configuration
 	bootstrapSpec := controlPlane.JoinControlPlaneConfig()
 	fd := controlPlane.NextFailureDomainForScaleUp()
-	if err := r.cloneConfigsAndGenerateMachine(ctx, cluster, kcp, bootstrapSpec, fd); err != nil {
+	if err := r.cloneConfigsAndGenerateMachine(ctx, cluster, ocnecp, bootstrapSpec, fd); err != nil {
 		logger.Error(err, "Failed to create additional control plane Machine")
-		r.recorder.Eventf(kcp, corev1.EventTypeWarning, "FailedScaleUp", "Failed to create additional control plane Machine for cluster %s/%s control plane: %v", cluster.Namespace, cluster.Name, err)
+		r.recorder.Eventf(ocnecp, corev1.EventTypeWarning, "FailedScaleUp", "Failed to create additional control plane Machine for cluster %s/%s control plane: %v", cluster.Namespace, cluster.Name, err)
 		return ctrl.Result{}, err
 	}
 
@@ -91,7 +91,7 @@ func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cl
 func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
 	ctx context.Context,
 	cluster *clusterv1.Cluster,
-	kcp *controlplanev1.OcneControlPlane,
+	ocnecp *controlplanev1.OCNEControlPlane,
 	controlPlane *internal.ControlPlane,
 	outdatedMachines collections.Machines,
 ) (ctrl.Result, error) {
@@ -133,9 +133,9 @@ func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
 		}
 	}
 
-	parsedVersion, err := semver.ParseTolerant(kcp.Spec.Version)
+	parsedVersion, err := semver.ParseTolerant(ocnecp.Spec.Version)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kcp.Spec.Version)
+		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 	}
 
 	if err := workloadCluster.RemoveMachineFromOcneConfigMap(ctx, machineToDelete, parsedVersion); err != nil {
@@ -146,7 +146,7 @@ func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
 	logger = logger.WithValues("Machine", klog.KObj(machineToDelete))
 	if err := r.Client.Delete(ctx, machineToDelete); err != nil && !apierrors.IsNotFound(err) {
 		logger.Error(err, "Failed to delete control plane machine")
-		r.recorder.Eventf(kcp, corev1.EventTypeWarning, "FailedScaleDown",
+		r.recorder.Eventf(ocnecp, corev1.EventTypeWarning, "FailedScaleDown",
 			"Failed to delete control plane Machine %s for cluster %s/%s control plane: %v", machineToDelete.Name, cluster.Namespace, cluster.Name, err)
 		return ctrl.Result{}, err
 	}

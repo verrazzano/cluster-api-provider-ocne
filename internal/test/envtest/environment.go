@@ -267,13 +267,13 @@ func newEnvironment(uncachedObjs ...client.Object) *Environment {
 	if err := (&clusterv1.MachineDeployment{}).SetupWebhookWithManager(mgr); err != nil {
 		klog.Fatalf("unable to create webhook: %+v", err)
 	}
-	if err := (&bootstrapv1.OcneConfig{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&bootstrapv1.OCNEConfig{}).SetupWebhookWithManager(mgr); err != nil {
 		klog.Fatalf("unable to create webhook: %+v", err)
 	}
-	if err := (&bootstrapv1.OcneConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&bootstrapv1.OCNEConfigTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		klog.Fatalf("unable to create webhook: %+v", err)
 	}
-	if err := (&controlplanev1.OcneControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&controlplanev1.OCNEControlPlane{}).SetupWebhookWithManager(mgr); err != nil {
 		klog.Fatalf("unable to create webhook: %+v", err)
 	}
 	if err := (&addonsv1.ClusterResourceSet{}).SetupWebhookWithManager(mgr); err != nil {

@@ -30,30 +30,30 @@ import (
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
 )
 
-func TestKubeadmConfigDefault(t *testing.T) {
+func TestOCNEConfigDefault(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
 
 	g := NewWithT(t)
 
-	kubeadmConfig := &OcneConfig{
+	kubeadmConfig := &OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
-		Spec: OcneConfigSpec{},
+		Spec: OCNEConfigSpec{},
 	}
 	updateDefaultingKubeadmConfig := kubeadmConfig.DeepCopy()
 	updateDefaultingKubeadmConfig.Spec.Verbosity = pointer.Int32(4)
-	t.Run("for OcneConfig", utildefaulting.DefaultValidateTest(updateDefaultingKubeadmConfig))
+	t.Run("for OCNEConfig", utildefaulting.DefaultValidateTest(updateDefaultingKubeadmConfig))
 
 	kubeadmConfig.Default()
 
 	g.Expect(kubeadmConfig.Spec.Format).To(Equal(CloudConfig))
 
-	ignitionKubeadmConfig := &OcneConfig{
+	ignitionKubeadmConfig := &OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
-		Spec: OcneConfigSpec{
+		Spec: OCNEConfigSpec{
 			Format: Ignition,
 		},
 	}
@@ -61,19 +61,19 @@ func TestKubeadmConfigDefault(t *testing.T) {
 	g.Expect(ignitionKubeadmConfig.Spec.Format).To(Equal(Ignition))
 }
 
-func TestKubeadmConfigValidate(t *testing.T) {
+func TestOCNEConfigValidate(t *testing.T) {
 	cases := map[string]struct {
-		in                    *OcneConfig
+		in                    *OCNEConfig
 		enableIgnitionFeature bool
 		expectErr             bool
 	}{
 		"valid content": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							Content: "foo",
@@ -83,12 +83,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			},
 		},
 		"valid contentFrom": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							ContentFrom: &FileSource{
@@ -103,12 +103,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			},
 		},
 		"invalid content and contentFrom": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							ContentFrom: &FileSource{},
@@ -120,12 +120,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"invalid contentFrom without name": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							ContentFrom: &FileSource{
@@ -141,12 +141,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"invalid contentFrom without key": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							ContentFrom: &FileSource{
@@ -162,12 +162,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"invalid with duplicate file path": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Files: []File{
 						{
 							Content: "foo",
@@ -181,12 +181,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"valid passwd": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Users: []User{
 						{
 							Passwd: pointer.String("foo"),
@@ -196,12 +196,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			},
 		},
 		"valid passwdFrom": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Users: []User{
 						{
 							PasswdFrom: &PasswdSource{
@@ -216,12 +216,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			},
 		},
 		"invalid passwd and passwdFrom": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Users: []User{
 						{
 							PasswdFrom: &PasswdSource{},
@@ -233,12 +233,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"invalid passwdFrom without name": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Users: []User{
 						{
 							PasswdFrom: &PasswdSource{
@@ -254,12 +254,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"invalid passwdFrom without key": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: metav1.NamespaceDefault,
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Users: []User{
 						{
 							PasswdFrom: &PasswdSource{
@@ -276,12 +276,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"Ignition field is set, format is not Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Ignition: &IgnitionSpec{},
 				},
 			},
@@ -289,24 +289,24 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"Ignition field is not set, format is Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 				},
 			},
 		},
 		"format is Ignition, user is inactive": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					Users: []User{
 						{
@@ -319,12 +319,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"format is Ignition, non-GPT partition configured": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					DiskSetup: &DiskSetup{
 						Partitions: []Partition{
@@ -339,12 +339,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"format is Ignition, experimental retry join is set": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format:                   Ignition,
 					UseExperimentalRetryJoin: true,
 				},
@@ -352,24 +352,24 @@ func TestKubeadmConfigValidate(t *testing.T) {
 			expectErr: true,
 		},
 		"feature gate disabled, format is Ignition": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 				},
 			},
 			expectErr: true,
 		},
 		"feature gate disabled, Ignition field is set": {
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					Ignition: &IgnitionSpec{
 						ContainerLinuxConfig: &ContainerLinuxConfig{},
@@ -380,12 +380,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"replaceFS specified with Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					DiskSetup: &DiskSetup{
 						Filesystems: []Filesystem{
@@ -400,12 +400,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"filesystem partition specified with Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					DiskSetup: &DiskSetup{
 						Filesystems: []Filesystem{
@@ -420,12 +420,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"file encoding gzip specified with Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					Files: []File{
 						{
@@ -438,12 +438,12 @@ func TestKubeadmConfigValidate(t *testing.T) {
 		},
 		"file encoding gzip+base64 specified with Ignition": {
 			enableIgnitionFeature: true,
-			in: &OcneConfig{
+			in: &OCNEConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "baz",
 					Namespace: "default",
 				},
-				Spec: OcneConfigSpec{
+				Spec: OCNEConfigSpec{
 					Format: Ignition,
 					Files: []File{
 						{

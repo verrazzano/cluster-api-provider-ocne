@@ -587,7 +587,7 @@ type Patches struct {
 	// The default "patchtype" is "strategic". "extension" must be either "json" or "yaml".
 	// "suffix" is an optional string that can be used to determine which patches are applied
 	// first alpha-numerically.
-	// These files can be written into the target directory via OcneConfig.Files which
+	// These files can be written into the target directory via OCNEConfig.Files which
 	// specifies additional files to be created on the machine, either with content inline or
 	// by referencing a secret.
 	// +optional

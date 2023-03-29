@@ -43,7 +43,7 @@ import (
 // It should never need to connect to a service, that responsibility lies outside of this struct.
 // Going forward we should be trying to add more logic to here and reduce the amount of logic in the reconciler.
 type ControlPlane struct {
-	KCP                  *controlplanev1.OcneControlPlane
+	KCP                  *controlplanev1.OCNEControlPlane
 	Cluster              *clusterv1.Cluster
 	Machines             collections.Machines
 	machinesPatchHelpers map[string]*patch.Helper
@@ -53,12 +53,12 @@ type ControlPlane struct {
 
 	// TODO: we should see if we can combine these with the Machine objects so we don't have all these separate lookups
 	// See discussion on https://github.com/kubernetes-sigs/cluster-api/pull/3405
-	ocneConfigs    map[string]*bootstrapv1.OcneConfig
+	ocneConfigs    map[string]*bootstrapv1.OCNEConfig
 	infraResources map[string]*unstructured.Unstructured
 }
 
 // NewControlPlane returns an instantiated ControlPlane.
-func NewControlPlane(ctx context.Context, client client.Client, cluster *clusterv1.Cluster, kcp *controlplanev1.OcneControlPlane, ownedMachines collections.Machines) (*ControlPlane, error) {
+func NewControlPlane(ctx context.Context, client client.Client, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, ownedMachines collections.Machines) (*ControlPlane, error) {
 	infraObjects, err := getInfraResources(ctx, client, ownedMachines)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func NewControlPlane(ctx context.Context, client client.Client, cluster *cluster
 	}
 
 	return &ControlPlane{
-		KCP:                  kcp,
+		KCP:                  ocnecp,
 		Cluster:              cluster,
 		Machines:             ownedMachines,
 		machinesPatchHelpers: patchHelpers,
@@ -95,21 +95,21 @@ func (c *ControlPlane) FailureDomains() clusterv1.FailureDomains {
 	return c.Cluster.Status.FailureDomains
 }
 
-// Version returns the OcneControlPlane's version.
+// Version returns the OCNEControlPlane's version.
 func (c *ControlPlane) Version() *string {
 	return &c.KCP.Spec.Version
 }
 
-// MachineInfrastructureTemplateRef returns the OcneControlPlane's infrastructure template for Machines.
+// MachineInfrastructureTemplateRef returns the OCNEControlPlane's infrastructure template for Machines.
 func (c *ControlPlane) MachineInfrastructureTemplateRef() *corev1.ObjectReference {
 	return &c.KCP.Spec.MachineTemplate.InfrastructureRef
 }
 
-// AsOwnerReference returns an owner reference to the OcneControlPlane.
+// AsOwnerReference returns an owner reference to the OCNEControlPlane.
 func (c *ControlPlane) AsOwnerReference() *metav1.OwnerReference {
 	return &metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
-		Kind:       "OcneControlPlane",
+		Kind:       "OCNEControlPlane",
 		Name:       c.KCP.Name,
 		UID:        c.KCP.UID,
 	}
@@ -167,15 +167,15 @@ func (c *ControlPlane) NextFailureDomainForScaleUp() *string {
 	return failuredomains.PickFewest(c.FailureDomains().FilterControlPlane(), c.UpToDateMachines())
 }
 
-// InitialControlPlaneConfig returns a new OcneConfigSpec that is to be used for an initializing control plane.
-func (c *ControlPlane) InitialControlPlaneConfig() *bootstrapv1.OcneConfigSpec {
+// InitialControlPlaneConfig returns a new OCNEConfigSpec that is to be used for an initializing control plane.
+func (c *ControlPlane) InitialControlPlaneConfig() *bootstrapv1.OCNEConfigSpec {
 	bootstrapSpec := c.KCP.Spec.OcneConfigSpec.DeepCopy()
 	bootstrapSpec.JoinConfiguration = nil
 	return bootstrapSpec
 }
 
-// JoinControlPlaneConfig returns a new OcneConfigSpec that is to be used for joining control planes.
-func (c *ControlPlane) JoinControlPlaneConfig() *bootstrapv1.OcneConfigSpec {
+// JoinControlPlaneConfig returns a new OCNEConfigSpec that is to be used for joining control planes.
+func (c *ControlPlane) JoinControlPlaneConfig() *bootstrapv1.OCNEConfigSpec {
 	bootstrapSpec := c.KCP.Spec.OcneConfigSpec.DeepCopy()
 	bootstrapSpec.InitConfiguration = nil
 	// NOTE: For the joining we are preserving the ClusterConfiguration in order to determine if the
@@ -185,16 +185,16 @@ func (c *ControlPlane) JoinControlPlaneConfig() *bootstrapv1.OcneConfigSpec {
 }
 
 // GenerateOcneConfig generates a new ocne config for creating new control plane nodes.
-func (c *ControlPlane) GenerateOcneConfig(spec *bootstrapv1.OcneConfigSpec) *bootstrapv1.OcneConfig {
+func (c *ControlPlane) GenerateOcneConfig(spec *bootstrapv1.OCNEConfigSpec) *bootstrapv1.OCNEConfig {
 	// Create an owner reference without a controller reference because the owning controller is the machine controller
 	owner := metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
-		Kind:       "OcneControlPlane",
+		Kind:       "OCNEControlPlane",
 		Name:       c.KCP.Name,
 		UID:        c.KCP.UID,
 	}
 
-	bootstrapConfig := &bootstrapv1.OcneConfig{
+	bootstrapConfig := &bootstrapv1.OCNEConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            names.SimpleNameGenerator.GenerateName(c.KCP.Name + "-"),
 			Namespace:       c.KCP.Namespace,
@@ -216,7 +216,7 @@ func (c *ControlPlane) NewMachine(infraRef, bootstrapRef *corev1.ObjectReference
 			Labels:      ControlPlaneMachineLabelsForCluster(c.KCP, c.Cluster.Name),
 			Annotations: c.KCP.Spec.MachineTemplate.ObjectMeta.Annotations,
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(c.KCP, controlplanev1.GroupVersion.WithKind("OcneControlPlane")),
+				*metav1.NewControllerRef(c.KCP, controlplanev1.GroupVersion.WithKind("OCNEControlPlane")),
 			},
 		},
 		Spec: clusterv1.MachineSpec{
@@ -246,8 +246,8 @@ func (c *ControlPlane) HasDeletingMachine() bool {
 	return len(c.Machines.Filter(collections.HasDeletionTimestamp)) > 0
 }
 
-// GetOcneConfig returns the OcneConfig of a given machine.
-func (c *ControlPlane) GetOcneConfig(machineName string) (*bootstrapv1.OcneConfig, bool) {
+// GetOcneConfig returns the OCNEConfig of a given machine.
+func (c *ControlPlane) GetOcneConfig(machineName string) (*bootstrapv1.OCNEConfig, bool) {
 	ocneConfig, ok := c.ocneConfigs[machineName]
 	return ocneConfig, ok
 }
@@ -297,15 +297,15 @@ func getInfraResources(ctx context.Context, cl client.Client, machines collectio
 	return result, nil
 }
 
-// getOcneConfigs fetches the ocne config for each machine in the collection and returns a map of machine.Name -> OcneConfig.
-func getOcneConfigs(ctx context.Context, cl client.Client, machines collections.Machines) (map[string]*bootstrapv1.OcneConfig, error) {
-	result := map[string]*bootstrapv1.OcneConfig{}
+// getOcneConfigs fetches the ocne config for each machine in the collection and returns a map of machine.Name -> OCNEConfig.
+func getOcneConfigs(ctx context.Context, cl client.Client, machines collections.Machines) (map[string]*bootstrapv1.OCNEConfig, error) {
+	result := map[string]*bootstrapv1.OCNEConfig{}
 	for _, m := range machines {
 		bootstrapRef := m.Spec.Bootstrap.ConfigRef
 		if bootstrapRef == nil {
 			continue
 		}
-		machineConfig := &bootstrapv1.OcneConfig{}
+		machineConfig := &bootstrapv1.OCNEConfig{}
 		if err := cl.Get(ctx, client.ObjectKey{Name: bootstrapRef.Name, Namespace: m.Namespace}, machineConfig); err != nil {
 			if apierrors.IsNotFound(errors.Cause(err)) {
 				continue

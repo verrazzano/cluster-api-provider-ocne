@@ -25,12 +25,12 @@ import (
 )
 
 // ControlPlaneMachineLabelsForCluster returns a set of labels to add to a control plane machine for this specific cluster.
-func ControlPlaneMachineLabelsForCluster(kcp *controlplanev1.OcneControlPlane, clusterName string) map[string]string {
+func ControlPlaneMachineLabelsForCluster(ocnecp *controlplanev1.OCNEControlPlane, clusterName string) map[string]string {
 	labels := map[string]string{}
 
 	// Add the labels from the MachineTemplate.
 	// Note: we intentionally don't use the map directly to ensure we don't modify the map in KCP.
-	for k, v := range kcp.Spec.MachineTemplate.ObjectMeta.Labels {
+	for k, v := range ocnecp.Spec.MachineTemplate.ObjectMeta.Labels {
 		labels[k] = v
 	}
 
@@ -38,6 +38,6 @@ func ControlPlaneMachineLabelsForCluster(kcp *controlplanev1.OcneControlPlane, c
 	labels[clusterv1.ClusterLabelName] = clusterName
 	labels[clusterv1.MachineControlPlaneLabelName] = ""
 	// Note: MustFormatValue is used here as the label value can be a hash if the control plane name is longer than 63 characters.
-	labels[clusterv1.MachineControlPlaneNameLabel] = capilabels.MustFormatValue(kcp.Name)
+	labels[clusterv1.MachineControlPlaneNameLabel] = capilabels.MustFormatValue(ocnecp.Name)
 	return labels
 }

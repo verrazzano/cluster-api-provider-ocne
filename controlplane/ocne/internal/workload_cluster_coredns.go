@@ -106,18 +106,18 @@ type coreDNSInfo struct {
 
 // UpdateCoreDNS updates the kubeadm configmap, coredns corefile and coredns
 // deployment.
-func (w *Workload) UpdateCoreDNS(ctx context.Context, kcp *controlplanev1.OcneControlPlane, version semver.Version) error {
+func (w *Workload) UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error {
 	// Return early if we've been asked to skip CoreDNS upgrades entirely.
-	if _, ok := kcp.Annotations[controlplanev1.SkipCoreDNSAnnotation]; ok {
+	if _, ok := ocnecp.Annotations[controlplanev1.SkipCoreDNSAnnotation]; ok {
 		return nil
 	}
 
 	// Return early if the configuration is nil.
-	if kcp.Spec.OcneConfigSpec.ClusterConfiguration == nil {
+	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration == nil {
 		return nil
 	}
 
-	clusterConfig := kcp.Spec.OcneConfigSpec.ClusterConfiguration
+	clusterConfig := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration
 
 	// Get the CoreDNS info needed for the upgrade.
 	info, err := w.getCoreDNSInfo(ctx, clusterConfig, version)

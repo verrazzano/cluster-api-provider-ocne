@@ -90,7 +90,7 @@ func (f fakeWorkloadCluster) ClusterStatus(_ context.Context) (internal.ClusterS
 	return f.Status, nil
 }
 
-func (f fakeWorkloadCluster) GetAPIServerCertificateExpiry(_ context.Context, _ *bootstrapv1.OcneConfig, _ string) (*time.Time, error) {
+func (f fakeWorkloadCluster) GetAPIServerCertificateExpiry(_ context.Context, _ *bootstrapv1.OCNEConfig, _ string) (*time.Time, error) {
 	return f.APIServerCertificateExpiry, nil
 }
 

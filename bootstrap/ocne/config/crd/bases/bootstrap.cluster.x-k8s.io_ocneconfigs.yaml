@@ -1,4 +1,3 @@
-# This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -12,8 +11,8 @@ spec:
   names:
     categories:
     - cluster-api
-    kind: OcneConfig
-    listKind: OcneConfigList
+    kind: OCNEConfig
+    listKind: OCNEConfigList
     plural: ocneconfigs
     singular: ocneconfig
   scope: Namespaced
@@ -23,14 +22,14 @@ spec:
       jsonPath: .metadata.labels['cluster\.x-k8s\.io/cluster-name']
       name: Cluster
       type: string
-    - description: Time duration since creation of OcneConfig
+    - description: Time duration since creation of OCNEConfig
       jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: OcneConfig is the Schema for the ocneconfigs API.
+        description: OCNEConfig is the Schema for the ocneconfigs API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +44,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: OcneConfigSpec defines the desired state of OcneConfig. Either
+            description: OCNEConfigSpec defines the desired state of OCNEConfig. Either
               ClusterConfiguration and InitConfiguration should be defined or the
               JoinConfiguration should be defined.
             properties:
@@ -699,7 +698,7 @@ spec:
                           must be either "json" or "yaml". "suffix" is an optional
                           string that can be used to determine which patches are applied
                           first alpha-numerically. These files can be written into
-                          the target directory via OcneConfig.Files which specifies
+                          the target directory via OCNEConfig.Files which specifies
                           additional files to be created on the machine, either with
                           content inline or by referencing a secret.
                         type: string
@@ -910,7 +909,7 @@ spec:
                           must be either "json" or "yaml". "suffix" is an optional
                           string that can be used to determine which patches are applied
                           first alpha-numerically. These files can be written into
-                          the target directory via OcneConfig.Files which specifies
+                          the target directory via OCNEConfig.Files which specifies
                           additional files to be created on the machine, either with
                           content inline or by referencing a secret.
                         type: string
@@ -944,14 +943,14 @@ spec:
                       type: string
                     type: array
                 type: object
-              postOcneCommands:
-                description: PostOcneCommands specifies extra commands to run after
+              postOCNECommands:
+                description: PostOCNECommands specifies extra commands to run after
                   kubeadm runs
                 items:
                   type: string
                 type: array
-              preOcneCommands:
-                description: PreOcneCommands specifies extra commands to run before
+              preOCNECommands:
+                description: PreOCNECommands specifies extra commands to run before
                   kubeadm runs
                 items:
                   type: string
@@ -959,24 +958,24 @@ spec:
               proxy:
                 description: Proxy contains proxy server info that may be required
                   for installing dependencies. The value, if specified is used in
-                  conjunction with preOcneCommands to install and configure repositories.
+                  conjunction with preOCNECommands to install and configure repositories.
                 properties:
                   httpProxy:
                     description: HttpProxy contains http proxy server info that may
                       be required for installing dependencies. The value, if specified
-                      is used in conjunction with preOcneCommands to install and configure
+                      is used in conjunction with preOCNECommands to install and configure
                       repositories.
                     type: string
                   httpsProxy:
                     description: HttpsProxy contains https proxy server info that
                       may be required for installing dependencies. The value, if specified
-                      is used in conjunction with preOcneCommands to install and configure
+                      is used in conjunction with preOCNECommands to install and configure
                       repositories.
                     type: string
                   noProxy:
                     description: NoProxy contains addresses that needs to be skipped
                       when proxy server is being used. The value, if specified is
-                      used in conjunction with preOcneCommands to install and configure
+                      used in conjunction with preOCNECommands to install and configure
                       repositories.
                     type: string
                 type: object
@@ -1072,10 +1071,10 @@ spec:
                 type: integer
             type: object
           status:
-            description: OcneConfigStatus defines the observed state of OcneConfig.
+            description: OcneConfigStatus defines the observed state of OCNEConfig.
             properties:
               conditions:
-                description: Conditions defines current service state of the OcneConfig.
+                description: Conditions defines current service state of the OCNEConfig.
                 items:
                   description: Condition defines an observation of a Cluster API resource
                     operational state.

@@ -48,10 +48,10 @@ var (
 	scheme *runtime.Scheme
 )
 
-func TestKubeadmControlPlaneValidateScale(t *testing.T) {
-	kcpManagedEtcd := &controlplanev1.OcneControlPlane{
+func TestOCNEControlPlaneValidateScale(t *testing.T) {
+	ocnecpManagedEtcd := &controlplanev1.OCNEControlPlane{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kcp-managed-etcd",
+			Name:      "ocnecp-managed-etcd",
 			Namespace: "foo",
 		},
 		Spec: controlplanev1.OcneControlPlaneSpec{
@@ -73,18 +73,18 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 					},
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OcneConfigSpec{
+			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
 				InitConfiguration: &bootstrapv1.InitConfiguration{
 					LocalAPIEndpoint: bootstrapv1.APIEndpoint{
 						AdvertiseAddress: "127.0.0.1",
 						BindPort:         int32(443),
 					},
 					NodeRegistration: bootstrapv1.NodeRegistrationOptions{
-						Name: "kcp-managed-etcd",
+						Name: "ocnecp-managed-etcd",
 					},
 				},
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
-					ClusterName: "kcp-managed-etcd",
+					ClusterName: "ocnecp-managed-etcd",
 					DNS: bootstrapv1.DNS{
 						ImageMeta: bootstrapv1.ImageMeta{
 							ImageRepository: "registry.k8s.io/coredns",
@@ -99,18 +99,18 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 						},
 					},
 					NodeRegistration: bootstrapv1.NodeRegistrationOptions{
-						Name: "kcp-managed-etcd",
+						Name: "ocnecp-managed-etcd",
 					},
 				},
-				PreOcneCommands: []string{
-					"kcp-managed-etcd", "foo",
+				PreOCNECommands: []string{
+					"ocnecp-managed-etcd", "foo",
 				},
-				PostOcneCommands: []string{
-					"kcp-managed-etcd", "foo",
+				PostOCNECommands: []string{
+					"ocnecp-managed-etcd", "foo",
 				},
 				Files: []bootstrapv1.File{
 					{
-						Path: "kcp-managed-etcd",
+						Path: "ocnecp-managed-etcd",
 					},
 				},
 				Users: []bootstrapv1.User{
@@ -130,9 +130,9 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 		},
 	}
 
-	kcpExternalEtcd := kcpManagedEtcd.DeepCopy()
-	kcpExternalEtcd.ObjectMeta.Name = "kcp-external-etcd"
-	kcpExternalEtcd.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
+	ocnecpExternalEtcd := ocnecpManagedEtcd.DeepCopy()
+	ocnecpExternalEtcd.ObjectMeta.Name = "ocnecp-external-etcd"
+	ocnecpExternalEtcd.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
 
 	tests := []struct {
 		name              string
@@ -148,7 +148,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 				UID:       uuid.NewUUID(),
 				Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 				Operation: admissionv1.Update,
-				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"kcp-managed-etcd","namespace":"foo"},"spec":{"replicas":0}}`)},
+				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"ocnecp-managed-etcd","namespace":"foo"},"spec":{"replicas":0}}`)},
 			}},
 		},
 		{
@@ -159,7 +159,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 				UID:       uuid.NewUUID(),
 				Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 				Operation: admissionv1.Update,
-				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"kcp-managed-etcd","namespace":"foo"},"spec":{"replicas":2}}`)},
+				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"ocnecp-managed-etcd","namespace":"foo"},"spec":{"replicas":2}}`)},
 			}},
 		},
 		{
@@ -170,7 +170,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 				UID:       uuid.NewUUID(),
 				Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 				Operation: admissionv1.Update,
-				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"kcp-managed-etcd","namespace":"foo"},"spec":{"replicas":3}}`)},
+				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"ocnecp-managed-etcd","namespace":"foo"},"spec":{"replicas":3}}`)},
 			}},
 		},
 		{
@@ -181,7 +181,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 				UID:       uuid.NewUUID(),
 				Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 				Operation: admissionv1.Update,
-				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"kcp-external-etcd","namespace":"foo"},"spec":{"replicas":4}}`)},
+				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"ocnecp-external-etcd","namespace":"foo"},"spec":{"replicas":4}}`)},
 			}},
 		},
 		{
@@ -192,7 +192,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 				UID:       uuid.NewUUID(),
 				Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 				Operation: admissionv1.Update,
-				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"kcp-external-etcd","namespace":"foo"},"spec":{"replicas":3}}`)},
+				Object:    runtime.RawExtension{Raw: []byte(`{"metadata":{"name":"ocnecp-external-etcd","namespace":"foo"},"spec":{"replicas":3}}`)},
 			}},
 		},
 	}
@@ -201,7 +201,7 @@ func TestKubeadmControlPlaneValidateScale(t *testing.T) {
 			g := NewWithT(t)
 
 			decoder, _ := admission.NewDecoder(scheme)
-			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(kcpManagedEtcd, kcpExternalEtcd).Build()
+			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(ocnecpManagedEtcd, ocnecpExternalEtcd).Build()
 
 			// Create the webhook and add the fakeClient as its client.
 			scaleHandler := ScaleValidator{

@@ -34,67 +34,67 @@ import (
 
 // updateStatus is called after every reconcilitation loop in a defer statement to always make sure we have the
 // resource status subresourcs up-to-date.
-func (r *OcneControlPlaneReconciler) updateStatus(ctx context.Context, kcp *controlplanev1.OcneControlPlane, cluster *clusterv1.Cluster) error {
+func (r *OcneControlPlaneReconciler) updateStatus(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, cluster *clusterv1.Cluster) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	selector := collections.ControlPlaneSelectorForCluster(cluster.Name)
 	// Copy label selector to its status counterpart in string format.
 	// This is necessary for CRDs including scale subresources.
-	kcp.Status.Selector = selector.String()
+	ocnecp.Status.Selector = selector.String()
 
-	ownedMachines, err := r.managementCluster.GetMachinesForCluster(ctx, cluster, collections.OwnedMachines(kcp))
+	ownedMachines, err := r.managementCluster.GetMachinesForCluster(ctx, cluster, collections.OwnedMachines(ocnecp))
 	if err != nil {
 		return errors.Wrap(err, "failed to get list of owned machines")
 	}
 
-	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, kcp, ownedMachines)
+	controlPlane, err := internal.NewControlPlane(ctx, r.Client, cluster, ocnecp, ownedMachines)
 	if err != nil {
 		log.Error(err, "failed to initialize control plane")
 		return err
 	}
-	kcp.Status.UpdatedReplicas = int32(len(controlPlane.UpToDateMachines()))
+	ocnecp.Status.UpdatedReplicas = int32(len(controlPlane.UpToDateMachines()))
 
 	replicas := int32(len(ownedMachines))
-	desiredReplicas := *kcp.Spec.Replicas
+	desiredReplicas := *ocnecp.Spec.Replicas
 
 	// set basic data that does not require interacting with the workload cluster
-	kcp.Status.Replicas = replicas
-	kcp.Status.ReadyReplicas = 0
-	kcp.Status.UnavailableReplicas = replicas
+	ocnecp.Status.Replicas = replicas
+	ocnecp.Status.ReadyReplicas = 0
+	ocnecp.Status.UnavailableReplicas = replicas
 
 	// Return early if the deletion timestamp is set, because we don't want to try to connect to the workload cluster
 	// and we don't want to report resize condition (because it is set to deleting into reconcile delete).
-	if !kcp.DeletionTimestamp.IsZero() {
+	if !ocnecp.DeletionTimestamp.IsZero() {
 		return nil
 	}
 
 	machinesWithHealthAPIServer := ownedMachines.Filter(collections.HealthyAPIServer())
 	lowestVersion := machinesWithHealthAPIServer.LowestVersion()
 	if lowestVersion != nil {
-		kcp.Status.Version = lowestVersion
+		ocnecp.Status.Version = lowestVersion
 	}
 
 	switch {
 	// We are scaling up
 	case replicas < desiredReplicas:
-		conditions.MarkFalse(kcp, controlplanev1.ResizedCondition, controlplanev1.ScalingUpReason, clusterv1.ConditionSeverityWarning, "Scaling up control plane to %d replicas (actual %d)", desiredReplicas, replicas)
+		conditions.MarkFalse(ocnecp, controlplanev1.ResizedCondition, controlplanev1.ScalingUpReason, clusterv1.ConditionSeverityWarning, "Scaling up control plane to %d replicas (actual %d)", desiredReplicas, replicas)
 	// We are scaling down
 	case replicas > desiredReplicas:
-		conditions.MarkFalse(kcp, controlplanev1.ResizedCondition, controlplanev1.ScalingDownReason, clusterv1.ConditionSeverityWarning, "Scaling down control plane to %d replicas (actual %d)", desiredReplicas, replicas)
+		conditions.MarkFalse(ocnecp, controlplanev1.ResizedCondition, controlplanev1.ScalingDownReason, clusterv1.ConditionSeverityWarning, "Scaling down control plane to %d replicas (actual %d)", desiredReplicas, replicas)
 
 		// This means that there was no error in generating the desired number of machine objects
-		conditions.MarkTrue(kcp, controlplanev1.MachinesCreatedCondition)
+		conditions.MarkTrue(ocnecp, controlplanev1.MachinesCreatedCondition)
 	default:
 		// make sure last resize operation is marked as completed.
 		// NOTE: we are checking the number of machines ready so we report resize completed only when the machines
 		// are actually provisioned (vs reporting completed immediately after the last machine object is created).
 		readyMachines := ownedMachines.Filter(collections.IsReady())
 		if int32(len(readyMachines)) == replicas {
-			conditions.MarkTrue(kcp, controlplanev1.ResizedCondition)
+			conditions.MarkTrue(ocnecp, controlplanev1.ResizedCondition)
 		}
 
 		// This means that there was no error in generating the desired number of machine objects
-		conditions.MarkTrue(kcp, controlplanev1.MachinesCreatedCondition)
+		conditions.MarkTrue(ocnecp, controlplanev1.MachinesCreatedCondition)
 	}
 
 	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, util.ObjectKey(cluster))
@@ -105,17 +105,17 @@ func (r *OcneControlPlaneReconciler) updateStatus(ctx context.Context, kcp *cont
 	if err != nil {
 		return err
 	}
-	kcp.Status.ReadyReplicas = status.ReadyNodes
-	kcp.Status.UnavailableReplicas = replicas - status.ReadyNodes
+	ocnecp.Status.ReadyReplicas = status.ReadyNodes
+	ocnecp.Status.UnavailableReplicas = replicas - status.ReadyNodes
 
 	// This only gets initialized once and does not change if the kubeadm config map goes away.
 	if status.HasOcneConfig {
-		kcp.Status.Initialized = true
-		conditions.MarkTrue(kcp, controlplanev1.AvailableCondition)
+		ocnecp.Status.Initialized = true
+		conditions.MarkTrue(ocnecp, controlplanev1.AvailableCondition)
 	}
 
-	if kcp.Status.ReadyReplicas > 0 {
-		kcp.Status.Ready = true
+	if ocnecp.Status.ReadyReplicas > 0 {
+		ocnecp.Status.Ready = true
 	}
 
 	return nil

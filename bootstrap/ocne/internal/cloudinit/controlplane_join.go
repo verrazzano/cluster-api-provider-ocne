@@ -39,9 +39,9 @@ const (
     permissions: '0640'
     content: "This placeholder file is used to create the /run/cluster-api sub directory in a way that is compatible with both Linux and Windows (mkdir -p /run/cluster-api does not work with Windows)"
 runcmd:
-{{- template "commands" .PreOcneCommands }}
-  - {{ .OcneCommand }} && {{ .SentinelFileCommand }}
-{{- template "commands" .PostOcneCommands }}
+{{- template "commands" .PreOCNECommands }}
+  - {{ .OCNECommand }} && {{ .SentinelFileCommand }}
+{{- template "commands" .PostOCNECommands }}
 {{- template "ntp" .NTP }}
 {{- template "users" .Users }}
 {{- template "disk_setup" .DiskSetup}}
@@ -62,7 +62,7 @@ type ControlPlaneJoinInput struct {
 func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, error) {
 	// TODO: Consider validating that the correct certificates exist. It is different for external/stacked etcd
 	if strings.ToLower(input.Header) != "test" {
-		input.PreOcneCommands = ocne.GetOcneOverrides(input.KubernetesVersion, input.OcneImageRepository, input.PodSubnet, input.ServiceSubnet, &input.Proxy)
+		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, &input.Proxy)
 	}
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.ControlPlane = true
