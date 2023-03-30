@@ -26,7 +26,7 @@ import (
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
 )
 
-// OcneControlPlaneTemplateSpec defines the desired state of OcneControlPlaneTemplate.
+// OcneControlPlaneTemplateSpec defines the desired state of OCNEControlPlaneTemplate.
 type OcneControlPlaneTemplateSpec struct {
 	Template OCNEControlPlaneTemplateResource `json:"template"`
 }
@@ -34,10 +34,10 @@ type OcneControlPlaneTemplateSpec struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=ocnecontrolplanetemplates,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OcneControlPlaneTemplate"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of OCNEControlPlaneTemplate"
 
-// OcneControlPlaneTemplate is the Schema for the ocnecontrolplanetemplates API.
-type OcneControlPlaneTemplate struct {
+// OCNEControlPlaneTemplate is the Schema for the ocnecontrolplanetemplates API.
+type OCNEControlPlaneTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -46,15 +46,15 @@ type OcneControlPlaneTemplate struct {
 
 // +kubebuilder:object:root=true
 
-// OcneControlPlaneTemplateList contains a list of OcneControlPlaneTemplate.
-type OcneControlPlaneTemplateList struct {
+// OCNEControlPlaneTemplateList contains a list of OCNEControlPlaneTemplate.
+type OCNEControlPlaneTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []OcneControlPlaneTemplate `json:"items"`
+	Items           []OCNEControlPlaneTemplate `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&OcneControlPlaneTemplate{}, &OcneControlPlaneTemplateList{})
+	SchemeBuilder.Register(&OCNEControlPlaneTemplate{}, &OCNEControlPlaneTemplateList{})
 }
 
 // OCNEControlPlaneTemplateResource describes the data needed to create a OCNEControlPlane from a template.
@@ -64,9 +64,9 @@ type OCNEControlPlaneTemplateResource struct {
 
 // OCNEControlPlaneTemplateResourceSpec defines the desired state of OCNEControlPlane.
 // NOTE: OCNEControlPlaneTemplateResourceSpec is similar to OcneControlPlaneSpec but
-// omits Replicas and Version fields. These fields do not make sense on the OcneControlPlaneTemplate,
+// omits Replicas and Version fields. These fields do not make sense on the OCNEControlPlaneTemplate,
 // because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
-// be configured on the OcneControlPlaneTemplate.
+// be configured on the OCNEControlPlaneTemplate.
 type OCNEControlPlaneTemplateResourceSpec struct {
 	// MachineTemplate contains information about how machines
 	// should be shaped when creating or updating a control plane.

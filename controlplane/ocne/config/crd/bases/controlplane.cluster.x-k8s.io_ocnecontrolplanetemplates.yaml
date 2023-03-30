@@ -11,21 +11,21 @@ spec:
   names:
     categories:
     - cluster-api
-    kind: OcneControlPlaneTemplate
-    listKind: OcneControlPlaneTemplateList
+    kind: OCNEControlPlaneTemplate
+    listKind: OCNEControlPlaneTemplateList
     plural: ocnecontrolplanetemplates
     singular: ocnecontrolplanetemplate
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Time duration since creation of OcneControlPlaneTemplate
+    - description: Time duration since creation of OCNEControlPlaneTemplate
       jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: OcneControlPlaneTemplate is the Schema for the ocnecontrolplanetemplates
+        description: OCNEControlPlaneTemplate is the Schema for the ocnecontrolplanetemplates
           API.
         properties:
           apiVersion:
@@ -42,7 +42,7 @@ spec:
             type: object
           spec:
             description: OcneControlPlaneTemplateSpec defines the desired state of
-              OcneControlPlaneTemplate.
+              OCNEControlPlaneTemplate.
             properties:
               template:
                 description: OCNEControlPlaneTemplateResource describes the data needed
@@ -52,9 +52,9 @@ spec:
                     description: 'OCNEControlPlaneTemplateResourceSpec defines the
                       desired state of OCNEControlPlane. NOTE: OCNEControlPlaneTemplateResourceSpec
                       is similar to OcneControlPlaneSpec but omits Replicas and Version
-                      fields. These fields do not make sense on the OcneControlPlaneTemplate,
+                      fields. These fields do not make sense on the OCNEControlPlaneTemplate,
                       because they are calculated by the Cluster topology reconciler
-                      during reconciliation and thus cannot be configured on the OcneControlPlaneTemplate.'
+                      during reconciliation and thus cannot be configured on the OCNEControlPlaneTemplate.'
                     properties:
                       machineTemplate:
                         description: MachineTemplate contains information about how

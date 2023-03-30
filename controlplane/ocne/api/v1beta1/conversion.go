@@ -22,5 +22,5 @@ package v1beta1
 
 func (*OCNEControlPlane) Hub()             {}
 func (*OCNEControlPlaneList) Hub()         {}
-func (*OcneControlPlaneTemplate) Hub()     {}
-func (*OcneControlPlaneTemplateList) Hub() {}
+func (*OCNEControlPlaneTemplate) Hub()     {}
+func (*OCNEControlPlaneTemplateList) Hub() {}

@@ -34,9 +34,9 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 )
 
-const kubeadmControlPlaneTemplateImmutableMsg = "OcneControlPlaneTemplate spec.template.spec field is immutable. Please create new resource instead."
+const kubeadmControlPlaneTemplateImmutableMsg = "OCNEControlPlaneTemplate spec.template.spec field is immutable. Please create new resource instead."
 
-func (r *OcneControlPlaneTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *OCNEControlPlaneTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -44,10 +44,10 @@ func (r *OcneControlPlaneTemplate) SetupWebhookWithManager(mgr ctrl.Manager) err
 
 // +kubebuilder:webhook:verbs=create;update,path=/mutate-controlplane-cluster-x-k8s-io-v1beta1-kubeadmcontrolplanetemplate,mutating=true,failurePolicy=fail,groups=controlplane.cluster.x-k8s.io,resources=kubeadmcontrolplanetemplates,versions=v1beta1,name=default.kubeadmcontrolplanetemplate.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Defaulter = &OcneControlPlaneTemplate{}
+var _ webhook.Defaulter = &OCNEControlPlaneTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (r *OcneControlPlaneTemplate) Default() {
+func (r *OCNEControlPlaneTemplate) Default() {
 	bootstrapv1.DefaultOcneConfigSpec(&r.Spec.Template.Spec.OCNEConfigSpec)
 
 	r.Spec.Template.Spec.RolloutStrategy = defaultRolloutStrategy(r.Spec.Template.Spec.RolloutStrategy)
@@ -55,11 +55,11 @@ func (r *OcneControlPlaneTemplate) Default() {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-controlplane-cluster-x-k8s-io-v1beta1-kubeadmcontrolplanetemplate,mutating=false,failurePolicy=fail,groups=controlplane.cluster.x-k8s.io,resources=kubeadmcontrolplanetemplates,versions=v1beta1,name=validation.kubeadmcontrolplanetemplate.controlplane.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
-var _ webhook.Validator = &OcneControlPlaneTemplate{}
+var _ webhook.Validator = &OCNEControlPlaneTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneControlPlaneTemplate) ValidateCreate() error {
-	// NOTE: OcneControlPlaneTemplate is behind ClusterTopology feature gate flag; the web hook
+func (r *OCNEControlPlaneTemplate) ValidateCreate() error {
+	// NOTE: OCNEControlPlaneTemplate is behind ClusterTopology feature gate flag; the web hook
 	// must prevent creating new objects in case the feature flag is disabled.
 	if !feature.Gates.Enabled(feature.ClusterTopology) {
 		return field.Forbidden(
@@ -73,17 +73,17 @@ func (r *OcneControlPlaneTemplate) ValidateCreate() error {
 	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "template", "spec", "ocneConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "template", "spec", "ocneConfigSpec"))...)
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("OcneControlPlaneTemplate").GroupKind(), r.Name, allErrs)
+		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlaneTemplate").GroupKind(), r.Name, allErrs)
 	}
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneControlPlaneTemplate) ValidateUpdate(oldRaw runtime.Object) error {
+func (r *OCNEControlPlaneTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 	var allErrs field.ErrorList
-	old, ok := oldRaw.(*OcneControlPlaneTemplate)
+	old, ok := oldRaw.(*OCNEControlPlaneTemplate)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a OcneControlPlaneTemplate but got a %T", oldRaw))
+		return apierrors.NewBadRequest(fmt.Sprintf("expected a OCNEControlPlaneTemplate but got a %T", oldRaw))
 	}
 
 	if !reflect.DeepEqual(r.Spec.Template.Spec, old.Spec.Template.Spec) {
@@ -95,11 +95,11 @@ func (r *OcneControlPlaneTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 	if len(allErrs) == 0 {
 		return nil
 	}
-	return apierrors.NewInvalid(GroupVersion.WithKind("OcneControlPlaneTemplate").GroupKind(), r.Name, allErrs)
+	return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlaneTemplate").GroupKind(), r.Name, allErrs)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *OcneControlPlaneTemplate) ValidateDelete() error {
+func (r *OCNEControlPlaneTemplate) ValidateDelete() error {
 	return nil
 }
 

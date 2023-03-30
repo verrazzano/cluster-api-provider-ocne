@@ -285,8 +285,8 @@ func setupWebhooks(mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&controlplanev1.OcneControlPlaneTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "OcneControlPlaneTemplate")
+	if err := (&controlplanev1.OCNEControlPlaneTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "OCNEControlPlaneTemplate")
 		os.Exit(1)
 	}
 }

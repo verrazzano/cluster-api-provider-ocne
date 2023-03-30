@@ -38,7 +38,7 @@ func TestOCNEControlPlaneTemplateDefault(t *testing.T) {
 
 	g := NewWithT(t)
 
-	ocnecpTemplate := &OcneControlPlaneTemplate{
+	ocnecpTemplate := &OCNEControlPlaneTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
@@ -54,7 +54,7 @@ func TestOCNEControlPlaneTemplateDefault(t *testing.T) {
 	}
 	updateDefaultingValidationKCPTemplate := ocnecpTemplate.DeepCopy()
 	updateDefaultingValidationKCPTemplate.Spec.Template.Spec.MachineTemplate.NodeDrainTimeout = &metav1.Duration{Duration: 20 * time.Second}
-	t.Run("for OcneControlPlaneTemplate", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCPTemplate))
+	t.Run("for OCNEControlPlaneTemplate", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCPTemplate))
 	ocnecpTemplate.Default()
 
 	g.Expect(ocnecpTemplate.Spec.Template.Spec.OCNEConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
@@ -68,7 +68,7 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
 	t.Run("create ocnecontrolplanetemplate should pass if gate enabled and valid ocnecontrolplanetemplate", func(t *testing.T) {
 		testnamespace := "test"
 		g := NewWithT(t)
-		ocnecpTemplate := &OcneControlPlaneTemplate{
+		ocnecpTemplate := &OCNEControlPlaneTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
@@ -88,11 +88,11 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
 }
 
 func TestOCNEControlPlaneTemplateValidationFeatureGateDisabled(t *testing.T) {
-	// NOTE: ClusterTopology feature flag is disabled by default, thus preventing to create OcneControlPlaneTemplate.
+	// NOTE: ClusterTopology feature flag is disabled by default, thus preventing to create OCNEControlPlaneTemplate.
 	t.Run("create ocnecontrolplanetemplate should not pass if gate disabled and valid ocnecontrolplanetemplate", func(t *testing.T) {
 		testnamespace := "test"
 		g := NewWithT(t)
-		ocnecpTemplate := &OcneControlPlaneTemplate{
+		ocnecpTemplate := &OCNEControlPlaneTemplate{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
