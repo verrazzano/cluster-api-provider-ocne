@@ -104,6 +104,7 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 	return fmt.Sprintf("%s,/var/run/shared-tmpfs/csi.sock", noProxy)
 }
 
+// GetOCNEOverrides Updates the cloud init with OCNE override instructions
 func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) []string {
 	var ocneNodeOverrrides []string
 	k8sversion := extractVersionString(kubernetesVersion)
