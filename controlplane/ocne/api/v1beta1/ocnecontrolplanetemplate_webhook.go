@@ -34,7 +34,7 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 )
 
-const kubeadmControlPlaneTemplateImmutableMsg = "OCNEControlPlaneTemplate spec.template.spec field is immutable. Please create new resource instead."
+const ocneControlPlaneTemplateImmutableMsg = "OCNEControlPlaneTemplate spec.template.spec field is immutable. Please create new resource instead."
 
 func (r *OCNEControlPlaneTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
@@ -70,8 +70,8 @@ func (r *OCNEControlPlaneTemplate) ValidateCreate() error {
 
 	spec := r.Spec.Template.Spec
 	allErrs := validateKubeadmControlPlaneTemplateResourceSpec(spec, field.NewPath("spec", "template", "spec"))
-	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "template", "spec", "ocneConfigSpec", "clusterConfiguration"))...)
-	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "template", "spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "template", "spec", "controlPlaneConfig", "clusterConfiguration"))...)
+	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "template", "spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlaneTemplate").GroupKind(), r.Name, allErrs)
 	}
@@ -88,7 +88,7 @@ func (r *OCNEControlPlaneTemplate) ValidateUpdate(oldRaw runtime.Object) error {
 
 	if !reflect.DeepEqual(r.Spec.Template.Spec, old.Spec.Template.Spec) {
 		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec", "template", "spec"), r, kubeadmControlPlaneTemplateImmutableMsg),
+			field.Invalid(field.NewPath("spec", "template", "spec"), r, ocneControlPlaneTemplateImmutableMsg),
 		)
 	}
 

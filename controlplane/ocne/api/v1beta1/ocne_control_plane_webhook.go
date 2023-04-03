@@ -73,7 +73,7 @@ func defaultKubeadmControlPlaneSpec(s *OCNEControlPlaneSpec, namespace string) {
 		s.Version = "v" + s.Version
 	}
 
-	bootstrapv1.DefaultOCNEConfigSpec(&s.OCNEConfigSpec)
+	bootstrapv1.DefaultOCNEConfigSpec(&s.ControlPlaneConfig)
 
 	s.RolloutStrategy = defaultRolloutStrategy(s.RolloutStrategy)
 }
@@ -105,8 +105,8 @@ func defaultRolloutStrategy(rolloutStrategy *RolloutStrategy) *RolloutStrategy {
 func (in *OCNEControlPlane) ValidateCreate() error {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
-	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
-	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(spec.ControlPlaneConfig.ClusterConfiguration, nil, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
+	allErrs = append(allErrs, spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
@@ -115,7 +115,7 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 
 const (
 	spec                 = "spec"
-	ocneConfigSpec       = "ocneConfigSpec"
+	controlPlaneConfig   = "controlPlaneConfig"
 	clusterConfiguration = "clusterConfiguration"
 	initConfiguration    = "initConfiguration"
 	joinConfiguration    = "joinConfiguration"
@@ -143,29 +143,29 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	// For example, {"spec", "*"} will allow any path under "spec" to change.
 	allowedPaths := [][]string{
 		{"metadata", "*"},
-		{spec, ocneConfigSpec, clusterConfiguration, "etcd", "local", "imageRepository"},
-		{spec, ocneConfigSpec, clusterConfiguration, "etcd", "local", "imageTag"},
-		{spec, ocneConfigSpec, clusterConfiguration, "etcd", "local", "extraArgs", "*"},
-		{spec, ocneConfigSpec, clusterConfiguration, "dns", "imageRepository"},
-		{spec, ocneConfigSpec, clusterConfiguration, "dns", "imageTag"},
-		{spec, ocneConfigSpec, clusterConfiguration, "imageRepository"},
-		{spec, ocneConfigSpec, clusterConfiguration, apiServer, "*"},
-		{spec, ocneConfigSpec, clusterConfiguration, controllerManager, "*"},
-		{spec, ocneConfigSpec, clusterConfiguration, scheduler, "*"},
-		{spec, ocneConfigSpec, initConfiguration, nodeRegistration, "*"},
-		{spec, ocneConfigSpec, initConfiguration, patches, directory},
-		{spec, ocneConfigSpec, initConfiguration, skipPhases},
-		{spec, ocneConfigSpec, joinConfiguration, nodeRegistration, "*"},
-		{spec, ocneConfigSpec, joinConfiguration, patches, directory},
-		{spec, ocneConfigSpec, joinConfiguration, skipPhases},
-		{spec, ocneConfigSpec, preOCNECommands},
-		{spec, ocneConfigSpec, postOCNECommands},
-		{spec, ocneConfigSpec, files},
-		{spec, ocneConfigSpec, "verbosity"},
-		{spec, ocneConfigSpec, users},
-		{spec, ocneConfigSpec, ntp, "*"},
-		{spec, ocneConfigSpec, ignition, "*"},
-		{spec, ocneConfigSpec, diskSetup, "*"},
+		{spec, controlPlaneConfig, clusterConfiguration, "etcd", "local", "imageRepository"},
+		{spec, controlPlaneConfig, clusterConfiguration, "etcd", "local", "imageTag"},
+		{spec, controlPlaneConfig, clusterConfiguration, "etcd", "local", "extraArgs", "*"},
+		{spec, controlPlaneConfig, clusterConfiguration, "dns", "imageRepository"},
+		{spec, controlPlaneConfig, clusterConfiguration, "dns", "imageTag"},
+		{spec, controlPlaneConfig, clusterConfiguration, "imageRepository"},
+		{spec, controlPlaneConfig, clusterConfiguration, apiServer, "*"},
+		{spec, controlPlaneConfig, clusterConfiguration, controllerManager, "*"},
+		{spec, controlPlaneConfig, clusterConfiguration, scheduler, "*"},
+		{spec, controlPlaneConfig, initConfiguration, nodeRegistration, "*"},
+		{spec, controlPlaneConfig, initConfiguration, patches, directory},
+		{spec, controlPlaneConfig, initConfiguration, skipPhases},
+		{spec, controlPlaneConfig, joinConfiguration, nodeRegistration, "*"},
+		{spec, controlPlaneConfig, joinConfiguration, patches, directory},
+		{spec, controlPlaneConfig, joinConfiguration, skipPhases},
+		{spec, controlPlaneConfig, preOCNECommands},
+		{spec, controlPlaneConfig, postOCNECommands},
+		{spec, controlPlaneConfig, files},
+		{spec, controlPlaneConfig, "verbosity"},
+		{spec, controlPlaneConfig, users},
+		{spec, controlPlaneConfig, ntp, "*"},
+		{spec, controlPlaneConfig, ignition, "*"},
+		{spec, controlPlaneConfig, diskSetup, "*"},
 		{spec, "machineTemplate", "metadata", "*"},
 		{spec, "machineTemplate", "infrastructureRef", "apiVersion"},
 		{spec, "machineTemplate", "infrastructureRef", "name"},
@@ -189,8 +189,8 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	// NOTE: Defaulting for the format field has been added in v1.1.0 after implementing ignition support.
 	// This allows existing KCP objects to pick up the new default.
-	if prev.Spec.OCNEConfigSpec.Format == "" && in.Spec.OCNEConfigSpec.Format == bootstrapv1.CloudConfig {
-		allowedPaths = append(allowedPaths, []string{spec, ocneConfigSpec, "format"})
+	if prev.Spec.ControlPlaneConfig.Format == "" && in.Spec.ControlPlaneConfig.Format == bootstrapv1.CloudConfig {
+		allowedPaths = append(allowedPaths, []string{spec, controlPlaneConfig, "format"})
 	}
 
 	originalJSON, err := json.Marshal(prev)
@@ -228,9 +228,9 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	}
 
 	allErrs = append(allErrs, in.validateVersion(prev.Spec.Version)...)
-	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.OCNEConfigSpec.ClusterConfiguration, prev.Spec.OCNEConfigSpec.ClusterConfiguration, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.ControlPlaneConfig.ClusterConfiguration, prev.Spec.ControlPlaneConfig.ClusterConfiguration, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
 	allErrs = append(allErrs, in.validateCoreDNSVersion(prev)...)
-	allErrs = append(allErrs, in.Spec.OCNEConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, in.Spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
@@ -264,8 +264,8 @@ func validateKubeadmControlPlaneSpec(s OCNEControlPlaneSpec, namespace string, p
 	}
 
 	externalEtcd := false
-	if s.OCNEConfigSpec.ClusterConfiguration != nil {
-		if s.OCNEConfigSpec.ClusterConfiguration.Etcd.External != nil {
+	if s.ControlPlaneConfig.ClusterConfiguration != nil {
+		if s.ControlPlaneConfig.ClusterConfiguration.Etcd.External != nil {
 			externalEtcd = true
 		}
 	}
@@ -520,21 +520,21 @@ func paths(path []string, diff map[string]interface{}) [][]string {
 }
 
 func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allErrs field.ErrorList) {
-	if in.Spec.OCNEConfigSpec.ClusterConfiguration == nil || prev.Spec.OCNEConfigSpec.ClusterConfiguration == nil {
+	if in.Spec.ControlPlaneConfig.ClusterConfiguration == nil || prev.Spec.ControlPlaneConfig.ClusterConfiguration == nil {
 		return allErrs
 	}
 	// return if either current or target versions is empty
-	if prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag == "" {
+	if prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
 		return allErrs
 	}
-	targetDNS := &in.Spec.OCNEConfigSpec.ClusterConfiguration.DNS
+	targetDNS := &in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS
 
-	fromVersion, err := version.ParseMajorMinorPatchTolerant(prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag)
+	fromVersion, err := version.ParseMajorMinorPatchTolerant(prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag)
 	if err != nil {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration", "dns", "imageTag"),
-				prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag,
+				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
+				prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag,
 				fmt.Sprintf("failed to parse current CoreDNS version: %v", err),
 			),
 		)
@@ -545,7 +545,7 @@ func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allE
 	if err != nil {
 		allErrs = append(allErrs,
 			field.Invalid(
-				field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration", "dns", "imageTag"),
+				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
 				targetDNS.ImageTag,
 				fmt.Sprintf("failed to parse target CoreDNS version: %v", err),
 			),
@@ -561,7 +561,7 @@ func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allE
 		allErrs = append(
 			allErrs,
 			field.Forbidden(
-				field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration", "dns", "imageTag"),
+				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
 				fmt.Sprintf("cannot migrate CoreDNS up to '%v' from '%v': %v", toVersion, fromVersion, err),
 			),
 		)
@@ -632,8 +632,8 @@ func (in *OCNEControlPlane) validateVersion(previousVersion string) (allErrs fie
 	// given how the migration has been implemented in kubeadm.
 	//
 	// Block if imageRepository is not set (i.e. the default registry should be used),
-	if (in.Spec.OCNEConfigSpec.ClusterConfiguration == nil ||
-		in.Spec.OCNEConfigSpec.ClusterConfiguration.ImageRepository == "") &&
+	if (in.Spec.ControlPlaneConfig.ClusterConfiguration == nil ||
+		in.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "") &&
 		// the version changed (i.e. we have an upgrade),
 		toVersion.NE(fromVersion) &&
 		// the version is >= v1.22.0 and < v1.26.0

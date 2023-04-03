@@ -47,7 +47,7 @@ func TestOCNEControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	cluster.Spec.ControlPlaneEndpoint.Host = Host
 	cluster.Spec.ControlPlaneEndpoint.Port = 6443
 	cluster.Status.InfrastructureReady = true
-	ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration = nil
+	ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration = nil
 	ocnecp.Spec.Replicas = pointer.Int32(1)
 	setKCPHealthy(ocnecp)
 

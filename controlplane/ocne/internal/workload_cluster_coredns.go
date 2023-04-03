@@ -113,11 +113,11 @@ func (w *Workload) UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCN
 	}
 
 	// Return early if the configuration is nil.
-	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration == nil {
+	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration == nil {
 		return nil
 	}
 
-	clusterConfig := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration
+	clusterConfig := ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration
 
 	// Get the CoreDNS info needed for the upgrade.
 	info, err := w.getCoreDNSInfo(ctx, clusterConfig, version)

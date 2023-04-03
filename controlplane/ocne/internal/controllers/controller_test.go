@@ -1180,7 +1180,7 @@ func TestReconcileInitializeControlPlane(t *testing.T) {
 					Namespace:  cluster.Namespace,
 				},
 			},
-			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{},
+			ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{},
 		},
 	}
 	ocnecp.Default()
@@ -1325,7 +1325,7 @@ func TestOCNEControlPlaneReconciler_updateCoreDNS(t *testing.T) {
 		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Replicas: nil,
 			Version:  "v1.16.6",
-			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+			ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 					DNS: bootstrapv1.DNS{
 						ImageMeta: bootstrapv1.ImageMeta{
@@ -1455,7 +1455,7 @@ kubernetesVersion: metav1.16.1`,
 	t.Run("returns no error when no ClusterConfiguration is specified", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := ocnecp.DeepCopy()
-		ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration = nil
+		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration = nil
 
 		objs := []client.Object{
 			cluster.DeepCopy(),

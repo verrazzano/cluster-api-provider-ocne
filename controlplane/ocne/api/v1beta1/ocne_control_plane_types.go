@@ -64,7 +64,7 @@ type OCNEControlPlaneSpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Version defines the desired Kubernetes version.
-	// Please note that if ocneConfigSpec.ClusterConfiguration.imageRepository is not set
+	// Please note that if controlPlaneConfig.ClusterConfiguration.imageRepository is not set
 	// we don't allow upgrades to versions >= v1.22.0 for which kubeadm uses the old registry (k8s.gcr.io).
 	// Please use a newer patch version with the new registry instead. The default registries of kubeadm are:
 	//   * registry.k8s.io (new registry): >= v1.22.17, >= v1.23.15, >= v1.24.9, >= v1.25.0
@@ -75,9 +75,9 @@ type OCNEControlPlaneSpec struct {
 	// should be shaped when creating or updating a control plane.
 	MachineTemplate OCNEControlPlaneMachineTemplate `json:"machineTemplate"`
 
-	// OCNEConfigSpec is a OCNEConfigSpec
+	// ControlPlaneConfig is a bootstrap OCNEConfigSpec
 	// to use for initializing and joining machines to the control plane.
-	OCNEConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
+	ControlPlaneConfig bootstrapv1.OCNEConfigSpec `json:"controlPlaneConfig"`
 
 	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.

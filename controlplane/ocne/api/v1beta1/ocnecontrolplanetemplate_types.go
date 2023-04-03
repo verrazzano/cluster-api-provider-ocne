@@ -75,7 +75,7 @@ type OCNEControlPlaneTemplateResourceSpec struct {
 
 	// OCNEConfigSpec is a OCNEConfigSpec
 	// to use for initializing and joining machines to the control plane.
-	OCNEConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
+	OCNEConfigSpec bootstrapv1.OCNEConfigSpec `json:"controlPlaneConfig"`
 
 	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.

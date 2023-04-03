@@ -54,7 +54,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -74,7 +74,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -94,7 +94,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{},
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{},
 			},
 		}
 		m := &clusterv1.Machine{
@@ -113,7 +113,7 @@ func TestGetAdjustedKcpConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					InitConfiguration: &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 				},
@@ -132,7 +132,7 @@ func TestGetAdjustedKcpConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					InitConfiguration: &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 				},
@@ -287,7 +287,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					Format: bootstrapv1.CloudConfig,
 				},
 			},
@@ -333,7 +333,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -381,7 +381,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration: &bootstrapv1.InitConfiguration{
 						NodeRegistration: bootstrapv1.NodeRegistrationOptions{
@@ -433,7 +433,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -481,7 +481,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
@@ -533,7 +533,7 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -585,7 +585,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -609,7 +609,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -633,7 +633,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -682,7 +682,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration: &bootstrapv1.InitConfiguration{
 						NodeRegistration: bootstrapv1.NodeRegistrationOptions{
@@ -735,7 +735,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -784,7 +784,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
@@ -837,7 +837,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
 			Spec: controlplanev1.OCNEControlPlaneSpec{
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -896,7 +896,7 @@ func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 						},
 					},
 				},
-				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+				ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},

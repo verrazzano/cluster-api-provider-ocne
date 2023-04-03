@@ -73,7 +73,7 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 					},
 				},
 			},
-			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+			ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 				InitConfiguration: &bootstrapv1.InitConfiguration{
 					LocalAPIEndpoint: bootstrapv1.APIEndpoint{
 						AdvertiseAddress: "127.0.0.1",
@@ -132,7 +132,7 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 
 	ocnecpExternalEtcd := ocnecpManagedEtcd.DeepCopy()
 	ocnecpExternalEtcd.ObjectMeta.Name = "ocnecp-external-etcd"
-	ocnecpExternalEtcd.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
+	ocnecpExternalEtcd.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
 
 	tests := []struct {
 		name              string

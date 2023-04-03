@@ -571,7 +571,7 @@ func (w *Workload) UpdateKubeProxyImageInfo(ctx context.Context, ocnecp *control
 	}
 
 	// Modify the image repository if a value was explicitly set or an upgrade is required.
-	imageRepository := ImageRepositoryFromClusterConfig(ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration, version)
+	imageRepository := ImageRepositoryFromClusterConfig(ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration, version)
 	if imageRepository != "" {
 		newImageName, err = containerutil.ModifyImageRepository(newImageName, imageRepository)
 		if err != nil {

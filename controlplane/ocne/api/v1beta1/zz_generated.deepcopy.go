@@ -130,7 +130,7 @@ func (in *OCNEControlPlaneSpec) DeepCopyInto(out *OCNEControlPlaneSpec) {
 		**out = **in
 	}
 	in.MachineTemplate.DeepCopyInto(&out.MachineTemplate)
-	in.OCNEConfigSpec.DeepCopyInto(&out.OCNEConfigSpec)
+	in.ControlPlaneConfig.DeepCopyInto(&out.ControlPlaneConfig)
 	if in.RolloutBefore != nil {
 		in, out := &in.RolloutBefore, &out.RolloutBefore
 		*out = new(RolloutBefore)

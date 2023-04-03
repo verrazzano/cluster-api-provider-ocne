@@ -319,7 +319,7 @@ func (r *OCNEControlPlaneReconciler) generateMachine(ctx context.Context, ocnecp
 
 	// Machine's bootstrap config may be missing ClusterConfiguration if it is not the first machine in the control plane.
 	// We store ClusterConfiguration as annotation here to detect any changes in KCP ClusterConfiguration and rollout the machine if any.
-	clusterConfig, err := json.Marshal(ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration)
+	clusterConfig, err := json.Marshal(ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal cluster configuration")
 	}

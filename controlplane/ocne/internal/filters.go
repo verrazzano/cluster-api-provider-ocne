@@ -81,7 +81,7 @@ func MatchesTemplateClonedFrom(infraConfigs map[string]*unstructured.Unstructure
 	}
 }
 
-// MatchesOCNEBootstrapConfig checks if machine's OCNEConfigSpec is equivalent with KCP's OCNEConfigSpec.
+// MatchesOCNEBootstrapConfig checks if machine's ControlPlaneConfig is equivalent with KCP's ControlPlaneConfig.
 func MatchesOCNEBootstrapConfig(machineConfigs map[string]*bootstrapv1.OCNEConfig, ocnecp *controlplanev1.OCNEControlPlane) collections.Func {
 	return func(machine *clusterv1.Machine) bool {
 		if machine == nil {
@@ -144,7 +144,7 @@ func matchClusterConfiguration(ocnecp *controlplanev1.OCNEControlPlane, machine 
 	if machineClusterConfig == nil {
 		machineClusterConfig = &bootstrapv1.ClusterConfiguration{}
 	}
-	ocnecpLocalClusterConfiguration := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration
+	ocnecpLocalClusterConfiguration := ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration
 	if ocnecpLocalClusterConfiguration == nil {
 		ocnecpLocalClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
 	}
@@ -162,7 +162,7 @@ func matchInitOrJoinConfiguration(machineConfig *bootstrapv1.OCNEConfig, ocnecp 
 		return true
 	}
 
-	// takes the OCNEConfigSpec from KCP and applies the transformations required
+	// takes the ControlPlaneConfig from KCP and applies the transformations required
 	// to allow a comparison with the OCNEConfig referenced from the machine.
 	ocnecpConfig := getAdjustedKcpConfig(ocnecp, machineConfig)
 
@@ -179,13 +179,13 @@ func matchInitOrJoinConfiguration(machineConfig *bootstrapv1.OCNEConfig, ocnecp 
 	return reflect.DeepEqual(&machineConfig.Spec, ocnecpConfig)
 }
 
-// getAdjustedKcpConfig takes the OCNEConfigSpec from KCP and applies the transformations required
+// getAdjustedKcpConfig takes the ControlPlaneConfig from KCP and applies the transformations required
 // to allow a comparison with the OCNEConfig referenced from the machine.
 // NOTE: The KCP controller applies a set of transformations when creating a OCNEConfig referenced from the machine,
 // mostly depending on the fact that the machine was the initial control plane node or a joining control plane node.
-// In this function we don't have such information, so we are making the OCNEConfigSpec similar to the OCNEConfig.
+// In this function we don't have such information, so we are making the ControlPlaneConfig similar to the OCNEConfig.
 func getAdjustedKcpConfig(ocnecp *controlplanev1.OCNEControlPlane, machineConfig *bootstrapv1.OCNEConfig) *bootstrapv1.OCNEConfigSpec {
-	ocnecpConfig := ocnecp.Spec.OCNEConfigSpec.DeepCopy()
+	ocnecpConfig := ocnecp.Spec.ControlPlaneConfig.DeepCopy()
 
 	// Machine's join configuration is nil when it is the first machine in the control plane.
 	if machineConfig.Spec.JoinConfiguration == nil {

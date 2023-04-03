@@ -275,7 +275,7 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	// Generate Cluster Certificates if needed
-	config := ocnecp.Spec.OCNEConfigSpec.DeepCopy()
+	config := ocnecp.Spec.ControlPlaneConfig.DeepCopy()
 	config.JoinConfiguration = nil
 	if config.ClusterConfiguration == nil {
 		config.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{}

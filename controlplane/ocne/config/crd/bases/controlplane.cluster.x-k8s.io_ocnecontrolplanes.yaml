@@ -84,96 +84,9 @@ spec:
           spec:
             description: OCNEControlPlaneSpec defines the desired state of OCNEControlPlane.
             properties:
-              machineTemplate:
-                description: MachineTemplate contains information about how machines
-                  should be shaped when creating or updating a control plane.
-                properties:
-                  infrastructureRef:
-                    description: InfrastructureRef is a required reference to a custom
-                      resource offered by an infrastructure provider.
-                    properties:
-                      apiVersion:
-                        description: API version of the referent.
-                        type: string
-                      fieldPath:
-                        description: 'If referring to a piece of an object instead
-                          of an entire object, this string should contain a valid
-                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
-                          For example, if the object reference is to a container within
-                          a pod, this would take on a value like: "spec.containers{name}"
-                          (where "name" refers to the name of the container that triggered
-                          the event) or if no container name is specified "spec.containers[2]"
-                          (container with index 2 in this pod). This syntax is chosen
-                          only to have some well-defined way of referencing a part
-                          of an object. TODO: this design is not final and this field
-                          is subject to change in the future.'
-                        type: string
-                      kind:
-                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
-                        type: string
-                      namespace:
-                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
-                        type: string
-                      resourceVersion:
-                        description: 'Specific resourceVersion to which this reference
-                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
-                        type: string
-                      uid:
-                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
-                  metadata:
-                    description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        description: 'Annotations is an unstructured key value map
-                          stored with a resource that may be set by external tools
-                          to store and retrieve arbitrary metadata. They are not queryable
-                          and should be preserved when modifying objects. More info:
-                          http://kubernetes.io/docs/user-guide/annotations'
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        description: 'Map of string keys and values that can be used
-                          to organize and categorize (scope and select) objects. May
-                          match selectors of replication controllers and services.
-                          More info: http://kubernetes.io/docs/user-guide/labels'
-                        type: object
-                    type: object
-                  nodeDeletionTimeout:
-                    description: NodeDeletionTimeout defines how long the machine
-                      controller will attempt to delete the Node that the Machine
-                      hosts after the Machine is marked for deletion. A duration of
-                      0 will retry deletion indefinitely. If no value is provided,
-                      the default value for this property of the Machine resource
-                      will be used.
-                    type: string
-                  nodeDrainTimeout:
-                    description: 'NodeDrainTimeout is the total amount of time that
-                      the controller will spend on draining a controlplane node The
-                      default value is 0, meaning that the node can be drained without
-                      any time limitations. NOTE: NodeDrainTimeout is different from
-                      `kubectl drain --timeout`'
-                    type: string
-                  nodeVolumeDetachTimeout:
-                    description: NodeVolumeDetachTimeout is the total amount of time
-                      that the controller will spend on waiting for all volumes to
-                      be detached. The default value is 0, meaning that the volumes
-                      can be detached without any time limitations.
-                    type: string
-                required:
-                - infrastructureRef
-                type: object
-              ocneConfigSpec:
-                description: OCNEConfigSpec is a OCNEConfigSpec to use for initializing
-                  and joining machines to the control plane.
+              controlPlaneConfig:
+                description: ControlPlaneConfig is a bootstrap OCNEConfigSpec to use
+                  for initializing and joining machines to the control plane.
                 properties:
                   clusterConfiguration:
                     description: ClusterConfiguration along with InitConfiguration
@@ -1234,6 +1147,93 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              machineTemplate:
+                description: MachineTemplate contains information about how machines
+                  should be shaped when creating or updating a control plane.
+                properties:
+                  infrastructureRef:
+                    description: InfrastructureRef is a required reference to a custom
+                      resource offered by an infrastructure provider.
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      fieldPath:
+                        description: 'If referring to a piece of an object instead
+                          of an entire object, this string should contain a valid
+                          JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                          For example, if the object reference is to a container within
+                          a pod, this would take on a value like: "spec.containers{name}"
+                          (where "name" refers to the name of the container that triggered
+                          the event) or if no container name is specified "spec.containers[2]"
+                          (container with index 2 in this pod). This syntax is chosen
+                          only to have some well-defined way of referencing a part
+                          of an object. TODO: this design is not final and this field
+                          is subject to change in the future.'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                        type: string
+                      resourceVersion:
+                        description: 'Specific resourceVersion to which this reference
+                          is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      uid:
+                        description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  metadata:
+                    description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata'
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: 'Annotations is an unstructured key value map
+                          stored with a resource that may be set by external tools
+                          to store and retrieve arbitrary metadata. They are not queryable
+                          and should be preserved when modifying objects. More info:
+                          http://kubernetes.io/docs/user-guide/annotations'
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: 'Map of string keys and values that can be used
+                          to organize and categorize (scope and select) objects. May
+                          match selectors of replication controllers and services.
+                          More info: http://kubernetes.io/docs/user-guide/labels'
+                        type: object
+                    type: object
+                  nodeDeletionTimeout:
+                    description: NodeDeletionTimeout defines how long the machine
+                      controller will attempt to delete the Node that the Machine
+                      hosts after the Machine is marked for deletion. A duration of
+                      0 will retry deletion indefinitely. If no value is provided,
+                      the default value for this property of the Machine resource
+                      will be used.
+                    type: string
+                  nodeDrainTimeout:
+                    description: 'NodeDrainTimeout is the total amount of time that
+                      the controller will spend on draining a controlplane node The
+                      default value is 0, meaning that the node can be drained without
+                      any time limitations. NOTE: NodeDrainTimeout is different from
+                      `kubectl drain --timeout`'
+                    type: string
+                  nodeVolumeDetachTimeout:
+                    description: NodeVolumeDetachTimeout is the total amount of time
+                      that the controller will spend on waiting for all volumes to
+                      be detached. The default value is 0, meaning that the volumes
+                      can be detached without any time limitations.
+                    type: string
+                required:
+                - infrastructureRef
+                type: object
               replicas:
                 description: Number of desired machines. Defaults to 1. When stacked
                   etcd is used only odd numbers are permitted, as per [etcd best practice](https://etcd.io/docs/v3.3.12/faq/#why-an-odd-number-of-cluster-members).
@@ -1287,7 +1287,7 @@ spec:
                 type: object
               version:
                 description: 'Version defines the desired Kubernetes version. Please
-                  note that if ocneConfigSpec.ClusterConfiguration.imageRepository
+                  note that if controlPlaneConfig.ClusterConfiguration.imageRepository
                   is not set we don''t allow upgrades to versions >= v1.22.0 for which
                   kubeadm uses the old registry (k8s.gcr.io). Please use a newer patch
                   version with the new registry instead. The default registries of
@@ -1295,8 +1295,8 @@ spec:
                   >= v1.24.9, >= v1.25.0 * k8s.gcr.io (old registry): all older versions'
                 type: string
             required:
+            - controlPlaneConfig
             - machineTemplate
-            - ocneConfigSpec
             - version
             type: object
           status:

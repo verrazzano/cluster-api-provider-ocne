@@ -157,7 +157,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+					ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "foo.bar.example/baz/qux",
 						},
@@ -172,7 +172,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+					ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "",
 						},
@@ -196,7 +196,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
+					ControlPlaneConfig: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "%%%",
 						},

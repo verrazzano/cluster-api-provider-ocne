@@ -56,35 +56,7 @@ spec:
                       because they are calculated by the Cluster topology reconciler
                       during reconciliation and thus cannot be configured on the OCNEControlPlaneTemplate.'
                     properties:
-                      machineTemplate:
-                        description: MachineTemplate contains information about how
-                          machines should be shaped when creating or updating a control
-                          plane.
-                        properties:
-                          nodeDeletionTimeout:
-                            description: NodeDeletionTimeout defines how long the
-                              machine controller will attempt to delete the Node that
-                              the Machine hosts after the Machine is marked for deletion.
-                              A duration of 0 will retry deletion indefinitely. If
-                              no value is provided, the default value for this property
-                              of the Machine resource will be used.
-                            type: string
-                          nodeDrainTimeout:
-                            description: 'NodeDrainTimeout is the total amount of
-                              time that the controller will spend on draining a controlplane
-                              node The default value is 0, meaning that the node can
-                              be drained without any time limitations. NOTE: NodeDrainTimeout
-                              is different from `kubectl drain --timeout`'
-                            type: string
-                          nodeVolumeDetachTimeout:
-                            description: NodeVolumeDetachTimeout is the total amount
-                              of time that the controller will spend on waiting for
-                              all volumes to be detached. The default value is 0,
-                              meaning that the volumes can be detached without any
-                              time limitations.
-                            type: string
-                        type: object
-                      ocneConfigSpec:
+                      controlPlaneConfig:
                         description: OCNEConfigSpec is a OCNEConfigSpec to use for
                           initializing and joining machines to the control plane.
                         properties:
@@ -1220,6 +1192,34 @@ spec:
                             format: int32
                             type: integer
                         type: object
+                      machineTemplate:
+                        description: MachineTemplate contains information about how
+                          machines should be shaped when creating or updating a control
+                          plane.
+                        properties:
+                          nodeDeletionTimeout:
+                            description: NodeDeletionTimeout defines how long the
+                              machine controller will attempt to delete the Node that
+                              the Machine hosts after the Machine is marked for deletion.
+                              A duration of 0 will retry deletion indefinitely. If
+                              no value is provided, the default value for this property
+                              of the Machine resource will be used.
+                            type: string
+                          nodeDrainTimeout:
+                            description: 'NodeDrainTimeout is the total amount of
+                              time that the controller will spend on draining a controlplane
+                              node The default value is 0, meaning that the node can
+                              be drained without any time limitations. NOTE: NodeDrainTimeout
+                              is different from `kubectl drain --timeout`'
+                            type: string
+                          nodeVolumeDetachTimeout:
+                            description: NodeVolumeDetachTimeout is the total amount
+                              of time that the controller will spend on waiting for
+                              all volumes to be detached. The default value is 0,
+                              meaning that the volumes can be detached without any
+                              time limitations.
+                            type: string
+                        type: object
                       rolloutAfter:
                         description: RolloutAfter is a field to indicate a rollout
                           should be performed after the specified time even if no
@@ -1267,7 +1267,7 @@ spec:
                             type: string
                         type: object
                     required:
-                    - ocneConfigSpec
+                    - controlPlaneConfig
                     type: object
                 required:
                 - spec
