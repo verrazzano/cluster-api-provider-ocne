@@ -56,9 +56,9 @@ func TestOCNEControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -73,7 +73,7 @@ func TestOCNEControlPlaneReconciler_updateStatusNoMachines(t *testing.T) {
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
 	log.SetLogger(klogr.New())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Machines: map[string]*clusterv1.Machine{},
@@ -112,9 +112,9 @@ func TestOCNEControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testing.T
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -138,7 +138,7 @@ func TestOCNEControlPlaneReconciler_updateStatusAllMachinesNotReady(t *testing.T
 	fakeClient := newFakeClient(objs...)
 	log.SetLogger(klogr.New())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Machines: machines,
@@ -177,9 +177,9 @@ func TestOCNEControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T) {
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -203,7 +203,7 @@ func TestOCNEControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T) {
 	fakeClient := newFakeClient(objs...)
 	log.SetLogger(klogr.New())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Machines: machines,
@@ -211,7 +211,7 @@ func TestOCNEControlPlaneReconciler_updateStatusAllMachinesReady(t *testing.T) {
 				Status: internal.ClusterStatus{
 					Nodes:         3,
 					ReadyNodes:    3,
-					HasOcneConfig: true,
+					HasOCNEConfig: true,
 				},
 			},
 		},
@@ -250,9 +250,9 @@ func TestOCNEControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing.T)
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -277,7 +277,7 @@ func TestOCNEControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing.T)
 	fakeClient := newFakeClient(objs...)
 	log.SetLogger(klogr.New())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Machines: machines,
@@ -285,7 +285,7 @@ func TestOCNEControlPlaneReconciler_updateStatusMachinesReadyMixed(t *testing.T)
 				Status: internal.ClusterStatus{
 					Nodes:         5,
 					ReadyNodes:    1,
-					HasOcneConfig: true,
+					HasOCNEConfig: true,
 				},
 			},
 		},
@@ -322,10 +322,10 @@ func TestOCNEControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAreNo
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version:  "v1.16.6",
 			Replicas: pointer.Int32(3),
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -350,7 +350,7 @@ func TestOCNEControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAreNo
 	log.SetLogger(klogr.New())
 
 	// Set all the machines to `not ready`
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Machines: machines,
@@ -358,7 +358,7 @@ func TestOCNEControlPlaneReconciler_machinesCreatedIsIsTrueEvenWhenTheNodesAreNo
 				Status: internal.ClusterStatus{
 					Nodes:         0,
 					ReadyNodes:    0,
-					HasOcneConfig: true,
+					HasOCNEConfig: true,
 				},
 			},
 		},

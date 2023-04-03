@@ -38,7 +38,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
+func (r *OCNEControlPlaneReconciler) initializeControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// Perform an uncached read of all the owned machines. This check is in place to make sure
@@ -67,7 +67,7 @@ func (r *OcneControlPlaneReconciler) initializeControlPlane(ctx context.Context,
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
+func (r *OCNEControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// Run preflight checks to ensure that the control plane is stable before proceeding with a scale up/scale down operation; if not, wait.
@@ -88,7 +88,7 @@ func (r *OcneControlPlaneReconciler) scaleUpControlPlane(ctx context.Context, cl
 	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
+func (r *OCNEControlPlaneReconciler) scaleDownControlPlane(
 	ctx context.Context,
 	cluster *clusterv1.Cluster,
 	ocnecp *controlplanev1.OCNEControlPlane,
@@ -138,7 +138,7 @@ func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
 		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 	}
 
-	if err := workloadCluster.RemoveMachineFromOcneConfigMap(ctx, machineToDelete, parsedVersion); err != nil {
+	if err := workloadCluster.RemoveMachineFromOCNEConfigMap(ctx, machineToDelete, parsedVersion); err != nil {
 		logger.Error(err, "Failed to remove machine from kubeadm ConfigMap")
 		return ctrl.Result{}, err
 	}
@@ -163,7 +163,7 @@ func (r *OcneControlPlaneReconciler) scaleDownControlPlane(
 // If the control plane is not passing preflight checks, it requeue.
 //
 // NOTE: this func uses KCP conditions, it is required to call reconcileControlPlaneConditions before this.
-func (r *OcneControlPlaneReconciler) preflightChecks(ctx context.Context, controlPlane *internal.ControlPlane, excludeFor ...*clusterv1.Machine) (ctrl.Result, error) { //nolint:unparam
+func (r *OCNEControlPlaneReconciler) preflightChecks(ctx context.Context, controlPlane *internal.ControlPlane, excludeFor ...*clusterv1.Machine) (ctrl.Result, error) { //nolint:unparam
 	logger := ctrl.LoggerFrom(ctx)
 
 	// If there is no KCP-owned control-plane machines, then control-plane has not been initialized yet,

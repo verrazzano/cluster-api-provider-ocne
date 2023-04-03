@@ -260,7 +260,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&ocnecontrolplanecontrollers.OcneControlPlaneReconciler{
+	if err := (&ocnecontrolplanecontrollers.OCNEControlPlaneReconciler{
 		Client:           mgr.GetClient(),
 		APIReader:        mgr.GetAPIReader(),
 		Tracker:          tracker,

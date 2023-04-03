@@ -47,13 +47,13 @@ func TestOCNEControlPlaneReconciler_RolloutStrategy_ScaleUp(t *testing.T) {
 	cluster.Spec.ControlPlaneEndpoint.Host = Host
 	cluster.Spec.ControlPlaneEndpoint.Port = 6443
 	cluster.Status.InfrastructureReady = true
-	ocnecp.Spec.OcneConfigSpec.ClusterConfiguration = nil
+	ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration = nil
 	ocnecp.Spec.Replicas = pointer.Int32(1)
 	setKCPHealthy(ocnecp)
 
 	fakeClient := newFakeClient(fakeGenericMachineTemplateCRD, cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:    fakeClient,
 		APIReader: fakeClient,
 		recorder:  record.NewFakeRecorder(32),
@@ -178,7 +178,7 @@ func TestOCNEControlPlaneReconciler_RolloutStrategy_ScaleDown(t *testing.T) {
 	}
 	fakeClient := newFakeClient(objs...)
 	fmc.Reader = fakeClient
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		APIReader:                 fakeClient,
 		Client:                    fakeClient,
 		managementCluster:         fmc,

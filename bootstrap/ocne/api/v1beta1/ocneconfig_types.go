@@ -154,8 +154,8 @@ type ContainerLinuxConfig struct {
 	Strict bool `json:"strict,omitempty"`
 }
 
-// OcneConfigStatus defines the observed state of OCNEConfig.
-type OcneConfigStatus struct {
+// OCNEConfigStatus defines the observed state of OCNEConfig.
+type OCNEConfigStatus struct {
 	// Ready indicates the BootstrapData field is ready to be consumed
 	// +optional
 	Ready bool `json:"ready"`
@@ -194,7 +194,7 @@ type OCNEConfig struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   OCNEConfigSpec   `json:"spec,omitempty"`
-	Status OcneConfigStatus `json:"status,omitempty"`
+	Status OCNEConfigStatus `json:"status,omitempty"`
 }
 
 // GetConditions returns the set of conditions for this object.

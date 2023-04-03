@@ -48,7 +48,7 @@ func TestOCNEConfigReconciler(t *testing.T) {
 				g.Expect(env.Cleanup(ctx, do...)).To(Succeed())
 			}(cluster, machine, config, ns)
 
-			reconciler := OcneConfigReconciler{
+			reconciler := OCNEConfigReconciler{
 				Client: env,
 			}
 			t.Log("Calling reconcile should requeue")

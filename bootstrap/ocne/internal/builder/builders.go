@@ -26,8 +26,8 @@ import (
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
 )
 
-// OcneConfigBuilder contains the information needed to produce a OcneConfig.
-type OcneConfigBuilder struct {
+// OCNEConfigBuilder contains the information needed to produce a OCNEConfig.
+type OCNEConfigBuilder struct {
 	name          string
 	namespace     string
 	joinConfig    *bootstrapv1.JoinConfiguration
@@ -35,34 +35,34 @@ type OcneConfigBuilder struct {
 	clusterConfig *bootstrapv1.ClusterConfiguration
 }
 
-// OcneConfig returns a OcneConfigBuilder with the supplied name and namespace.
-func OcneConfig(namespace, name string) *OcneConfigBuilder {
-	return &OcneConfigBuilder{
+// OCNEConfig returns a OCNEConfigBuilder with the supplied name and namespace.
+func OCNEConfig(namespace, name string) *OCNEConfigBuilder {
+	return &OCNEConfigBuilder{
 		name:      name,
 		namespace: namespace,
 	}
 }
 
-// WithJoinConfig adds the passed JoinConfig to the OcneConfigBuilder.
-func (k *OcneConfigBuilder) WithJoinConfig(joinConf *bootstrapv1.JoinConfiguration) *OcneConfigBuilder {
+// WithJoinConfig adds the passed JoinConfig to the OCNEConfigBuilder.
+func (k *OCNEConfigBuilder) WithJoinConfig(joinConf *bootstrapv1.JoinConfiguration) *OCNEConfigBuilder {
 	k.joinConfig = joinConf
 	return k
 }
 
-// WithClusterConfig adds the passed ClusterConfig to the OcneConfigBuilder.
-func (k *OcneConfigBuilder) WithClusterConfig(clusterConf *bootstrapv1.ClusterConfiguration) *OcneConfigBuilder {
+// WithClusterConfig adds the passed ClusterConfig to the OCNEConfigBuilder.
+func (k *OCNEConfigBuilder) WithClusterConfig(clusterConf *bootstrapv1.ClusterConfiguration) *OCNEConfigBuilder {
 	k.clusterConfig = clusterConf
 	return k
 }
 
-// WithInitConfig adds the passed InitConfig to the OcneConfigBuilder.
-func (k *OcneConfigBuilder) WithInitConfig(initConf *bootstrapv1.InitConfiguration) *OcneConfigBuilder {
+// WithInitConfig adds the passed InitConfig to the OCNEConfigBuilder.
+func (k *OCNEConfigBuilder) WithInitConfig(initConf *bootstrapv1.InitConfiguration) *OCNEConfigBuilder {
 	k.initConfig = initConf
 	return k
 }
 
-// Unstructured produces a OcneConfig as an unstructured Kubernetes object.
-func (k *OcneConfigBuilder) Unstructured() *unstructured.Unstructured {
+// Unstructured produces a OCNEConfig as an unstructured Kubernetes object.
+func (k *OCNEConfigBuilder) Unstructured() *unstructured.Unstructured {
 	config := k.Build()
 	rawMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(config)
 	if err != nil {
@@ -71,8 +71,8 @@ func (k *OcneConfigBuilder) Unstructured() *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: rawMap}
 }
 
-// Build produces a OcneConfig from the variable in the OcneConfigBuilder.
-func (k *OcneConfigBuilder) Build() *bootstrapv1.OCNEConfig {
+// Build produces a OCNEConfig from the variable in the OCNEConfigBuilder.
+func (k *OCNEConfigBuilder) Build() *bootstrapv1.OCNEConfig {
 	config := &bootstrapv1.OCNEConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OCNEConfig",

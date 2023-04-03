@@ -84,7 +84,7 @@ func TestControlPlane(t *testing.T) {
 
 		t.Run("Should generate OCNEConfig without a controller reference", func(t *testing.T) {
 			spec := &bootstrapv1.OCNEConfigSpec{}
-			ocneConfig := controlPlane.GenerateOcneConfig(spec)
+			ocneConfig := controlPlane.GenerateOCNEConfig(spec)
 			g.Expect(ocneConfig.Labels["cluster.x-k8s.io/cluster-name"]).To(Equal("test-cluster"))
 			g.Expect(ocneConfig.OwnerReferences[0].Controller).To(BeNil())
 		})

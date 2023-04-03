@@ -39,7 +39,7 @@ import (
 
 // reconcileUnhealthyMachines tries to remediate OCNEControlPlane unhealthy machines
 // based on the process described in https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20191017-kubeadm-based-control-plane.md#remediation-using-delete-and-recreate
-func (r *OcneControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Context, controlPlane *internal.ControlPlane) (ret ctrl.Result, retErr error) {
+func (r *OCNEControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Context, controlPlane *internal.ControlPlane) (ret ctrl.Result, retErr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// Cleanup pending remediation actions not completed for any reasons (e.g. number of current replicas is less or equal to 1)
@@ -181,7 +181,7 @@ func (r *OcneControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Cont
 		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", controlPlane.KCP.Spec.Version)
 	}
 
-	if err := workloadCluster.RemoveMachineFromOcneConfigMap(ctx, machineToBeRemediated, parsedVersion); err != nil {
+	if err := workloadCluster.RemoveMachineFromOCNEConfigMap(ctx, machineToBeRemediated, parsedVersion); err != nil {
 		log.Error(err, "Failed to remove machine from kubeadm ConfigMap")
 		return ctrl.Result{}, err
 	}
@@ -211,7 +211,7 @@ func (r *OcneControlPlaneReconciler) reconcileUnhealthyMachines(ctx context.Cont
 //
 // NOTE: this func assumes the list of members in sync with the list of machines/nodes, it is required to call reconcileEtcdMembers
 // ans well as reconcileControlPlaneConditions before this.
-func (r *OcneControlPlaneReconciler) canSafelyRemoveEtcdMember(ctx context.Context, controlPlane *internal.ControlPlane, machineToBeRemediated *clusterv1.Machine) (bool, error) {
+func (r *OCNEControlPlaneReconciler) canSafelyRemoveEtcdMember(ctx context.Context, controlPlane *internal.ControlPlane, machineToBeRemediated *clusterv1.Machine) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	workloadCluster, err := r.managementCluster.GetWorkloadCluster(ctx, client.ObjectKey{

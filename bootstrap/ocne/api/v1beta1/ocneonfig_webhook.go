@@ -52,11 +52,11 @@ var _ webhook.Defaulter = &OCNEConfig{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (c *OCNEConfig) Default() {
-	DefaultOcneConfigSpec(&c.Spec)
+	DefaultOCNEConfigSpec(&c.Spec)
 }
 
-// DefaultOcneConfigSpec defaults a OCNEConfigSpec.
-func DefaultOcneConfigSpec(r *OCNEConfigSpec) {
+// DefaultOCNEConfigSpec defaults a OCNEConfigSpec.
+func DefaultOCNEConfigSpec(r *OCNEConfigSpec) {
 	if r.Format == "" {
 		r.Format = CloudConfig
 	}

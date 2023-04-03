@@ -59,7 +59,7 @@ func (in *OCNEControlPlane) Default() {
 	defaultKubeadmControlPlaneSpec(&in.Spec, in.Namespace)
 }
 
-func defaultKubeadmControlPlaneSpec(s *OcneControlPlaneSpec, namespace string) {
+func defaultKubeadmControlPlaneSpec(s *OCNEControlPlaneSpec, namespace string) {
 	if s.Replicas == nil {
 		replicas := int32(1)
 		s.Replicas = &replicas
@@ -73,7 +73,7 @@ func defaultKubeadmControlPlaneSpec(s *OcneControlPlaneSpec, namespace string) {
 		s.Version = "v" + s.Version
 	}
 
-	bootstrapv1.DefaultOcneConfigSpec(&s.OcneConfigSpec)
+	bootstrapv1.DefaultOCNEConfigSpec(&s.OCNEConfigSpec)
 
 	s.RolloutStrategy = defaultRolloutStrategy(s.RolloutStrategy)
 }
@@ -105,8 +105,8 @@ func defaultRolloutStrategy(rolloutStrategy *RolloutStrategy) *RolloutStrategy {
 func (in *OCNEControlPlane) ValidateCreate() error {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
-	allErrs = append(allErrs, validateClusterConfiguration(spec.OcneConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
-	allErrs = append(allErrs, spec.OcneConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(spec.OCNEConfigSpec.ClusterConfiguration, nil, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
+	allErrs = append(allErrs, spec.OCNEConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
@@ -189,7 +189,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	// NOTE: Defaulting for the format field has been added in v1.1.0 after implementing ignition support.
 	// This allows existing KCP objects to pick up the new default.
-	if prev.Spec.OcneConfigSpec.Format == "" && in.Spec.OcneConfigSpec.Format == bootstrapv1.CloudConfig {
+	if prev.Spec.OCNEConfigSpec.Format == "" && in.Spec.OCNEConfigSpec.Format == bootstrapv1.CloudConfig {
 		allowedPaths = append(allowedPaths, []string{spec, ocneConfigSpec, "format"})
 	}
 
@@ -228,9 +228,9 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	}
 
 	allErrs = append(allErrs, in.validateVersion(prev.Spec.Version)...)
-	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.OcneConfigSpec.ClusterConfiguration, prev.Spec.OcneConfigSpec.ClusterConfiguration, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
+	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.OCNEConfigSpec.ClusterConfiguration, prev.Spec.OCNEConfigSpec.ClusterConfiguration, field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration"))...)
 	allErrs = append(allErrs, in.validateCoreDNSVersion(prev)...)
-	allErrs = append(allErrs, in.Spec.OcneConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
+	allErrs = append(allErrs, in.Spec.OCNEConfigSpec.Validate(field.NewPath("spec", "ocneConfigSpec"))...)
 
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
@@ -239,7 +239,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-func validateKubeadmControlPlaneSpec(s OcneControlPlaneSpec, namespace string, pathPrefix *field.Path) field.ErrorList {
+func validateKubeadmControlPlaneSpec(s OCNEControlPlaneSpec, namespace string, pathPrefix *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if s.Replicas == nil {
@@ -264,8 +264,8 @@ func validateKubeadmControlPlaneSpec(s OcneControlPlaneSpec, namespace string, p
 	}
 
 	externalEtcd := false
-	if s.OcneConfigSpec.ClusterConfiguration != nil {
-		if s.OcneConfigSpec.ClusterConfiguration.Etcd.External != nil {
+	if s.OCNEConfigSpec.ClusterConfiguration != nil {
+		if s.OCNEConfigSpec.ClusterConfiguration.Etcd.External != nil {
 			externalEtcd = true
 		}
 	}
@@ -520,21 +520,21 @@ func paths(path []string, diff map[string]interface{}) [][]string {
 }
 
 func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allErrs field.ErrorList) {
-	if in.Spec.OcneConfigSpec.ClusterConfiguration == nil || prev.Spec.OcneConfigSpec.ClusterConfiguration == nil {
+	if in.Spec.OCNEConfigSpec.ClusterConfiguration == nil || prev.Spec.OCNEConfigSpec.ClusterConfiguration == nil {
 		return allErrs
 	}
 	// return if either current or target versions is empty
-	if prev.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag == "" {
+	if prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag == "" {
 		return allErrs
 	}
-	targetDNS := &in.Spec.OcneConfigSpec.ClusterConfiguration.DNS
+	targetDNS := &in.Spec.OCNEConfigSpec.ClusterConfiguration.DNS
 
-	fromVersion, err := version.ParseMajorMinorPatchTolerant(prev.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag)
+	fromVersion, err := version.ParseMajorMinorPatchTolerant(prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag)
 	if err != nil {
 		allErrs = append(allErrs,
 			field.Invalid(
 				field.NewPath("spec", "ocneConfigSpec", "clusterConfiguration", "dns", "imageTag"),
-				prev.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag,
+				prev.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag,
 				fmt.Sprintf("failed to parse current CoreDNS version: %v", err),
 			),
 		)
@@ -632,8 +632,8 @@ func (in *OCNEControlPlane) validateVersion(previousVersion string) (allErrs fie
 	// given how the migration has been implemented in kubeadm.
 	//
 	// Block if imageRepository is not set (i.e. the default registry should be used),
-	if (in.Spec.OcneConfigSpec.ClusterConfiguration == nil ||
-		in.Spec.OcneConfigSpec.ClusterConfiguration.ImageRepository == "") &&
+	if (in.Spec.OCNEConfigSpec.ClusterConfiguration == nil ||
+		in.Spec.OCNEConfigSpec.ClusterConfiguration.ImageRepository == "") &&
 		// the version changed (i.e. we have an upgrade),
 		toVersion.NE(fromVersion) &&
 		// the version is >= v1.22.0 and < v1.26.0

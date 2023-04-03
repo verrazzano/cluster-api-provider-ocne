@@ -85,7 +85,7 @@ func TestClusterToKubeadmControlPlane(t *testing.T) {
 		},
 	}
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -100,7 +100,7 @@ func TestClusterToKubeadmControlPlaneNoControlPlane(t *testing.T) {
 
 	cluster := newCluster(&types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceDefault})
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -123,7 +123,7 @@ func TestClusterToKubeadmControlPlaneOtherControlPlane(t *testing.T) {
 		},
 	}
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -145,7 +145,7 @@ func TestReconcileReturnErrorWhenOwnerClusterIsMissing(t *testing.T) {
 		g.Expect(env.Cleanup(ctx, do...)).To(Succeed())
 	}(ocnecp, ns)
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   env,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -167,7 +167,7 @@ func TestReconcileUpdateObservedGeneration(t *testing.T) {
 	t.Skip("Disabling this test temporarily until we can get a fix for https://github.com/kubernetes/kubernetes/issues/80609 in controller runtime + switch to a live client in test env.")
 
 	g := NewWithT(t)
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:            env,
 		recorder:          record.NewFakeRecorder(32),
 		managementCluster: &internal.Management{Client: env.Client, Tracker: nil},
@@ -232,9 +232,9 @@ func TestReconcileNoClusterOwnerRef(t *testing.T) {
 			Namespace: metav1.NamespaceDefault,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "UnknownInfraMachine",
 					APIVersion: "test/v1alpha1",
@@ -248,7 +248,7 @@ func TestReconcileNoClusterOwnerRef(t *testing.T) {
 	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -270,9 +270,9 @@ func TestReconcileNoKCP(t *testing.T) {
 			Namespace: metav1.NamespaceDefault,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "UnknownInfraMachine",
 					APIVersion: "test/v1alpha1",
@@ -284,7 +284,7 @@ func TestReconcileNoKCP(t *testing.T) {
 	}
 
 	fakeClient := newFakeClient()
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -308,9 +308,9 @@ func TestReconcileNoCluster(t *testing.T) {
 				},
 			},
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "UnknownInfraMachine",
 					APIVersion: "test/v1alpha1",
@@ -324,7 +324,7 @@ func TestReconcileNoCluster(t *testing.T) {
 	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -357,9 +357,9 @@ func TestReconcilePaused(t *testing.T) {
 				},
 			},
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "UnknownInfraMachine",
 					APIVersion: "test/v1alpha1",
@@ -372,7 +372,7 @@ func TestReconcilePaused(t *testing.T) {
 	ocnecp.Default()
 	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -410,9 +410,9 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 				},
 			},
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "UnknownInfraMachine",
 					APIVersion: "test/v1alpha1",
@@ -426,7 +426,7 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 		managementCluster: &fakeManagementCluster{
@@ -440,7 +440,7 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 	// this first requeue is to add finalizer
 	g.Expect(result).To(Equal(ctrl.Result{}))
 	g.Expect(r.Client.Get(ctx, util.ObjectKey(ocnecp), ocnecp)).To(Succeed())
-	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 	result, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
 	g.Expect(err).NotTo(HaveOccurred())
@@ -449,7 +449,7 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 	g.Expect(r.Client.Get(ctx, util.ObjectKey(ocnecp), ocnecp)).To(Succeed())
 
 	// Always expect that the Finalizer is set on the passed in resource
-	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
 
@@ -508,7 +508,7 @@ func TestOCNEControlPlaneReconciler_adoption(t *testing.T) {
 
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -602,7 +602,7 @@ func TestOCNEControlPlaneReconciler_adoption(t *testing.T) {
 
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -683,7 +683,7 @@ func TestOCNEControlPlaneReconciler_adoption(t *testing.T) {
 		}
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -737,7 +737,7 @@ func TestOCNEControlPlaneReconciler_adoption(t *testing.T) {
 		fakeClient := newFakeClient(fakeGenericMachineTemplateCRD, cluster.DeepCopy(), ocnecp.DeepCopy(), tmpl.DeepCopy(), fmc.Machines["test0"].DeepCopy())
 		fmc.Reader = fakeClient
 		recorder := record.NewFakeRecorder(32)
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			recorder:                  recorder,
@@ -807,7 +807,7 @@ func TestOCNEControlPlaneReconciler_ensureOwnerReferences(t *testing.T) {
 
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -849,7 +849,7 @@ func TestOCNEControlPlaneReconciler_ensureOwnerReferences(t *testing.T) {
 
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -894,7 +894,7 @@ func TestOCNEControlPlaneReconciler_ensureOwnerReferences(t *testing.T) {
 
 		fakeClient := newFakeClient(objs...)
 		fmc.Reader = fakeClient
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -921,7 +921,7 @@ func TestReconcileCertificateExpiries(t *testing.T) {
 
 	cluster := newCluster(&types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceDefault})
 	ocnecp := &controlplanev1.OCNEControlPlane{
-		Status: controlplanev1.OcneControlPlaneStatus{Initialized: true},
+		Status: controlplanev1.OCNEControlPlaneStatus{Initialized: true},
 	}
 	machineWithoutExpiryAnnotation := &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1091,7 +1091,7 @@ func TestReconcileCertificateExpiries(t *testing.T) {
 	controlPlane, err := internal.NewControlPlane(ctx, fakeClient, cluster, ocnecp, ownedMachines)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client: fakeClient,
 		managementCluster: &fakeManagementCluster{
 			Workload: fakeWorkloadCluster{
@@ -1169,10 +1169,10 @@ func TestReconcileInitializeControlPlane(t *testing.T) {
 				},
 			},
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Replicas: nil,
 			Version:  "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       genericMachineTemplate.GetKind(),
 					APIVersion: genericMachineTemplate.GetAPIVersion(),
@@ -1180,7 +1180,7 @@ func TestReconcileInitializeControlPlane(t *testing.T) {
 					Namespace:  cluster.Namespace,
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{},
+			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{},
 		},
 	}
 	ocnecp.Default()
@@ -1240,7 +1240,7 @@ kubernetesVersion: metav1.16.1`,
 		corednsDepl.DeepCopy(),
 	)
 	expectedLabels := map[string]string{clusterv1.ClusterLabelName: "foo"}
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:    fakeClient,
 		APIReader: fakeClient,
 		recorder:  record.NewFakeRecorder(32),
@@ -1269,7 +1269,7 @@ kubernetesVersion: metav1.16.1`,
 	// this first requeue is to add finalizer
 	g.Expect(result).To(Equal(ctrl.Result{}))
 	g.Expect(r.Client.Get(ctx, util.ObjectKey(ocnecp), ocnecp)).To(Succeed())
-	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 	result, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
 	g.Expect(err).NotTo(HaveOccurred())
@@ -1284,7 +1284,7 @@ kubernetesVersion: metav1.16.1`,
 	}))
 
 	// Always expect that the Finalizer is set on the passed in resource
-	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+	g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 	g.Expect(ocnecp.Status.Selector).NotTo(BeEmpty())
 	g.Expect(ocnecp.Status.Replicas).To(BeEquivalentTo(1))
@@ -1322,10 +1322,10 @@ func TestOCNEControlPlaneReconciler_updateCoreDNS(t *testing.T) {
 			Namespace: cluster.Namespace,
 			Name:      "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Replicas: nil,
 			Version:  "v1.16.6",
-			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 					DNS: bootstrapv1.DNS{
 						ImageMeta: bootstrapv1.ImageMeta{
@@ -1455,7 +1455,7 @@ kubernetesVersion: metav1.16.1`,
 	t.Run("returns no error when no ClusterConfiguration is specified", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := ocnecp.DeepCopy()
-		ocnecp.Spec.OcneConfigSpec.ClusterConfiguration = nil
+		ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration = nil
 
 		objs := []client.Object{
 			cluster.DeepCopy(),
@@ -1593,7 +1593,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g := NewWithT(t)
 
 		cluster, ocnecp, _ := createClusterWithControlPlane(metav1.NamespaceDefault)
-		controllerutil.AddFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
+		controllerutil.AddFinalizer(ocnecp, controlplanev1.OCNEControlPlaneFinalizer)
 		initObjs := []client.Object{cluster.DeepCopy(), ocnecp.DeepCopy()}
 
 		for i := 0; i < 3; i++ {
@@ -1603,7 +1603,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 		fakeClient := newFakeClient(initObjs...)
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client: fakeClient,
 			managementCluster: &fakeManagementCluster{
 				Management: &internal.Management{Client: fakeClient},
@@ -1616,7 +1616,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		result, err := r.reconcileDelete(ctx, cluster, ocnecp)
 		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: deleteRequeueAfter}))
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 		controlPlaneMachines := clusterv1.MachineList{}
 		g.Expect(fakeClient.List(ctx, &controlPlaneMachines)).To(Succeed())
@@ -1632,7 +1632,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g := NewWithT(t)
 
 		cluster, ocnecp, _ := createClusterWithControlPlane(metav1.NamespaceDefault)
-		controllerutil.AddFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
+		controllerutil.AddFinalizer(ocnecp, controlplanev1.OCNEControlPlaneFinalizer)
 
 		workerMachine := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1653,7 +1653,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 		fakeClient := newFakeClient(initObjs...)
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client: fakeClient,
 			managementCluster: &fakeManagementCluster{
 				Management: &internal.Management{Client: fakeClient},
@@ -1666,7 +1666,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: deleteRequeueAfter}))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 		controlPlaneMachines := clusterv1.MachineList{}
 		labels := map[string]string{
@@ -1681,7 +1681,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g := NewWithT(t)
 
 		cluster, ocnecp, _ := createClusterWithControlPlane(metav1.NamespaceDefault)
-		controllerutil.AddFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
+		controllerutil.AddFinalizer(ocnecp, controlplanev1.OCNEControlPlaneFinalizer)
 
 		workerMachinePool := &expv1.MachinePool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1702,7 +1702,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 		fakeClient := newFakeClient(initObjs...)
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client: fakeClient,
 			managementCluster: &fakeManagementCluster{
 				Management: &internal.Management{Client: fakeClient},
@@ -1715,7 +1715,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: deleteRequeueAfter}))
 		g.Expect(err).ToNot(HaveOccurred())
 
-		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OcneControlPlaneFinalizer))
+		g.Expect(ocnecp.Finalizers).To(ContainElement(controlplanev1.OCNEControlPlaneFinalizer))
 
 		controlPlaneMachines := clusterv1.MachineList{}
 		labels := map[string]string{
@@ -1729,11 +1729,11 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 		g := NewWithT(t)
 
 		cluster, ocnecp, _ := createClusterWithControlPlane(metav1.NamespaceDefault)
-		controllerutil.AddFinalizer(ocnecp, controlplanev1.OcneControlPlaneFinalizer)
+		controllerutil.AddFinalizer(ocnecp, controlplanev1.OCNEControlPlaneFinalizer)
 
 		fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy())
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client: fakeClient,
 			managementCluster: &fakeManagementCluster{
 				Management: &internal.Management{Client: fakeClient},
@@ -1810,8 +1810,8 @@ func createClusterWithControlPlane(namespace string) (*clusterv1.Cluster, *contr
 				},
 			},
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "GenericMachineTemplate",
 					Namespace:  namespace,

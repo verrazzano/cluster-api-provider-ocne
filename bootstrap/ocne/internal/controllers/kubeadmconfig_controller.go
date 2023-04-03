@@ -64,8 +64,8 @@ import (
 )
 
 const (
-	// OcneConfigControllerName defines the controller used when creating clients.
-	OcneConfigControllerName = "ocneconfig-controller"
+	// OCNEConfigControllerName defines the controller used when creating clients.
+	OCNEConfigControllerName = "ocneconfig-controller"
 )
 
 const (
@@ -74,8 +74,8 @@ const (
 )
 
 const (
-	// DefaultOcneSocket is the crio socket used for Ocne
-	DefaultOcneSocket = "/var/run/crio/crio.sock"
+	// DefaultOCNESocket is the crio socket used for OCNE
+	DefaultOCNESocket = "/var/run/crio/crio.sock"
 )
 
 // InitLocker is a lock that is used around ocne init.
@@ -89,8 +89,8 @@ type InitLocker interface {
 // +kubebuilder:rbac:groups="",resources=secrets;events;configmaps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=*,verbs=get;list
 
-// OcneConfigReconciler reconciles a OCNEConfig object.
-type OcneConfigReconciler struct {
+// OCNEConfigReconciler reconciles a OCNEConfig object.
+type OCNEConfigReconciler struct {
 	Client          client.Client
 	KubeadmInitLock InitLocker
 
@@ -112,7 +112,7 @@ type Scope struct {
 }
 
 // SetupWithManager sets up the reconciler with the Manager.
-func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+func (r *OCNEConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	if r.KubeadmInitLock == nil {
 		r.KubeadmInitLock = locking.NewControlPlaneInitMutex(mgr.GetClient())
 	}
@@ -145,7 +145,7 @@ func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(r.ClusterToOcneConfigs),
+		handler.EnqueueRequestsFromMapFunc(r.ClusterToOCNEConfigs),
 		predicates.All(ctrl.LoggerFrom(ctx),
 			predicates.ClusterUnpausedAndInfrastructureReady(ctrl.LoggerFrom(ctx)),
 			predicates.ResourceHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
@@ -159,7 +159,7 @@ func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 }
 
 // Reconcile handles OCNEConfig events.
-func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, rerr error) {
+func (r *OCNEConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, rerr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// Lookup the ocne config
@@ -314,11 +314,11 @@ func (r *OcneConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return r.joinWorker(ctx, scope)
 }
 
-func (r *OcneConfigReconciler) refreshBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster) (ctrl.Result, error) {
+func (r *OCNEConfigReconciler) refreshBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	token := config.Spec.JoinConfiguration.Discovery.BootstrapToken.Token
 
-	remoteClient, err := r.remoteClientGetter(ctx, OcneConfigControllerName, r.Client, util.ObjectKey(cluster))
+	remoteClient, err := r.remoteClientGetter(ctx, OCNEConfigControllerName, r.Client, util.ObjectKey(cluster))
 	if err != nil {
 		log.Error(err, "Error creating remote cluster client")
 		return ctrl.Result{}, err
@@ -333,10 +333,10 @@ func (r *OcneConfigReconciler) refreshBootstrapToken(ctx context.Context, config
 	}, nil
 }
 
-func (r *OcneConfigReconciler) rotateMachinePoolBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster, scope *Scope) (ctrl.Result, error) {
+func (r *OCNEConfigReconciler) rotateMachinePoolBootstrapToken(ctx context.Context, config *bootstrapv1.OCNEConfig, cluster *clusterv1.Cluster, scope *Scope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(2).Info("Config is owned by a MachinePool, checking if token should be rotated")
-	remoteClient, err := r.remoteClientGetter(ctx, OcneConfigControllerName, r.Client, util.ObjectKey(cluster))
+	remoteClient, err := r.remoteClientGetter(ctx, OCNEConfigControllerName, r.Client, util.ObjectKey(cluster))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -364,7 +364,7 @@ func (r *OcneConfigReconciler) rotateMachinePoolBootstrapToken(ctx context.Conte
 	}, nil
 }
 
-func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, scope *Scope) (_ ctrl.Result, reterr error) {
+func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, scope *Scope) (_ ctrl.Result, reterr error) {
 	// initialize the DataSecretAvailableCondition if missing.
 	// this is required in order to avoid the condition's LastTransitionTime to flicker in case of errors surfacing
 	// using the DataSecretGeneratedFailedReason
@@ -497,7 +497,7 @@ func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	}
 
 	// Overriding the criSocket for ocne
-	scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = DefaultOcneSocket
+	scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = DefaultOCNESocket
 
 	var podSubnet, serviceSubnet string
 	if scope.Cluster.Spec.ClusterNetwork != nil {
@@ -559,7 +559,7 @@ func (r *OcneConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	return ctrl.Result{}, nil
 }
 
-func (r *OcneConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ctrl.Result, error) {
+func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ctrl.Result, error) {
 	scope.Info("Creating BootstrapData for the worker node")
 
 	certificates := secret.NewCertificatesForWorker(scope.Config.Spec.JoinConfiguration.CACertPath)
@@ -682,7 +682,7 @@ func (r *OcneConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *OcneConfigReconciler) joinControlplane(ctx context.Context, scope *Scope) (ctrl.Result, error) {
+func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scope) (ctrl.Result, error) {
 	scope.Info("Creating BootstrapData for the joining control plane")
 
 	if !scope.ConfigOwner.IsControlPlaneMachine() {
@@ -814,7 +814,7 @@ func (r *OcneConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 
 // resolveFiles maps .Spec.Files into cloudinit.Files, resolving any object references
 // along the way.
-func (r *OcneConfigReconciler) resolveFiles(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.File, error) {
+func (r *OCNEConfigReconciler) resolveFiles(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.File, error) {
 	collected := make([]bootstrapv1.File, 0, len(cfg.Spec.Files))
 
 	for i := range cfg.Spec.Files {
@@ -834,7 +834,7 @@ func (r *OcneConfigReconciler) resolveFiles(ctx context.Context, cfg *bootstrapv
 }
 
 // resolveSecretFileContent returns file content fetched from a referenced secret object.
-func (r *OcneConfigReconciler) resolveSecretFileContent(ctx context.Context, ns string, source bootstrapv1.File) ([]byte, error) {
+func (r *OCNEConfigReconciler) resolveSecretFileContent(ctx context.Context, ns string, source bootstrapv1.File) ([]byte, error) {
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: ns, Name: source.ContentFrom.Secret.Name}
 	if err := r.Client.Get(ctx, key, secret); err != nil {
@@ -852,7 +852,7 @@ func (r *OcneConfigReconciler) resolveSecretFileContent(ctx context.Context, ns 
 
 // resolveUsers maps .Spec.Users into cloudinit.Users, resolving any object references
 // along the way.
-func (r *OcneConfigReconciler) resolveUsers(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.User, error) {
+func (r *OCNEConfigReconciler) resolveUsers(ctx context.Context, cfg *bootstrapv1.OCNEConfig) ([]bootstrapv1.User, error) {
 	collected := make([]bootstrapv1.User, 0, len(cfg.Spec.Users))
 
 	for i := range cfg.Spec.Users {
@@ -873,7 +873,7 @@ func (r *OcneConfigReconciler) resolveUsers(ctx context.Context, cfg *bootstrapv
 }
 
 // resolveSecretUserContent returns passwd fetched from a referenced secret object.
-func (r *OcneConfigReconciler) resolveSecretPasswordContent(ctx context.Context, ns string, source bootstrapv1.User) ([]byte, error) {
+func (r *OCNEConfigReconciler) resolveSecretPasswordContent(ctx context.Context, ns string, source bootstrapv1.User) ([]byte, error) {
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: ns, Name: source.PasswdFrom.Secret.Name}
 	if err := r.Client.Get(ctx, key, secret); err != nil {
@@ -889,9 +889,9 @@ func (r *OcneConfigReconciler) resolveSecretPasswordContent(ctx context.Context,
 	return data, nil
 }
 
-// ClusterToOcneConfigs is a handler.ToRequestsFunc to be used to enqueue
+// ClusterToOCNEConfigs is a handler.ToRequestsFunc to be used to enqueue
 // requests for reconciliation of KubeadmConfigs.
-func (r *OcneConfigReconciler) ClusterToOcneConfigs(o client.Object) []ctrl.Request {
+func (r *OCNEConfigReconciler) ClusterToOCNEConfigs(o client.Object) []ctrl.Request {
 	result := []ctrl.Request{}
 
 	c, ok := o.(*clusterv1.Cluster)
@@ -939,7 +939,7 @@ func (r *OcneConfigReconciler) ClusterToOcneConfigs(o client.Object) []ctrl.Requ
 
 // MachineToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
 // request for reconciliation of OCNEConfig.
-func (r *OcneConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl.Request {
+func (r *OCNEConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl.Request {
 	m, ok := o.(*clusterv1.Machine)
 	if !ok {
 		panic(fmt.Sprintf("Expected a Machine but got a %T", o))
@@ -955,7 +955,7 @@ func (r *OcneConfigReconciler) MachineToBootstrapMapFunc(o client.Object) []ctrl
 
 // MachinePoolToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
 // request for reconciliation of OCNEConfig.
-func (r *OcneConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []ctrl.Request {
+func (r *OCNEConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []ctrl.Request {
 	m, ok := o.(*expv1.MachinePool)
 	if !ok {
 		panic(fmt.Sprintf("Expected a MachinePool but got a %T", o))
@@ -974,7 +974,7 @@ func (r *OcneConfigReconciler) MachinePoolToBootstrapMapFunc(o client.Object) []
 // The implementation func respect user provided discovery configurations, but in case some of them are missing, a valid BootstrapToken object
 // is automatically injected into config.JoinConfiguration.Discovery.
 // This allows to simplify configuration UX, by providing the option to delegate to CABPOCNE the configuration of ocne join discovery.
-func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv1.OCNEConfig, certificates secret.Certificates) (ctrl.Result, error) {
+func (r *OCNEConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *clusterv1.Cluster, config *bootstrapv1.OCNEConfig, certificates secret.Certificates) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// if config already contains a file discovery configuration, respect it without further validations
@@ -1012,7 +1012,7 @@ func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *
 
 	// if BootstrapToken already contains a token, respect it; otherwise create a new bootstrap token for the node to join
 	if config.Spec.JoinConfiguration.Discovery.BootstrapToken.Token == "" {
-		remoteClient, err := r.remoteClientGetter(ctx, OcneConfigControllerName, r.Client, util.ObjectKey(cluster))
+		remoteClient, err := r.remoteClientGetter(ctx, OCNEConfigControllerName, r.Client, util.ObjectKey(cluster))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -1037,7 +1037,7 @@ func (r *OcneConfigReconciler) reconcileDiscovery(ctx context.Context, cluster *
 
 // reconcileTopLevelObjectSettings injects into config.ClusterConfiguration values from top level objects like cluster and machine.
 // The implementation func respect user provided config values, but in case some of them are missing, values from top level objects are used.
-func (r *OcneConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine, config *bootstrapv1.OCNEConfig) {
+func (r *OCNEConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine, config *bootstrapv1.OCNEConfig) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// If there is no ControlPlaneEndpoint defined in ClusterConfiguration but
@@ -1083,7 +1083,7 @@ func (r *OcneConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Conte
 
 // storeBootstrapData creates a new secret with the data passed in as input,
 // sets the reference in the configuration status and ready to true.
-func (r *OcneConfigReconciler) storeBootstrapData(ctx context.Context, scope *Scope, data []byte) error {
+func (r *OCNEConfigReconciler) storeBootstrapData(ctx context.Context, scope *Scope, data []byte) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	secret := &corev1.Secret{
@@ -1128,7 +1128,7 @@ func (r *OcneConfigReconciler) storeBootstrapData(ctx context.Context, scope *Sc
 }
 
 // Ensure the bootstrap secret has the OCNEConfig as a controller OwnerReference.
-func (r *OcneConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Context, scope *Scope) error {
+func (r *OCNEConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Context, scope *Scope) error {
 	secret := &corev1.Secret{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: scope.Config.Namespace, Name: scope.Config.Name}, secret)
 	if err != nil {

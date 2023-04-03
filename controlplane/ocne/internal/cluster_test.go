@@ -249,7 +249,7 @@ func machineListForTestGetMachinesForCluster() *clusterv1.MachineList {
 	owned := true
 	ownedRef := []metav1.OwnerReference{
 		{
-			Kind:       "OcneControlPlane",
+			Kind:       "OCNEControlPlane",
 			Name:       "my-control-plane",
 			Controller: &owned,
 		},

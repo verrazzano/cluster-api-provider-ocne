@@ -34,7 +34,7 @@ import (
 
 // updateStatus is called after every reconcilitation loop in a defer statement to always make sure we have the
 // resource status subresourcs up-to-date.
-func (r *OcneControlPlaneReconciler) updateStatus(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, cluster *clusterv1.Cluster) error {
+func (r *OCNEControlPlaneReconciler) updateStatus(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, cluster *clusterv1.Cluster) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	selector := collections.ControlPlaneSelectorForCluster(cluster.Name)
@@ -109,7 +109,7 @@ func (r *OcneControlPlaneReconciler) updateStatus(ctx context.Context, ocnecp *c
 	ocnecp.Status.UnavailableReplicas = replicas - status.ReadyNodes
 
 	// This only gets initialized once and does not change if the kubeadm config map goes away.
-	if status.HasOcneConfig {
+	if status.HasOCNEConfig {
 		ocnecp.Status.Initialized = true
 		conditions.MarkTrue(ocnecp, controlplanev1.AvailableCondition)
 	}

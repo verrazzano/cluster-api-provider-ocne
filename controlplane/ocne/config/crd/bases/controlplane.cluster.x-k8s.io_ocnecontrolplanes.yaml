@@ -82,7 +82,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: OcneControlPlaneSpec defines the desired state of OCNEControlPlane.
+            description: OCNEControlPlaneSpec defines the desired state of OCNEControlPlane.
             properties:
               machineTemplate:
                 description: MachineTemplate contains information about how machines
@@ -172,7 +172,7 @@ spec:
                 - infrastructureRef
                 type: object
               ocneConfigSpec:
-                description: OcneConfigSpec is a OcneConfigSpec to use for initializing
+                description: OCNEConfigSpec is a OCNEConfigSpec to use for initializing
                   and joining machines to the control plane.
                 properties:
                   clusterConfiguration:
@@ -1300,7 +1300,7 @@ spec:
             - version
             type: object
           status:
-            description: OcneControlPlaneStatus defines the observed state of OCNEControlPlane.
+            description: OCNEControlPlaneStatus defines the observed state of OCNEControlPlane.
             properties:
               conditions:
                 description: Conditions defines current service state of the OCNEControlPlane.

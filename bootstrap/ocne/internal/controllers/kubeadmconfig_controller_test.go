@@ -64,7 +64,7 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
 			WithVersion("v1.19.1").
 			WithClusterName(cluster.Name).
-			WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "").Unstructured()).
+			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "").Unstructured()).
 			Build()
 		if i == 1 {
 			c := newKubeadmConfig(metav1.NamespaceDefault, configName)
@@ -77,7 +77,7 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 		machineObjs = append(machineObjs, m)
 	}
 	fakeClient := fake.NewClientBuilder().WithObjects(objs...).Build()
-	reconciler := &OcneConfigReconciler{
+	reconciler := &OCNEConfigReconciler{
 		Client: fakeClient,
 	}
 	for i := 0; i < 3; i++ {
@@ -103,7 +103,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *tes
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -128,7 +128,7 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
 		WithClusterName(clusterName).
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	machine.Spec.Bootstrap.DataSecretName = pointer.String("something")
 
@@ -156,7 +156,7 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -223,7 +223,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 	g := NewWithT(t)
 
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		WithVersion("v1.19.1").
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
@@ -234,7 +234,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -253,7 +253,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t 
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	machine.Spec.Bootstrap.DataSecretName = pointer.String("something")
 
@@ -264,7 +264,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t 
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -287,7 +287,7 @@ func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
 		WithClusterName(cluster.Name).
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 	addKubeadmConfigToMachine(config, machine)
@@ -304,7 +304,7 @@ func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -327,7 +327,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *test
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 
@@ -337,7 +337,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *test
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -356,7 +356,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedC
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 
@@ -366,7 +366,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedC
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -388,7 +388,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.19.1").
 		WithClusterName(cluster.Name).
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 
@@ -399,7 +399,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client: myclient,
 	}
 
@@ -466,7 +466,7 @@ func TestOCNEConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotInit
 
 			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
 
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:          myclient,
 				KubeadmInitLock: &myInitLocker{},
 			}
@@ -500,7 +500,7 @@ func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
 
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:          myclient,
 		KubeadmInitLock: &myInitLocker{},
 	}
@@ -554,7 +554,7 @@ func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConf
 	objects = append(objects, createSecrets(t, cluster, controlPlaneInitConfig)...)
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:             myclient,
 		KubeadmInitLock:    &myInitLocker{},
 		remoteClientGetter: fakeremote.NewClusterClient,
@@ -594,7 +594,7 @@ func TestOCNEConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoin
 
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:          myclient,
 		KubeadmInitLock: &myInitLocker{},
 	}
@@ -664,7 +664,7 @@ func TestReconcileIfJoinNodesAndControlPlaneIsReady(t *testing.T) {
 			}
 			objects = append(objects, createSecrets(t, cluster, config)...)
 			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:             myclient,
 				KubeadmInitLock:    &myInitLocker{},
 				remoteClientGetter: fakeremote.NewClusterClient,
@@ -741,7 +741,7 @@ func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
 			}
 			objects = append(objects, createSecrets(t, cluster, config)...)
 			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:             myclient,
 				KubeadmInitLock:    &myInitLocker{},
 				remoteClientGetter: fakeremote.NewClusterClient,
@@ -841,7 +841,7 @@ func TestBootstrapDataFormat(t *testing.T) {
 
 			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
 
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:             myclient,
 				KubeadmInitLock:    &myInitLocker{},
 				remoteClientGetter: fakeremote.NewClusterClient,
@@ -921,7 +921,7 @@ func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 
 	objects = append(objects, createSecrets(t, cluster, initConfig)...)
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:             myclient,
 		KubeadmInitLock:    &myInitLocker{},
 		remoteClientGetter: fakeremote.NewClusterClient,
@@ -998,7 +998,7 @@ func TestBootstrapTokenTTLExtension(t *testing.T) {
 
 	objects = append(objects, createSecrets(t, cluster, initConfig)...)
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:             myclient,
 		KubeadmInitLock:    &myInitLocker{},
 		TokenTTL:           DefaultTokenTTL,
@@ -1199,7 +1199,7 @@ func TestBootstrapTokenRotationMachinePool(t *testing.T) {
 
 	objects = append(objects, createSecrets(t, cluster, initConfig)...)
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:             myclient,
 		KubeadmInitLock:    &myInitLocker{},
 		TokenTTL:           DefaultTokenTTL,
@@ -1356,7 +1356,7 @@ func TestBootstrapTokenRotationMachinePool(t *testing.T) {
 
 // Ensure the discovery portion of the JoinConfiguration gets generated correctly.
 func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testing.T) {
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:             fake.NewClientBuilder().Build(),
 		KubeadmInitLock:    &myInitLocker{},
 		remoteClientGetter: fakeremote.NewClusterClient,
@@ -1499,7 +1499,7 @@ func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testing.T
 
 // Test failure cases for the discovery reconcile function.
 func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t *testing.T) {
-	k := &OcneConfigReconciler{}
+	k := &OCNEConfigReconciler{}
 
 	testcases := []struct {
 		name    string
@@ -1544,7 +1544,7 @@ func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t *te
 
 // Set cluster configuration defaults based on dynamic values from the cluster object.
 func TestOCNEConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguration(t *testing.T) {
-	k := &OcneConfigReconciler{}
+	k := &OCNEConfigReconciler{}
 
 	testcases := []struct {
 		name    string
@@ -1697,7 +1697,7 @@ func TestOCNEConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessRequested
 			g := NewWithT(t)
 
 			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-			reconciler := OcneConfigReconciler{
+			reconciler := OCNEConfigReconciler{
 				Client:             myclient,
 				KubeadmInitLock:    &myInitLocker{},
 				remoteClientGetter: fakeremote.NewClusterClient,
@@ -1735,7 +1735,7 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
 			WithVersion("v1.19.1").
 			WithClusterName(cluster.Name).
-			WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, configName).Unstructured()).
+			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, configName).Unstructured()).
 			Build()
 		c := newKubeadmConfig(metav1.NamespaceDefault, configName)
 		addKubeadmConfigToMachine(c, m)
@@ -1751,10 +1751,10 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 		objs = append(objs, mp, c)
 	}
 	fakeClient := fake.NewClientBuilder().WithObjects(objs...).Build()
-	reconciler := &OcneConfigReconciler{
+	reconciler := &OCNEConfigReconciler{
 		Client: fakeClient,
 	}
-	configs := reconciler.ClusterToOcneConfigs(cluster)
+	configs := reconciler.ClusterToOCNEConfigs(cluster)
 	names := make([]string, 6)
 	for i := range configs {
 		names[i] = configs[i].Name
@@ -1790,7 +1790,7 @@ func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *te
 		},
 	}
 	fakec := fake.NewClientBuilder().WithObjects(cluster, m, c, scrt).Build()
-	reconciler := &OcneConfigReconciler{
+	reconciler := &OCNEConfigReconciler{
 		Client:          fakec,
 		KubeadmInitLock: &myInitLocker{},
 	}
@@ -1824,7 +1824,7 @@ func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes
 		controlPlaneInitConfigSecond,
 	}
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:          myclient,
 		KubeadmInitLock: &myInitLocker{},
 	}
@@ -1879,7 +1879,7 @@ func TestOCNEConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
 	}
 
 	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
-	k := &OcneConfigReconciler{
+	k := &OCNEConfigReconciler{
 		Client:          myclient,
 		KubeadmInitLock: &myInitLocker{},
 	}
@@ -2015,7 +2015,7 @@ func TestOCNEConfigReconciler_ResolveFiles(t *testing.T) {
 			g := NewWithT(t)
 
 			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:          myclient,
 				KubeadmInitLock: &myInitLocker{},
 			}
@@ -2141,7 +2141,7 @@ func TestOCNEConfigReconciler_ResolveUsers(t *testing.T) {
 			g := NewWithT(t)
 
 			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
-			k := &OcneConfigReconciler{
+			k := &OCNEConfigReconciler{
 				Client:          myclient,
 				KubeadmInitLock: &myInitLocker{},
 			}
@@ -2176,7 +2176,7 @@ func TestOCNEConfigReconciler_ResolveUsers(t *testing.T) {
 func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
 	return builder.Machine(cluster.Namespace, "worker-machine").
 		WithVersion("v1.19.1").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(cluster.Namespace, "conf1").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
 		WithClusterName(cluster.Name).
 		Build()
 }
@@ -2185,7 +2185,7 @@ func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
 func newControlPlaneMachine(cluster *clusterv1.Cluster, name string) *clusterv1.Machine {
 	m := builder.Machine(cluster.Namespace, name).
 		WithVersion("v1.19.1").
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		WithClusterName(cluster.Name).
 		WithLabels(map[string]string{clusterv1.MachineControlPlaneLabelName: ""}).
 		Build()
@@ -2197,7 +2197,7 @@ func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool 
 	m := builder.MachinePool(cluster.Namespace, name).
 		WithClusterName(cluster.Name).
 		WithLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}).
-		WithBootstrapTemplate(bootstrapbuilder.OcneConfig(cluster.Namespace, "conf1").Unstructured()).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
 		WithVersion("1.19.1").
 		Build()
 	return m
@@ -2210,13 +2210,13 @@ func newWorkerMachinePoolForCluster(cluster *clusterv1.Cluster) *expv1.MachinePo
 
 // newKubeadmConfig return a CABPK OCNEConfig object.
 func newKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
-	return bootstrapbuilder.OcneConfig(namespace, name).
+	return bootstrapbuilder.OCNEConfig(namespace, name).
 		Build()
 }
 
 // newKubeadmConfig return a CABPK OCNEConfig object with a worker JoinConfiguration.
 func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
-	return bootstrapbuilder.OcneConfig(namespace, name).
+	return bootstrapbuilder.OCNEConfig(namespace, name).
 		WithJoinConfig(&bootstrapv1.JoinConfiguration{
 			ControlPlane: nil,
 		}).
@@ -2225,7 +2225,7 @@ func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig 
 
 // newKubeadmConfig returns a CABPK OCNEConfig object with a ControlPlane JoinConfiguration.
 func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
-	return bootstrapbuilder.OcneConfig(namespace, name).
+	return bootstrapbuilder.OCNEConfig(namespace, name).
 		WithJoinConfig(&bootstrapv1.JoinConfiguration{
 			ControlPlane: &bootstrapv1.JoinControlPlane{},
 		}).
@@ -2234,7 +2234,7 @@ func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEC
 
 // newControlPlaneJoinConfig returns a CABPK OCNEConfig object with a ControlPlane InitConfiguration and ClusterConfiguration.
 func newControlPlaneInitKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
-	return bootstrapbuilder.OcneConfig(namespace, name).
+	return bootstrapbuilder.OCNEConfig(namespace, name).
 		WithInitConfig(&bootstrapv1.InitConfiguration{}).
 		WithClusterConfig(&bootstrapv1.ClusterConfiguration{}).
 		Build()

@@ -45,7 +45,7 @@ func TestOCNEControlPlaneReconciler_initializeControlPlane(t *testing.T) {
 
 	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 		managementClusterUncached: &fakeManagementCluster{
@@ -106,7 +106,7 @@ func TestOCNEControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 
 		fakeClient := newFakeClient(initObjs...)
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			managementCluster:         fmc,
 			managementClusterUncached: fmc,
@@ -148,7 +148,7 @@ func TestOCNEControlPlaneReconciler_scaleUpControlPlane(t *testing.T) {
 			Workload: fakeWorkloadCluster{},
 		}
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			Client:                    fakeClient,
 			APIReader:                 fakeClient,
 			managementCluster:         fmc,
@@ -185,7 +185,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 		setMachineHealthy(machines["one"])
 		fakeClient := newFakeClient(machines["one"])
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			recorder: record.NewFakeRecorder(32),
 			Client:   fakeClient,
 			managementCluster: &fakeManagementCluster{
@@ -195,7 +195,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 
 		cluster := &clusterv1.Cluster{}
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
 				Version: "v1.19.1",
 			},
 		}
@@ -226,7 +226,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 		setMachineHealthy(machines["three"])
 		fakeClient := newFakeClient(machines["one"], machines["two"], machines["three"])
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			recorder: record.NewFakeRecorder(32),
 			Client:   fakeClient,
 			managementCluster: &fakeManagementCluster{
@@ -236,7 +236,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 
 		cluster := &clusterv1.Cluster{}
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
 				Version: "v1.19.1",
 			},
 		}
@@ -266,7 +266,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 		setMachineHealthy(machines["three"])
 		fakeClient := newFakeClient(machines["one"], machines["two"], machines["three"])
 
-		r := &OcneControlPlaneReconciler{
+		r := &OCNEControlPlaneReconciler{
 			recorder: record.NewFakeRecorder(32),
 			Client:   fakeClient,
 			managementCluster: &fakeManagementCluster{
@@ -294,7 +294,7 @@ func TestOCNEControlPlaneReconciler_scaleDownControlPlane_NoError(t *testing.T) 
 
 func TestSelectMachineForScaleDown(t *testing.T) {
 	ocnecp := controlplanev1.OCNEControlPlane{
-		Spec: controlplanev1.OcneControlPlaneSpec{},
+		Spec: controlplanev1.OCNEControlPlaneSpec{},
 	}
 	startDate := time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)
 	m1 := machine("machine-1", withFailureDomain("one"), withTimestamp(startDate.Add(time.Hour)))
@@ -451,7 +451,7 @@ func TestPreflightChecks(t *testing.T) {
 		{
 			name: "control plane with an healthy machine and an healthy ocnecp condition should pass",
 			ocnecp: &controlplanev1.OCNEControlPlane{
-				Status: controlplanev1.OcneControlPlaneStatus{
+				Status: controlplanev1.OCNEControlPlaneStatus{
 					Conditions: clusterv1.Conditions{
 						*conditions.TrueCondition(controlplanev1.ControlPlaneComponentsHealthyCondition),
 						*conditions.TrueCondition(controlplanev1.EtcdClusterHealthyCondition),
@@ -479,7 +479,7 @@ func TestPreflightChecks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			r := &OcneControlPlaneReconciler{
+			r := &OCNEControlPlaneReconciler{
 				recorder: record.NewFakeRecorder(32),
 			}
 			controlPlane := &internal.ControlPlane{

@@ -107,19 +107,19 @@ type WorkloadCluster interface {
 	// Upgrade related tasks.
 	ReconcileKubeletRBACBinding(ctx context.Context, version semver.Version) error
 	ReconcileKubeletRBACRole(ctx context.Context, version semver.Version) error
-	UpdateKubernetesVersionInOcneConfigMap(ctx context.Context, version semver.Version) error
-	UpdateImageRepositoryInOcneConfigMap(ctx context.Context, imageRepository string, version semver.Version) error
-	UpdateEtcdVersionInOcneConfigMap(ctx context.Context, imageRepository, imageTag string, version semver.Version) error
-	UpdateEtcdExtraArgsInOcneConfigMap(ctx context.Context, extraArgs map[string]string, version semver.Version) error
-	UpdateAPIServerInOcneConfigMap(ctx context.Context, apiServer bootstrapv1.APIServer, version semver.Version) error
-	UpdateControllerManagerInOcneConfigMap(ctx context.Context, controllerManager bootstrapv1.ControlPlaneComponent, version semver.Version) error
-	UpdateSchedulerInOcneConfigMap(ctx context.Context, scheduler bootstrapv1.ControlPlaneComponent, version semver.Version) error
+	UpdateKubernetesVersionInOCNEConfigMap(ctx context.Context, version semver.Version) error
+	UpdateImageRepositoryInOCNEConfigMap(ctx context.Context, imageRepository string, version semver.Version) error
+	UpdateEtcdVersionInOCNEConfigMap(ctx context.Context, imageRepository, imageTag string, version semver.Version) error
+	UpdateEtcdExtraArgsInOCNEConfigMap(ctx context.Context, extraArgs map[string]string, version semver.Version) error
+	UpdateAPIServerInOCNEConfigMap(ctx context.Context, apiServer bootstrapv1.APIServer, version semver.Version) error
+	UpdateControllerManagerInOCNEConfigMap(ctx context.Context, controllerManager bootstrapv1.ControlPlaneComponent, version semver.Version) error
+	UpdateSchedulerInOCNEConfigMap(ctx context.Context, scheduler bootstrapv1.ControlPlaneComponent, version semver.Version) error
 	UpdateKubeletConfigMap(ctx context.Context, version semver.Version) error
 	UpdateKubeProxyImageInfo(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error
 	UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane, version semver.Version) error
 	RemoveEtcdMemberForMachine(ctx context.Context, machine *clusterv1.Machine) error
-	RemoveMachineFromOcneConfigMap(ctx context.Context, machine *clusterv1.Machine, version semver.Version) error
-	RemoveNodeFromOcneConfigMap(ctx context.Context, nodeName string, version semver.Version) error
+	RemoveMachineFromOCNEConfigMap(ctx context.Context, machine *clusterv1.Machine, version semver.Version) error
+	RemoveNodeFromOCNEConfigMap(ctx context.Context, nodeName string, version semver.Version) error
 	ForwardEtcdLeadership(ctx context.Context, machine *clusterv1.Machine, leaderCandidate *clusterv1.Machine) error
 	AllowBootstrapTokensToGetNodes(ctx context.Context) error
 
@@ -173,8 +173,8 @@ func (w *Workload) getConfigMap(ctx context.Context, configMap ctrlclient.Object
 	return original.DeepCopy(), nil
 }
 
-// UpdateImageRepositoryInOcneConfigMap updates the image repository in the ocne config map.
-func (w *Workload) UpdateImageRepositoryInOcneConfigMap(ctx context.Context, imageRepository string, version semver.Version) error {
+// UpdateImageRepositoryInOCNEConfigMap updates the image repository in the ocne config map.
+func (w *Workload) UpdateImageRepositoryInOCNEConfigMap(ctx context.Context, imageRepository string, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		if imageRepository == "" {
 			return
@@ -183,8 +183,8 @@ func (w *Workload) UpdateImageRepositoryInOcneConfigMap(ctx context.Context, ima
 	}, version)
 }
 
-// UpdateKubernetesVersionInOcneConfigMap updates the kubernetes version in the ocne config map.
-func (w *Workload) UpdateKubernetesVersionInOcneConfigMap(ctx context.Context, version semver.Version) error {
+// UpdateKubernetesVersionInOCNEConfigMap updates the kubernetes version in the ocne config map.
+func (w *Workload) UpdateKubernetesVersionInOCNEConfigMap(ctx context.Context, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		c.KubernetesVersion = fmt.Sprintf("v%s", version.String())
 	}, version)
@@ -270,39 +270,39 @@ func (w *Workload) UpdateKubeletConfigMap(ctx context.Context, version semver.Ve
 	return nil
 }
 
-// UpdateAPIServerInOcneConfigMap updates api server configuration in ocne config map.
-func (w *Workload) UpdateAPIServerInOcneConfigMap(ctx context.Context, apiServer bootstrapv1.APIServer, version semver.Version) error {
+// UpdateAPIServerInOCNEConfigMap updates api server configuration in ocne config map.
+func (w *Workload) UpdateAPIServerInOCNEConfigMap(ctx context.Context, apiServer bootstrapv1.APIServer, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		c.APIServer = apiServer
 	}, version)
 }
 
-// UpdateControllerManagerInOcneConfigMap updates controller manager configuration in ocne config map.
-func (w *Workload) UpdateControllerManagerInOcneConfigMap(ctx context.Context, controllerManager bootstrapv1.ControlPlaneComponent, version semver.Version) error {
+// UpdateControllerManagerInOCNEConfigMap updates controller manager configuration in ocne config map.
+func (w *Workload) UpdateControllerManagerInOCNEConfigMap(ctx context.Context, controllerManager bootstrapv1.ControlPlaneComponent, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		c.ControllerManager = controllerManager
 	}, version)
 }
 
-// UpdateSchedulerInOcneConfigMap updates scheduler configuration in ocne config map.
-func (w *Workload) UpdateSchedulerInOcneConfigMap(ctx context.Context, scheduler bootstrapv1.ControlPlaneComponent, version semver.Version) error {
+// UpdateSchedulerInOCNEConfigMap updates scheduler configuration in ocne config map.
+func (w *Workload) UpdateSchedulerInOCNEConfigMap(ctx context.Context, scheduler bootstrapv1.ControlPlaneComponent, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		c.Scheduler = scheduler
 	}, version)
 }
 
-// RemoveMachineFromOcneConfigMap removes the entry for the machine from the ocne configmap.
-func (w *Workload) RemoveMachineFromOcneConfigMap(ctx context.Context, machine *clusterv1.Machine, version semver.Version) error {
+// RemoveMachineFromOCNEConfigMap removes the entry for the machine from the ocne configmap.
+func (w *Workload) RemoveMachineFromOCNEConfigMap(ctx context.Context, machine *clusterv1.Machine, version semver.Version) error {
 	if machine == nil || machine.Status.NodeRef == nil {
 		// Nothing to do, no node for Machine
 		return nil
 	}
 
-	return w.RemoveNodeFromOcneConfigMap(ctx, machine.Status.NodeRef.Name, version)
+	return w.RemoveNodeFromOCNEConfigMap(ctx, machine.Status.NodeRef.Name, version)
 }
 
-// RemoveNodeFromOcneConfigMap removes the entry for the node from the ocne configmap.
-func (w *Workload) RemoveNodeFromOcneConfigMap(ctx context.Context, name string, v semver.Version) error {
+// RemoveNodeFromOCNEConfigMap removes the entry for the node from the ocne configmap.
+func (w *Workload) RemoveNodeFromOCNEConfigMap(ctx context.Context, name string, v semver.Version) error {
 	if version.Compare(v, minKubernetesVersionWithoutClusterStatus, version.WithoutPreReleases()) >= 0 {
 		return nil
 	}
@@ -314,7 +314,7 @@ func (w *Workload) RemoveNodeFromOcneConfigMap(ctx context.Context, name string,
 
 // updateClusterStatus gets the ClusterStatus ocne-config ConfigMap, converts it to the
 // Cluster API representation, and then applies a mutation func; if changes are detected, the
-// data are converted back into the Ocne API version in use for the target Kubernetes version and the
+// data are converted back into the OCNE API version in use for the target Kubernetes version and the
 // ocne-config ConfigMap updated.
 func (w *Workload) updateClusterStatus(ctx context.Context, mutator func(status *bootstrapv1.ClusterStatus), version semver.Version) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -353,7 +353,7 @@ func (w *Workload) updateClusterStatus(ctx context.Context, mutator func(status 
 
 // updateClusterConfiguration gets the ClusterConfiguration ocne-config ConfigMap, converts it to the
 // Cluster API representation, and then applies a mutation func; if changes are detected, the
-// data are converted back into the Ocne API version in use for the target Kubernetes version and the
+// data are converted back into the OCNE API version in use for the target Kubernetes version and the
 // ocne-config ConfigMap updated.
 func (w *Workload) updateClusterConfiguration(ctx context.Context, mutator func(*bootstrapv1.ClusterConfiguration), version semver.Version) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
@@ -396,8 +396,8 @@ type ClusterStatus struct {
 	Nodes int32
 	// ReadyNodes are the count of nodes that are reporting ready
 	ReadyNodes int32
-	// HasOcneConfig will be true if the ocne config map has been uploaded, false otherwise.
-	HasOcneConfig bool
+	// HasOCNEConfig will be true if the ocne config map has been uploaded, false otherwise.
+	HasOCNEConfig bool
 }
 
 // ClusterStatus returns the status of the cluster.
@@ -426,7 +426,7 @@ func (w *Workload) ClusterStatus(ctx context.Context) (ClusterStatus, error) {
 	err = w.Client.Get(ctx, key, &corev1.ConfigMap{})
 	// TODO: Consider if this should only return false if the error is IsNotFound.
 	// TODO: Consider adding a third state of 'unknown' when there is an error retrieving the config map.
-	status.HasOcneConfig = err == nil
+	status.HasOCNEConfig = err == nil
 	return status, nil
 }
 
@@ -571,7 +571,7 @@ func (w *Workload) UpdateKubeProxyImageInfo(ctx context.Context, ocnecp *control
 	}
 
 	// Modify the image repository if a value was explicitly set or an upgrade is required.
-	imageRepository := ImageRepositoryFromClusterConfig(ocnecp.Spec.OcneConfigSpec.ClusterConfiguration, version)
+	imageRepository := ImageRepositoryFromClusterConfig(ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration, version)
 	if imageRepository != "" {
 		newImageName, err = containerutil.ModifyImageRepository(newImageName, imageRepository)
 		if err != nil {

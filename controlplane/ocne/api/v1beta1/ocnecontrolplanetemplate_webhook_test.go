@@ -42,7 +42,7 @@ func TestOCNEControlPlaneTemplateDefault(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
-		Spec: OcneControlPlaneTemplateSpec{
+		Spec: OCNEControlPlaneTemplateSpec{
 			Template: OCNEControlPlaneTemplateResource{
 				Spec: OCNEControlPlaneTemplateResourceSpec{
 					MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{
@@ -73,7 +73,7 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
 			},
-			Spec: OcneControlPlaneTemplateSpec{
+			Spec: OCNEControlPlaneTemplateSpec{
 				Template: OCNEControlPlaneTemplateResource{
 					Spec: OCNEControlPlaneTemplateResourceSpec{
 						MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{
@@ -97,7 +97,7 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateDisabled(t *testing.T) {
 				Name:      "ocnecontrolplanetemplate-test",
 				Namespace: testnamespace,
 			},
-			Spec: OcneControlPlaneTemplateSpec{
+			Spec: OCNEControlPlaneTemplateSpec{
 				Template: OCNEControlPlaneTemplateResource{
 					Spec: OCNEControlPlaneTemplateResourceSpec{
 						MachineTemplate: &OCNEControlPlaneTemplateMachineTemplate{

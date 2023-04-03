@@ -106,7 +106,7 @@ func TestUpdateEtcdVersionInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateEtcdVersionInOcneConfigMap(ctx, tt.newImageRepository, tt.newImageTag, semver.MustParse("1.19.1"))
+			err := w.UpdateEtcdVersionInOCNEConfigMap(ctx, tt.newImageRepository, tt.newImageTag, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -188,7 +188,7 @@ func TestUpdateEtcdExtraArgsInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateEtcdExtraArgsInOcneConfigMap(ctx, tt.newExtraArgs, semver.MustParse("1.19.1"))
+			err := w.UpdateEtcdExtraArgsInOCNEConfigMap(ctx, tt.newExtraArgs, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -761,7 +761,7 @@ func TestRemoveNodeFromKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.RemoveNodeFromOcneConfigMap(ctx, tt.apiEndpoint, semver.MustParse("1.19.1"))
+			err := w.RemoveNodeFromOCNEConfigMap(ctx, tt.apiEndpoint, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap

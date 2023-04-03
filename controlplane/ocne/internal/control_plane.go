@@ -63,7 +63,7 @@ func NewControlPlane(ctx context.Context, client client.Client, cluster *cluster
 	if err != nil {
 		return nil, err
 	}
-	ocneConfigs, err := getOcneConfigs(ctx, client, ownedMachines)
+	ocneConfigs, err := getOCNEConfigs(ctx, client, ownedMachines)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +117,8 @@ func (c *ControlPlane) AsOwnerReference() *metav1.OwnerReference {
 
 // EtcdImageData returns the etcd image data embedded in the ClusterConfiguration or empty strings if none are defined.
 func (c *ControlPlane) EtcdImageData() (string, string) {
-	if c.KCP.Spec.OcneConfigSpec.ClusterConfiguration != nil && c.KCP.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local != nil {
-		meta := c.KCP.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
+	if c.KCP.Spec.OCNEConfigSpec.ClusterConfiguration != nil && c.KCP.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local != nil {
+		meta := c.KCP.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
 		return meta.ImageRepository, meta.ImageTag
 	}
 	return "", ""
@@ -169,14 +169,14 @@ func (c *ControlPlane) NextFailureDomainForScaleUp() *string {
 
 // InitialControlPlaneConfig returns a new OCNEConfigSpec that is to be used for an initializing control plane.
 func (c *ControlPlane) InitialControlPlaneConfig() *bootstrapv1.OCNEConfigSpec {
-	bootstrapSpec := c.KCP.Spec.OcneConfigSpec.DeepCopy()
+	bootstrapSpec := c.KCP.Spec.OCNEConfigSpec.DeepCopy()
 	bootstrapSpec.JoinConfiguration = nil
 	return bootstrapSpec
 }
 
 // JoinControlPlaneConfig returns a new OCNEConfigSpec that is to be used for joining control planes.
 func (c *ControlPlane) JoinControlPlaneConfig() *bootstrapv1.OCNEConfigSpec {
-	bootstrapSpec := c.KCP.Spec.OcneConfigSpec.DeepCopy()
+	bootstrapSpec := c.KCP.Spec.OCNEConfigSpec.DeepCopy()
 	bootstrapSpec.InitConfiguration = nil
 	// NOTE: For the joining we are preserving the ClusterConfiguration in order to determine if the
 	// cluster is using an external etcd in the ocne bootstrap provider (even if this is not required by ocne Join).
@@ -184,8 +184,8 @@ func (c *ControlPlane) JoinControlPlaneConfig() *bootstrapv1.OCNEConfigSpec {
 	return bootstrapSpec
 }
 
-// GenerateOcneConfig generates a new ocne config for creating new control plane nodes.
-func (c *ControlPlane) GenerateOcneConfig(spec *bootstrapv1.OCNEConfigSpec) *bootstrapv1.OCNEConfig {
+// GenerateOCNEConfig generates a new ocne config for creating new control plane nodes.
+func (c *ControlPlane) GenerateOCNEConfig(spec *bootstrapv1.OCNEConfigSpec) *bootstrapv1.OCNEConfig {
 	// Create an owner reference without a controller reference because the owning controller is the machine controller
 	owner := metav1.OwnerReference{
 		APIVersion: controlplanev1.GroupVersion.String(),
@@ -246,8 +246,8 @@ func (c *ControlPlane) HasDeletingMachine() bool {
 	return len(c.Machines.Filter(collections.HasDeletionTimestamp)) > 0
 }
 
-// GetOcneConfig returns the OCNEConfig of a given machine.
-func (c *ControlPlane) GetOcneConfig(machineName string) (*bootstrapv1.OCNEConfig, bool) {
+// GetOCNEConfig returns the OCNEConfig of a given machine.
+func (c *ControlPlane) GetOCNEConfig(machineName string) (*bootstrapv1.OCNEConfig, bool) {
 	ocneConfig, ok := c.ocneConfigs[machineName]
 	return ocneConfig, ok
 }
@@ -297,8 +297,8 @@ func getInfraResources(ctx context.Context, cl client.Client, machines collectio
 	return result, nil
 }
 
-// getOcneConfigs fetches the ocne config for each machine in the collection and returns a map of machine.Name -> OCNEConfig.
-func getOcneConfigs(ctx context.Context, cl client.Client, machines collections.Machines) (map[string]*bootstrapv1.OCNEConfig, error) {
+// getOCNEConfigs fetches the ocne config for each machine in the collection and returns a map of machine.Name -> OCNEConfig.
+func getOCNEConfigs(ctx context.Context, cl client.Client, machines collections.Machines) (map[string]*bootstrapv1.OCNEConfig, error) {
 	result := map[string]*bootstrapv1.OCNEConfig{}
 	for _, m := range machines {
 		bootstrapRef := m.Spec.Bootstrap.ConfigRef
@@ -319,7 +319,7 @@ func getOcneConfigs(ctx context.Context, cl client.Client, machines collections.
 
 // IsEtcdManaged returns true if the control plane relies on a managed etcd.
 func (c *ControlPlane) IsEtcdManaged() bool {
-	return c.KCP.Spec.OcneConfigSpec.ClusterConfiguration == nil || c.KCP.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External == nil
+	return c.KCP.Spec.OCNEConfigSpec.ClusterConfiguration == nil || c.KCP.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.External == nil
 }
 
 // UnhealthyMachines returns the list of control plane machines marked as unhealthy by MHC.

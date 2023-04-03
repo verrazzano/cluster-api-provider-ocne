@@ -18,7 +18,7 @@ limitations under the License.
 
 /*
 Package builder implements builder and CRDs for creating Bootstrap objects for testing.
-Important: OcneConfig specific builders should not be used in core CAPI, because this
+Important: OCNEConfig specific builders should not be used in core CAPI, because this
 can lead to false assumptions on what we should expect from a bootstrap config provider.
 */
 package builder

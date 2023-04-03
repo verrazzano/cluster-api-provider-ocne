@@ -1071,7 +1071,7 @@ spec:
                 type: integer
             type: object
           status:
-            description: OcneConfigStatus defines the observed state of OCNEConfig.
+            description: OCNEConfigStatus defines the observed state of OCNEConfig.
             properties:
               conditions:
                 description: Conditions defines current service state of the OCNEConfig.

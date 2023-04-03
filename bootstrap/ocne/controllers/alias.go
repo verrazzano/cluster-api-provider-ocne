@@ -37,8 +37,8 @@ const (
 	DefaultTokenTTL = kubeadmbootstrapcontrollers.DefaultTokenTTL
 )
 
-// OcneConfigReconciler reconciles a OCNEConfig object.
-type OcneConfigReconciler struct {
+// OCNEConfigReconciler reconciles a OCNEConfig object.
+type OCNEConfigReconciler struct {
 	Client client.Client
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
@@ -49,8 +49,8 @@ type OcneConfigReconciler struct {
 }
 
 // SetupWithManager sets up the reconciler with the Manager.
-func (r *OcneConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	return (&kubeadmbootstrapcontrollers.OcneConfigReconciler{
+func (r *OCNEConfigReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+	return (&kubeadmbootstrapcontrollers.OCNEConfigReconciler{
 		Client:           r.Client,
 		WatchFilterValue: r.WatchFilterValue,
 		TokenTTL:         r.TokenTTL,

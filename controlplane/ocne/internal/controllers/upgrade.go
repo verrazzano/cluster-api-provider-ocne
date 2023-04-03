@@ -33,7 +33,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func (r *OcneControlPlaneReconciler) upgradeControlPlane(
+func (r *OCNEControlPlaneReconciler) upgradeControlPlane(
 	ctx context.Context,
 	cluster *clusterv1.Cluster,
 	ocnecp *controlplanev1.OCNEControlPlane,
@@ -73,11 +73,11 @@ func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 		return ctrl.Result{}, errors.Wrap(err, "failed to set role and role binding for kubeadm")
 	}
 
-	if err := workloadCluster.UpdateKubernetesVersionInOcneConfigMap(ctx, parsedVersion); err != nil {
+	if err := workloadCluster.UpdateKubernetesVersionInOCNEConfigMap(ctx, parsedVersion); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to update the kubernetes version in the kubeadm config map")
 	}
 
-	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
+	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration != nil {
 		// We intentionally only parse major/minor/patch so that the subsequent code
 		// also already applies to beta versions of new releases.
 		parsedVersionTolerant, err := version.ParseMajorMinorPatchTolerant(ocnecp.Spec.Version)
@@ -85,35 +85,35 @@ func (r *OcneControlPlaneReconciler) upgradeControlPlane(
 			return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", ocnecp.Spec.Version)
 		}
 		// Get the imageRepository or the correct value if nothing is set and a migration is necessary.
-		imageRepository := internal.ImageRepositoryFromClusterConfig(ocnecp.Spec.OcneConfigSpec.ClusterConfiguration, parsedVersionTolerant)
+		imageRepository := internal.ImageRepositoryFromClusterConfig(ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration, parsedVersionTolerant)
 
-		if err := workloadCluster.UpdateImageRepositoryInOcneConfigMap(ctx, imageRepository, parsedVersion); err != nil {
+		if err := workloadCluster.UpdateImageRepositoryInOCNEConfigMap(ctx, imageRepository, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the image repository in the kubeadm config map")
 		}
 	}
 
-	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil && ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local != nil {
-		meta := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
-		if err := workloadCluster.UpdateEtcdVersionInOcneConfigMap(ctx, meta.ImageRepository, meta.ImageTag, parsedVersion); err != nil {
+	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration != nil && ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local != nil {
+		meta := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta
+		if err := workloadCluster.UpdateEtcdVersionInOCNEConfigMap(ctx, meta.ImageRepository, meta.ImageTag, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the etcd version in the kubeadm config map")
 		}
 
-		extraArgs := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.ExtraArgs
-		if err := workloadCluster.UpdateEtcdExtraArgsInOcneConfigMap(ctx, extraArgs, parsedVersion); err != nil {
+		extraArgs := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local.ExtraArgs
+		if err := workloadCluster.UpdateEtcdExtraArgsInOCNEConfigMap(ctx, extraArgs, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update the etcd extra args in the kubeadm config map")
 		}
 	}
 
-	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
-		if err := workloadCluster.UpdateAPIServerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.APIServer, parsedVersion); err != nil {
+	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration != nil {
+		if err := workloadCluster.UpdateAPIServerInOCNEConfigMap(ctx, ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.APIServer, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update api server in the kubeadm config map")
 		}
 
-		if err := workloadCluster.UpdateControllerManagerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.ControllerManager, parsedVersion); err != nil {
+		if err := workloadCluster.UpdateControllerManagerInOCNEConfigMap(ctx, ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.ControllerManager, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update controller manager in the kubeadm config map")
 		}
 
-		if err := workloadCluster.UpdateSchedulerInOcneConfigMap(ctx, ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Scheduler, parsedVersion); err != nil {
+		if err := workloadCluster.UpdateSchedulerInOCNEConfigMap(ctx, ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.Scheduler, parsedVersion); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to update scheduler in the kubeadm config map")
 		}
 	}

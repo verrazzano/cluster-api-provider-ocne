@@ -38,7 +38,7 @@ var _ webhook.Defaulter = &OCNEConfigTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *OCNEConfigTemplate) Default() {
-	DefaultOcneConfigSpec(&r.Spec.Template.Spec)
+	DefaultOCNEConfigSpec(&r.Spec.Template.Spec)
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1beta1,name=validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1

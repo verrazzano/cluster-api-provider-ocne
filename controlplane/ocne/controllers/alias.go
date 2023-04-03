@@ -32,8 +32,8 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/remote"
 )
 
-// OcneControlPlaneReconciler reconciles a KubeadmControlPlane object.
-type OcneControlPlaneReconciler struct {
+// OCNEControlPlaneReconciler reconciles a KubeadmControlPlane object.
+type OCNEControlPlaneReconciler struct {
 	Client    client.Client
 	APIReader client.Reader
 	Tracker   *remote.ClusterCacheTracker
@@ -45,8 +45,8 @@ type OcneControlPlaneReconciler struct {
 }
 
 // SetupWithManager sets up the reconciler with the Manager.
-func (r *OcneControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
-	return (&ocnecontrolplanecontrollers.OcneControlPlaneReconciler{
+func (r *OCNEControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
+	return (&ocnecontrolplanecontrollers.OCNEControlPlaneReconciler{
 		Client:           r.Client,
 		APIReader:        r.APIReader,
 		Tracker:          r.Tracker,

@@ -44,7 +44,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "$|^^_",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "$|^^_",
 				},
 			},
 		}
@@ -53,8 +53,8 @@ func TestMatchClusterConfiguration(t *testing.T) {
 	t.Run("Return true if cluster configuration matches", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -64,7 +64,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "{\n  \"clusterName\": \"foo\"\n}",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "{\n  \"clusterName\": \"foo\"\n}",
 				},
 			},
 		}
@@ -73,8 +73,8 @@ func TestMatchClusterConfiguration(t *testing.T) {
 	t.Run("Return false if cluster configuration does not match", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -84,7 +84,7 @@ func TestMatchClusterConfiguration(t *testing.T) {
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "{\n  \"clusterName\": \"bar\"\n}",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "{\n  \"clusterName\": \"bar\"\n}",
 				},
 			},
 		}
@@ -93,14 +93,14 @@ func TestMatchClusterConfiguration(t *testing.T) {
 	t.Run("Return true if cluster configuration is nil (special case)", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{},
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{},
 			},
 		}
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "null",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "null",
 				},
 			},
 		}
@@ -112,8 +112,8 @@ func TestGetAdjustedKcpConfig(t *testing.T) {
 	t.Run("if the machine is the first control plane, ocnecp config should get InitConfiguration", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					InitConfiguration: &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 				},
@@ -131,8 +131,8 @@ func TestGetAdjustedKcpConfig(t *testing.T) {
 	t.Run("if the machine is a joining control plane, ocnecp config should get JoinConfiguration", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					InitConfiguration: &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{},
 				},
@@ -286,8 +286,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns true if one format is empty and the other one cloud-config", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					Format: bootstrapv1.CloudConfig,
 				},
 			},
@@ -332,8 +332,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns true if InitConfiguration is equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -380,8 +380,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns false if InitConfiguration is NOT equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration: &bootstrapv1.InitConfiguration{
 						NodeRegistration: bootstrapv1.NodeRegistrationOptions{
@@ -432,8 +432,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns true if JoinConfiguration is equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -480,8 +480,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns false if JoinConfiguration is NOT equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
@@ -532,8 +532,8 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	t.Run("returns false if some other configurations are not equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -580,12 +580,12 @@ func TestMatchInitOrJoinConfiguration(t *testing.T) {
 	})
 }
 
-func TestMatchesOcneBootstrapConfig(t *testing.T) {
+func TestMatchesOCNEBootstrapConfig(t *testing.T) {
 	t.Run("returns true if ClusterConfiguration is equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -595,21 +595,21 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "{\n  \"clusterName\": \"foo\"\n}",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "{\n  \"clusterName\": \"foo\"\n}",
 				},
 			},
 		}
 		machineConfigs := map[string]*bootstrapv1.OCNEConfig{
 			m.Name: {},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeTrue())
 	})
 	t.Run("returns false if ClusterConfiguration is NOT equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 						ClusterName: "foo",
 					},
@@ -619,21 +619,21 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 		m := &clusterv1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					controlplanev1.OcneClusterConfigurationAnnotation: "{\n  \"clusterName\": \"bar\"\n}",
+					controlplanev1.OCNEClusterConfigurationAnnotation: "{\n  \"clusterName\": \"bar\"\n}",
 				},
 			},
 		}
 		machineConfigs := map[string]*bootstrapv1.OCNEConfig{
 			m.Name: {},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeFalse())
 	})
 	t.Run("returns true if InitConfiguration is equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -675,14 +675,14 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 				},
 			},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeTrue())
 	})
 	t.Run("returns false if InitConfiguration is NOT equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration: &bootstrapv1.InitConfiguration{
 						NodeRegistration: bootstrapv1.NodeRegistrationOptions{
@@ -728,14 +728,14 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 				},
 			},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeFalse())
 	})
 	t.Run("returns true if JoinConfiguration is equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -777,14 +777,14 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 				},
 			},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeTrue())
 	})
 	t.Run("returns false if JoinConfiguration is NOT equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration: &bootstrapv1.JoinConfiguration{
@@ -830,14 +830,14 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 				},
 			},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeFalse())
 	})
 	t.Run("returns false if some other configurations are not equal", func(t *testing.T) {
 		g := NewWithT(t)
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -880,13 +880,13 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 				},
 			},
 		}
-		f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+		f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 		g.Expect(f(m)).To(BeFalse())
 	})
 	t.Run("should match on labels and annotations", func(t *testing.T) {
 		ocnecp := &controlplanev1.OCNEControlPlane{
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 					ObjectMeta: clusterv1.ObjectMeta{
 						Annotations: map[string]string{
 							"test": "annotation",
@@ -896,7 +896,7 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 						},
 					},
 				},
-				OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+				OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 					InitConfiguration:    &bootstrapv1.InitConfiguration{},
 					JoinConfiguration:    &bootstrapv1.JoinConfiguration{},
@@ -943,7 +943,7 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 			g := NewWithT(t)
 			machineConfigs[m.Name].Annotations = nil
 			machineConfigs[m.Name].Labels = nil
-			f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+			f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 			g.Expect(f(m)).To(BeFalse())
 		})
 
@@ -951,7 +951,7 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 			g := NewWithT(t)
 			machineConfigs[m.Name].Annotations = ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations
 			machineConfigs[m.Name].Labels = nil
-			f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+			f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 			g.Expect(f(m)).To(BeFalse())
 		})
 
@@ -959,7 +959,7 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 			g := NewWithT(t)
 			machineConfigs[m.Name].Annotations = nil
 			machineConfigs[m.Name].Labels = ocnecp.Spec.MachineTemplate.ObjectMeta.Labels
-			f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+			f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 			g.Expect(f(m)).To(BeFalse())
 		})
 
@@ -967,7 +967,7 @@ func TestMatchesOcneBootstrapConfig(t *testing.T) {
 			g := NewWithT(t)
 			machineConfigs[m.Name].Labels = ocnecp.Spec.MachineTemplate.ObjectMeta.Labels
 			machineConfigs[m.Name].Annotations = ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations
-			f := MatchesOcneBootstrapConfig(machineConfigs, ocnecp)
+			f := MatchesOCNEBootstrapConfig(machineConfigs, ocnecp)
 			g.Expect(f(m)).To(BeTrue())
 		})
 	})
@@ -1004,8 +1004,8 @@ func TestMatchesTemplateClonedFrom(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "default",
 			},
-			Spec: controlplanev1.OcneControlPlaneSpec{
-				MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			Spec: controlplanev1.OCNEControlPlaneSpec{
+				MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 					ObjectMeta: clusterv1.ObjectMeta{
 						Annotations: map[string]string{
 							"test": "annotation",
@@ -1100,8 +1100,8 @@ func TestMatchesTemplateClonedFrom_WithClonedFromAnnotations(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       "GenericMachineTemplate",
 					Namespace:  "default",

@@ -127,27 +127,27 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3",
-			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OCNEControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "returns error if image in kube-proxy ds was in digest format",
 			ds:          newKubeProxyDSWithImage("k8s.gcr.io/kube-proxy@sha256:47bfd"),
 			expectErr:   true,
 			expectImage: "k8s.gcr.io/kube-proxy@sha256:47bfd",
-			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OCNEControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "expects OCI compatible format of tag",
 			ds:          newKubeProxyDS(),
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3_build1",
-			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3+build1"}},
+			KCP:         &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OCNEControlPlaneSpec{Version: "v1.16.3+build1"}},
 		},
 		{
 			name:      "returns error if image in kube-proxy ds was in wrong format",
 			ds:        newKubeProxyDSWithImage(""),
 			expectErr: true,
-			KCP:       &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OcneControlPlaneSpec{Version: "v1.16.3"}},
+			KCP:       &controlplanev1.OCNEControlPlane{Spec: controlplanev1.OCNEControlPlaneSpec{Version: "v1.16.3"}},
 		},
 		{
 			name:        "updates image repository if one has been set on the control plane",
@@ -155,9 +155,9 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			expectErr:   false,
 			expectImage: "foo.bar.example/baz/qux/kube-proxy:v1.16.3",
 			KCP: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "foo.bar.example/baz/qux",
 						},
@@ -170,9 +170,9 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			expectErr:   false,
 			expectImage: "k8s.gcr.io/kube-proxy:v1.16.3",
 			KCP: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "",
 						},
@@ -185,7 +185,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			expectErr:   false,
 			expectImage: "registry.k8s.io/kube-proxy:v1.25.0-alpha.1",
 			KCP: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.25.0-alpha.1",
 				}},
 		},
@@ -194,9 +194,9 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			ds:        newKubeProxyDS(),
 			expectErr: true,
 			KCP: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							ImageRepository: "%%%",
 						},
@@ -214,7 +214,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 						controlplanev1.SkipKubeProxyAnnotation: "",
 					},
 				},
-				Spec: controlplanev1.OcneControlPlaneSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.16.3",
 				}},
 		},
@@ -360,7 +360,7 @@ func TestRemoveMachineFromKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.RemoveMachineFromOcneConfigMap(ctx, tt.machine, tt.kubernetesVersion)
+			err := w.RemoveMachineFromOCNEConfigMap(ctx, tt.machine, tt.kubernetesVersion)
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 				return
@@ -923,7 +923,7 @@ func TestUpdateKubernetesVersionInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateKubernetesVersionInOcneConfigMap(ctx, tt.version)
+			err := w.UpdateKubernetesVersionInOCNEConfigMap(ctx, tt.version)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -979,7 +979,7 @@ func TestUpdateImageRepositoryInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateImageRepositoryInOcneConfigMap(ctx, tt.newImageRepository, semver.MustParse("1.19.1"))
+			err := w.UpdateImageRepositoryInOCNEConfigMap(ctx, tt.newImageRepository, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -1057,7 +1057,7 @@ func TestUpdateApiServerInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateAPIServerInOcneConfigMap(ctx, tt.newAPIServer, semver.MustParse("1.19.1"))
+			err := w.UpdateAPIServerInOCNEConfigMap(ctx, tt.newAPIServer, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -1133,7 +1133,7 @@ func TestUpdateControllerManagerInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateControllerManagerInOcneConfigMap(ctx, tt.newControllerManager, semver.MustParse("1.19.1"))
+			err := w.UpdateControllerManagerInOCNEConfigMap(ctx, tt.newControllerManager, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -1208,7 +1208,7 @@ func TestUpdateSchedulerInKubeadmConfigMap(t *testing.T) {
 			w := &Workload{
 				Client: fakeClient,
 			}
-			err := w.UpdateSchedulerInOcneConfigMap(ctx, tt.newScheduler, semver.MustParse("1.19.1"))
+			err := w.UpdateSchedulerInOCNEConfigMap(ctx, tt.newScheduler, semver.MustParse("1.19.1"))
 			g.Expect(err).ToNot(HaveOccurred())
 
 			var actualConfig corev1.ConfigMap
@@ -1293,10 +1293,10 @@ func TestClusterStatus(t *testing.T) {
 			g.Expect(status.Nodes).To(BeEquivalentTo(2))
 			g.Expect(status.ReadyNodes).To(BeEquivalentTo(1))
 			if tt.expectHasConf {
-				g.Expect(status.HasOcneConfig).To(BeTrue())
+				g.Expect(status.HasOCNEConfig).To(BeTrue())
 				return
 			}
-			g.Expect(status.HasOcneConfig).To(BeFalse())
+			g.Expect(status.HasOCNEConfig).To(BeFalse())
 		})
 	}
 }

@@ -106,11 +106,11 @@ func (f fakeWorkloadCluster) ReconcileKubeletRBACBinding(_ context.Context, _ se
 	return nil
 }
 
-func (f fakeWorkloadCluster) UpdateKubernetesVersionInOcneConfigMap(_ context.Context, _ semver.Version) error {
+func (f fakeWorkloadCluster) UpdateKubernetesVersionInOCNEConfigMap(_ context.Context, _ semver.Version) error {
 	return nil
 }
 
-func (f fakeWorkloadCluster) UpdateEtcdVersionInOcneConfigMap(_ context.Context, _, _ string, _ semver.Version) error {
+func (f fakeWorkloadCluster) UpdateEtcdVersionInOCNEConfigMap(_ context.Context, _, _ string, _ semver.Version) error {
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (f fakeWorkloadCluster) RemoveEtcdMemberForMachine(_ context.Context, _ *cl
 	return nil
 }
 
-func (f fakeWorkloadCluster) RemoveMachineFromOcneConfigMap(_ context.Context, _ *clusterv1.Machine, _ semver.Version) error {
+func (f fakeWorkloadCluster) RemoveMachineFromOCNEConfigMap(_ context.Context, _ *clusterv1.Machine, _ semver.Version) error {
 	return nil
 }
 

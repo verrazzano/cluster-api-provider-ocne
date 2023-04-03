@@ -87,7 +87,7 @@ loopmembers:
 			errs = append(errs, err)
 		}
 
-		if err := w.RemoveNodeFromOcneConfigMap(ctx, member.Name, version); err != nil {
+		if err := w.RemoveNodeFromOCNEConfigMap(ctx, member.Name, version); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -95,7 +95,7 @@ loopmembers:
 }
 
 // UpdateEtcdVersionInKubeadmConfigMap sets the imageRepository or the imageTag or both in the kubeadm config map.
-func (w *Workload) UpdateEtcdVersionInOcneConfigMap(ctx context.Context, imageRepository, imageTag string, version semver.Version) error {
+func (w *Workload) UpdateEtcdVersionInOCNEConfigMap(ctx context.Context, imageRepository, imageTag string, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		if c.Etcd.Local != nil {
 			c.Etcd.Local.ImageRepository = imageRepository
@@ -105,7 +105,7 @@ func (w *Workload) UpdateEtcdVersionInOcneConfigMap(ctx context.Context, imageRe
 }
 
 // UpdateEtcdExtraArgsInKubeadmConfigMap sets extraArgs in the kubeadm config map.
-func (w *Workload) UpdateEtcdExtraArgsInOcneConfigMap(ctx context.Context, extraArgs map[string]string, version semver.Version) error {
+func (w *Workload) UpdateEtcdExtraArgsInOCNEConfigMap(ctx context.Context, extraArgs map[string]string, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		if c.Etcd.Local != nil {
 			c.Etcd.Local.ExtraArgs = extraArgs

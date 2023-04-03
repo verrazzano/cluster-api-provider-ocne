@@ -43,9 +43,9 @@ func TestOCNEControlPlaneDefault(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "foo",
 		},
-		Spec: OcneControlPlaneSpec{
+		Spec: OCNEControlPlaneSpec{
 			Version: "v1.18.3",
-			MachineTemplate: OcneControlPlaneMachineTemplate{
+			MachineTemplate: OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -66,7 +66,7 @@ func TestOCNEControlPlaneDefault(t *testing.T) {
 	t.Run("for OCNEControlPlane", utildefaulting.DefaultValidateTest(updateDefaultingValidationKCP))
 	ocnecp.Default()
 
-	g.Expect(ocnecp.Spec.OcneConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
+	g.Expect(ocnecp.Spec.OCNEConfigSpec.Format).To(Equal(bootstrapv1.CloudConfig))
 	g.Expect(ocnecp.Spec.MachineTemplate.InfrastructureRef.Namespace).To(Equal(ocnecp.Namespace))
 	g.Expect(ocnecp.Spec.Version).To(Equal("v1.18.3"))
 	g.Expect(ocnecp.Spec.RolloutStrategy.Type).To(Equal(RollingUpdateStrategyType))
@@ -79,8 +79,8 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 			Name:      "test",
 			Namespace: "foo",
 		},
-		Spec: OcneControlPlaneSpec{
-			MachineTemplate: OcneControlPlaneMachineTemplate{
+		Spec: OCNEControlPlaneSpec{
+			MachineTemplate: OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -88,7 +88,7 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 					Name:       "infraTemplate",
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 				ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
 			},
 			Replicas: pointer.Int32(1),
@@ -124,7 +124,7 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 	evenReplicas.Spec.Replicas = pointer.Int32(2)
 
 	evenReplicasExternalEtcd := evenReplicas.DeepCopy()
-	evenReplicasExternalEtcd.Spec.OcneConfigSpec = bootstrapv1.OCNEConfigSpec{
+	evenReplicasExternalEtcd.Spec.OCNEConfigSpec = bootstrapv1.OCNEConfigSpec{
 		ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 			Etcd: bootstrapv1.Etcd{
 				External: &bootstrapv1.ExternalEtcd{},
@@ -142,7 +142,7 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 	invalidVersion2.Spec.Version = "1.16.6"
 
 	invalidCoreDNSVersion := valid.DeepCopy()
-	invalidCoreDNSVersion.Spec.OcneConfigSpec.ClusterConfiguration.DNS.ImageTag = "v1.7" // not a valid semantic version
+	invalidCoreDNSVersion.Spec.OCNEConfigSpec.ClusterConfiguration.DNS.ImageTag = "v1.7" // not a valid semantic version
 
 	invalidRolloutBeforeCertificateExpiryDays := valid.DeepCopy()
 	invalidRolloutBeforeCertificateExpiryDays.Spec.RolloutBefore = &RolloutBefore{
@@ -150,11 +150,11 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 	}
 
 	invalidIgnitionConfiguration := valid.DeepCopy()
-	invalidIgnitionConfiguration.Spec.OcneConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
+	invalidIgnitionConfiguration.Spec.OCNEConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
 
 	validIgnitionConfiguration := valid.DeepCopy()
-	validIgnitionConfiguration.Spec.OcneConfigSpec.Format = bootstrapv1.Ignition
-	validIgnitionConfiguration.Spec.OcneConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
+	validIgnitionConfiguration.Spec.OCNEConfigSpec.Format = bootstrapv1.Ignition
+	validIgnitionConfiguration.Spec.OCNEConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
 
 	tests := []struct {
 		name                  string
@@ -267,8 +267,8 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 			Name:      "test",
 			Namespace: "foo",
 		},
-		Spec: OcneControlPlaneSpec{
-			MachineTemplate: OcneControlPlaneMachineTemplate{
+		Spec: OCNEControlPlaneSpec{
+			MachineTemplate: OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -288,7 +288,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 					},
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 				InitConfiguration: &bootstrapv1.InitConfiguration{
 					LocalAPIEndpoint: bootstrapv1.APIEndpoint{
 						AdvertiseAddress: "127.0.0.1",
@@ -353,30 +353,30 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	wrongReplicaCountForScaleIn.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal = int32(0)
 
 	invalidUpdateKubeadmConfigInit := before.DeepCopy()
-	invalidUpdateKubeadmConfigInit.Spec.OcneConfigSpec.InitConfiguration = &bootstrapv1.InitConfiguration{}
+	invalidUpdateKubeadmConfigInit.Spec.OCNEConfigSpec.InitConfiguration = &bootstrapv1.InitConfiguration{}
 
 	validUpdateKubeadmConfigInit := before.DeepCopy()
-	validUpdateKubeadmConfigInit.Spec.OcneConfigSpec.InitConfiguration.NodeRegistration = bootstrapv1.NodeRegistrationOptions{}
+	validUpdateKubeadmConfigInit.Spec.OCNEConfigSpec.InitConfiguration.NodeRegistration = bootstrapv1.NodeRegistrationOptions{}
 
 	invalidUpdateKubeadmConfigCluster := before.DeepCopy()
-	invalidUpdateKubeadmConfigCluster.Spec.OcneConfigSpec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
+	invalidUpdateKubeadmConfigCluster.Spec.OCNEConfigSpec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
 
 	invalidUpdateKubeadmConfigJoin := before.DeepCopy()
-	invalidUpdateKubeadmConfigJoin.Spec.OcneConfigSpec.JoinConfiguration = &bootstrapv1.JoinConfiguration{}
+	invalidUpdateKubeadmConfigJoin.Spec.OCNEConfigSpec.JoinConfiguration = &bootstrapv1.JoinConfiguration{}
 
 	validUpdateKubeadmConfigJoin := before.DeepCopy()
-	validUpdateKubeadmConfigJoin.Spec.OcneConfigSpec.JoinConfiguration.NodeRegistration = bootstrapv1.NodeRegistrationOptions{}
+	validUpdateKubeadmConfigJoin.Spec.OCNEConfigSpec.JoinConfiguration.NodeRegistration = bootstrapv1.NodeRegistrationOptions{}
 
 	beforeKubeadmConfigFormatSet := before.DeepCopy()
-	beforeKubeadmConfigFormatSet.Spec.OcneConfigSpec.Format = bootstrapv1.CloudConfig
+	beforeKubeadmConfigFormatSet.Spec.OCNEConfigSpec.Format = bootstrapv1.CloudConfig
 	invalidUpdateKubeadmConfigFormat := beforeKubeadmConfigFormatSet.DeepCopy()
-	invalidUpdateKubeadmConfigFormat.Spec.OcneConfigSpec.Format = bootstrapv1.Ignition
+	invalidUpdateKubeadmConfigFormat.Spec.OCNEConfigSpec.Format = bootstrapv1.Ignition
 
 	validUpdate := before.DeepCopy()
 	validUpdate.Labels = map[string]string{"blue": "green"}
-	validUpdate.Spec.OcneConfigSpec.PreOCNECommands = []string{"ab", "abc"}
-	validUpdate.Spec.OcneConfigSpec.PostOCNECommands = []string{"ab", "abc"}
-	validUpdate.Spec.OcneConfigSpec.Files = []bootstrapv1.File{
+	validUpdate.Spec.OCNEConfigSpec.PreOCNECommands = []string{"ab", "abc"}
+	validUpdate.Spec.OCNEConfigSpec.PostOCNECommands = []string{"ab", "abc"}
+	validUpdate.Spec.OCNEConfigSpec.Files = []bootstrapv1.File{
 		{
 			Path: "ab",
 		},
@@ -385,7 +385,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 		},
 	}
 	validUpdate.Spec.Version = "v1.17.1"
-	validUpdate.Spec.OcneConfigSpec.Users = []bootstrapv1.User{
+	validUpdate.Spec.OCNEConfigSpec.Users = []bootstrapv1.User{
 		{
 			Name: "bar",
 			SSHAuthorizedKeys: []string{
@@ -411,7 +411,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	validUpdate.Spec.RolloutBefore = &RolloutBefore{
 		CertificatesExpiryDays: pointer.Int32(14),
 	}
-	validUpdate.Spec.OcneConfigSpec.Format = bootstrapv1.CloudConfig
+	validUpdate.Spec.OCNEConfigSpec.Format = bootstrapv1.CloudConfig
 
 	scaleToZero := before.DeepCopy()
 	scaleToZero.Spec.Replicas = pointer.Int32(0)
@@ -426,40 +426,40 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	missingReplicas.Spec.Replicas = nil
 
 	etcdLocalImageTag := before.DeepCopy()
-	etcdLocalImageTag.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	etcdLocalImageTag.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageTag: "v9.1.1",
 		},
 	}
 
 	etcdLocalImageBuildTag := before.DeepCopy()
-	etcdLocalImageBuildTag.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	etcdLocalImageBuildTag.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageTag: "v9.1.1_validBuild1",
 		},
 	}
 
 	etcdLocalImageInvalidTag := before.DeepCopy()
-	etcdLocalImageInvalidTag.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	etcdLocalImageInvalidTag.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageTag: "v9.1.1+invalidBuild1",
 		},
 	}
 
 	unsetEtcd := etcdLocalImageTag.DeepCopy()
-	unsetEtcd.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = nil
+	unsetEtcd.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = nil
 
 	networking := before.DeepCopy()
-	networking.Spec.OcneConfigSpec.ClusterConfiguration.Networking.DNSDomain = "some dns domain"
+	networking.Spec.OCNEConfigSpec.ClusterConfiguration.Networking.DNSDomain = "some dns domain"
 
 	kubernetesVersion := before.DeepCopy()
-	kubernetesVersion.Spec.OcneConfigSpec.ClusterConfiguration.KubernetesVersion = "some kubernetes version"
+	kubernetesVersion.Spec.OCNEConfigSpec.ClusterConfiguration.KubernetesVersion = "some kubernetes version"
 
 	controlPlaneEndpoint := before.DeepCopy()
-	controlPlaneEndpoint.Spec.OcneConfigSpec.ClusterConfiguration.ControlPlaneEndpoint = "some control plane endpoint"
+	controlPlaneEndpoint.Spec.OCNEConfigSpec.ClusterConfiguration.ControlPlaneEndpoint = "some control plane endpoint"
 
 	apiServer := before.DeepCopy()
-	apiServer.Spec.OcneConfigSpec.ClusterConfiguration.APIServer = bootstrapv1.APIServer{
+	apiServer.Spec.OCNEConfigSpec.ClusterConfiguration.APIServer = bootstrapv1.APIServer{
 		ControlPlaneComponent: bootstrapv1.ControlPlaneComponent{
 			ExtraArgs:    map[string]string{"foo": "bar"},
 			ExtraVolumes: []bootstrapv1.HostPathMount{{Name: "mount1"}},
@@ -469,19 +469,19 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	controllerManager := before.DeepCopy()
-	controllerManager.Spec.OcneConfigSpec.ClusterConfiguration.ControllerManager = bootstrapv1.ControlPlaneComponent{
+	controllerManager.Spec.OCNEConfigSpec.ClusterConfiguration.ControllerManager = bootstrapv1.ControlPlaneComponent{
 		ExtraArgs:    map[string]string{"controller manager field": "controller manager value"},
 		ExtraVolumes: []bootstrapv1.HostPathMount{{Name: "mount", HostPath: "/foo", MountPath: "bar", ReadOnly: true, PathType: "File"}},
 	}
 
 	scheduler := before.DeepCopy()
-	scheduler.Spec.OcneConfigSpec.ClusterConfiguration.Scheduler = bootstrapv1.ControlPlaneComponent{
+	scheduler.Spec.OCNEConfigSpec.ClusterConfiguration.Scheduler = bootstrapv1.ControlPlaneComponent{
 		ExtraArgs:    map[string]string{"scheduler field": "scheduler value"},
 		ExtraVolumes: []bootstrapv1.HostPathMount{{Name: "mount", HostPath: "/foo", MountPath: "bar", ReadOnly: true, PathType: "File"}},
 	}
 
 	dns := before.DeepCopy()
-	dns.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	dns.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "v1.6.6_foobar.1",
@@ -489,7 +489,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	dnsBuildTag := before.DeepCopy()
-	dnsBuildTag.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	dnsBuildTag.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "1.6.7",
@@ -497,7 +497,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	dnsInvalidTag := before.DeepCopy()
-	dnsInvalidTag.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	dnsInvalidTag.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "v0.20.0+invalidBuild1",
@@ -505,7 +505,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	dnsInvalidCoreDNSToVersion := dns.DeepCopy()
-	dnsInvalidCoreDNSToVersion.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	dnsInvalidCoreDNSToVersion.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "1.6.5",
@@ -513,14 +513,14 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	validCoreDNSCustomToVersion := dns.DeepCopy()
-	validCoreDNSCustomToVersion.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	validCoreDNSCustomToVersion.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "v1.6.6_foobar.2",
 		},
 	}
 	validUnsupportedCoreDNSVersion := dns.DeepCopy()
-	validUnsupportedCoreDNSVersion.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	validUnsupportedCoreDNSVersion.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "gcr.io/capi-test",
 			ImageTag:        "v99.99.99",
@@ -528,7 +528,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	unsetCoreDNSToVersion := dns.DeepCopy()
-	unsetCoreDNSToVersion.Spec.OcneConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
+	unsetCoreDNSToVersion.Spec.OCNEConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
 		ImageMeta: bootstrapv1.ImageMeta{
 			ImageRepository: "",
 			ImageTag:        "",
@@ -536,43 +536,43 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	certificatesDir := before.DeepCopy()
-	certificatesDir.Spec.OcneConfigSpec.ClusterConfiguration.CertificatesDir = "a new certificates directory"
+	certificatesDir.Spec.OCNEConfigSpec.ClusterConfiguration.CertificatesDir = "a new certificates directory"
 
 	imageRepository := before.DeepCopy()
-	imageRepository.Spec.OcneConfigSpec.ClusterConfiguration.ImageRepository = "a new image repository"
+	imageRepository.Spec.OCNEConfigSpec.ClusterConfiguration.ImageRepository = "a new image repository"
 
 	featureGates := before.DeepCopy()
-	featureGates.Spec.OcneConfigSpec.ClusterConfiguration.FeatureGates = map[string]bool{"a feature gate": true}
+	featureGates.Spec.OCNEConfigSpec.ClusterConfiguration.FeatureGates = map[string]bool{"a feature gate": true}
 
 	externalEtcd := before.DeepCopy()
-	externalEtcd.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{
+	externalEtcd.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{
 		KeyFile: "some key file",
 	}
 
 	localDataDir := before.DeepCopy()
-	localDataDir.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	localDataDir.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		DataDir: "some local data dir",
 	}
 	modifyLocalDataDir := localDataDir.DeepCopy()
-	modifyLocalDataDir.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local.DataDir = "a different local data dir"
+	modifyLocalDataDir.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local.DataDir = "a different local data dir"
 
 	localPeerCertSANs := before.DeepCopy()
-	localPeerCertSANs.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	localPeerCertSANs.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		PeerCertSANs: []string{"a cert"},
 	}
 
 	localServerCertSANs := before.DeepCopy()
-	localServerCertSANs.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	localServerCertSANs.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		ServerCertSANs: []string{"a cert"},
 	}
 
 	localExtraArgs := before.DeepCopy()
-	localExtraArgs.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	localExtraArgs.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		ExtraArgs: map[string]string{"an arg": "a value"},
 	}
 
 	beforeExternalEtcdCluster := before.DeepCopy()
-	beforeExternalEtcdCluster.Spec.OcneConfigSpec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{
+	beforeExternalEtcdCluster.Spec.OCNEConfigSpec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{
 		Etcd: bootstrapv1.Etcd{
 			External: &bootstrapv1.ExternalEtcd{
 				Endpoints: []string{"127.0.0.1"},
@@ -583,7 +583,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	scaleToEvenExternalEtcdCluster.Spec.Replicas = pointer.Int32(2)
 
 	beforeInvalidEtcdCluster := before.DeepCopy()
-	beforeInvalidEtcdCluster.Spec.OcneConfigSpec.ClusterConfiguration.Etcd = bootstrapv1.Etcd{
+	beforeInvalidEtcdCluster.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd = bootstrapv1.Etcd{
 		Local: &bootstrapv1.LocalEtcd{
 			ImageMeta: bootstrapv1.ImageMeta{
 				ImageRepository: "image-repository",
@@ -593,25 +593,25 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	afterInvalidEtcdCluster := beforeInvalidEtcdCluster.DeepCopy()
-	afterInvalidEtcdCluster.Spec.OcneConfigSpec.ClusterConfiguration.Etcd = bootstrapv1.Etcd{
+	afterInvalidEtcdCluster.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd = bootstrapv1.Etcd{
 		External: &bootstrapv1.ExternalEtcd{
 			Endpoints: []string{"127.0.0.1"},
 		},
 	}
 
 	withoutClusterConfiguration := before.DeepCopy()
-	withoutClusterConfiguration.Spec.OcneConfigSpec.ClusterConfiguration = nil
+	withoutClusterConfiguration.Spec.OCNEConfigSpec.ClusterConfiguration = nil
 
 	afterEtcdLocalDirAddition := before.DeepCopy()
-	afterEtcdLocalDirAddition.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
+	afterEtcdLocalDirAddition.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.Local = &bootstrapv1.LocalEtcd{
 		DataDir: "/data",
 	}
 
 	updateNTPServers := before.DeepCopy()
-	updateNTPServers.Spec.OcneConfigSpec.NTP.Servers = []string{"new-server"}
+	updateNTPServers.Spec.OCNEConfigSpec.NTP.Servers = []string{"new-server"}
 
 	disableNTPServers := before.DeepCopy()
-	disableNTPServers.Spec.OcneConfigSpec.NTP.Enabled = pointer.Bool(false)
+	disableNTPServers.Spec.OCNEConfigSpec.NTP.Enabled = pointer.Bool(false)
 
 	invalidRolloutBeforeCertificateExpiryDays := before.DeepCopy()
 	invalidRolloutBeforeCertificateExpiryDays.Spec.RolloutBefore = &RolloutBefore{
@@ -619,35 +619,35 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 	}
 
 	invalidIgnitionConfiguration := before.DeepCopy()
-	invalidIgnitionConfiguration.Spec.OcneConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
+	invalidIgnitionConfiguration.Spec.OCNEConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{}
 
 	validIgnitionConfigurationBefore := before.DeepCopy()
-	validIgnitionConfigurationBefore.Spec.OcneConfigSpec.Format = bootstrapv1.Ignition
-	validIgnitionConfigurationBefore.Spec.OcneConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{
+	validIgnitionConfigurationBefore.Spec.OCNEConfigSpec.Format = bootstrapv1.Ignition
+	validIgnitionConfigurationBefore.Spec.OCNEConfigSpec.Ignition = &bootstrapv1.IgnitionSpec{
 		ContainerLinuxConfig: &bootstrapv1.ContainerLinuxConfig{},
 	}
 
 	validIgnitionConfigurationAfter := validIgnitionConfigurationBefore.DeepCopy()
-	validIgnitionConfigurationAfter.Spec.OcneConfigSpec.Ignition.ContainerLinuxConfig.AdditionalConfig = "foo: bar"
+	validIgnitionConfigurationAfter.Spec.OCNEConfigSpec.Ignition.ContainerLinuxConfig.AdditionalConfig = "foo: bar"
 
 	updateInitConfigurationPatches := before.DeepCopy()
-	updateInitConfigurationPatches.Spec.OcneConfigSpec.InitConfiguration.Patches = &bootstrapv1.Patches{
+	updateInitConfigurationPatches.Spec.OCNEConfigSpec.InitConfiguration.Patches = &bootstrapv1.Patches{
 		Directory: "/tmp/patches",
 	}
 
 	updateJoinConfigurationPatches := before.DeepCopy()
-	updateJoinConfigurationPatches.Spec.OcneConfigSpec.InitConfiguration.Patches = &bootstrapv1.Patches{
+	updateJoinConfigurationPatches.Spec.OCNEConfigSpec.InitConfiguration.Patches = &bootstrapv1.Patches{
 		Directory: "/tmp/patches",
 	}
 
 	updateInitConfigurationSkipPhases := before.DeepCopy()
-	updateInitConfigurationSkipPhases.Spec.OcneConfigSpec.InitConfiguration.SkipPhases = []string{"addon/kube-proxy"}
+	updateInitConfigurationSkipPhases.Spec.OCNEConfigSpec.InitConfiguration.SkipPhases = []string{"addon/kube-proxy"}
 
 	updateJoinConfigurationSkipPhases := before.DeepCopy()
-	updateJoinConfigurationSkipPhases.Spec.OcneConfigSpec.JoinConfiguration.SkipPhases = []string{"addon/kube-proxy"}
+	updateJoinConfigurationSkipPhases.Spec.OCNEConfigSpec.JoinConfiguration.SkipPhases = []string{"addon/kube-proxy"}
 
 	updateDiskSetup := before.DeepCopy()
-	updateDiskSetup.Spec.OcneConfigSpec.DiskSetup = &bootstrapv1.DiskSetup{
+	updateDiskSetup.Spec.OCNEConfigSpec.DiskSetup = &bootstrapv1.DiskSetup{
 		Filesystems: []bootstrapv1.Filesystem{
 			{
 				Device:     "/dev/sda",
@@ -1149,8 +1149,8 @@ func TestValidateVersion(t *testing.T) {
 			g := NewWithT(t)
 
 			ocnecp := OCNEControlPlane{
-				Spec: OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+				Spec: OCNEControlPlaneSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: tt.clusterConfiguration,
 					},
 					Version: tt.newVersion,
@@ -1172,9 +1172,9 @@ func TestOCNEControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
 			Name:      "test",
 			Namespace: "foo",
 		},
-		Spec: OcneControlPlaneSpec{
+		Spec: OCNEControlPlaneSpec{
 			Version: "v1.19.0",
-			MachineTemplate: OcneControlPlaneMachineTemplate{
+			MachineTemplate: OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",

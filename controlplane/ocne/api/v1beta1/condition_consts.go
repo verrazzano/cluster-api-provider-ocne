@@ -45,9 +45,9 @@ const (
 	// and so the control plane is available and an API server instance is ready for processing requests.
 	AvailableCondition clusterv1.ConditionType = "Available"
 
-	// WaitingForOcneInitReason (Severity=Info) documents a OCNEControlPlane object waiting for the first
+	// WaitingForOCNEInitReason (Severity=Info) documents a OCNEControlPlane object waiting for the first
 	// control plane instance to complete the ocne init operation.
-	WaitingForOcneInitReason = "WaitingForOcneInit"
+	WaitingForOCNEInitReason = "WaitingForOCNEInit"
 )
 
 const (

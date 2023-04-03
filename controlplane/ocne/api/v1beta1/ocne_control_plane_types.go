@@ -40,9 +40,9 @@ const (
 )
 
 const (
-	// OcneControlPlaneFinalizer is the finalizer applied to OCNEControlPlane resources
+	// OCNEControlPlaneFinalizer is the finalizer applied to OCNEControlPlane resources
 	// by its managing controller.
-	OcneControlPlaneFinalizer = "ocne.controlplane.cluster.x-k8s.io"
+	OCNEControlPlaneFinalizer = "ocne.controlplane.cluster.x-k8s.io"
 
 	// SkipCoreDNSAnnotation annotation explicitly skips reconciling CoreDNS if set.
 	SkipCoreDNSAnnotation = "controlplane.cluster.x-k8s.io/skip-coredns"
@@ -50,13 +50,13 @@ const (
 	// SkipKubeProxyAnnotation annotation explicitly skips reconciling kube-proxy if set.
 	SkipKubeProxyAnnotation = "controlplane.cluster.x-k8s.io/skip-kube-proxy"
 
-	// OcneClusterConfigurationAnnotation is a machine annotation that stores the json-marshalled string of KCP ClusterConfiguration.
+	// OCNEClusterConfigurationAnnotation is a machine annotation that stores the json-marshalled string of KCP ClusterConfiguration.
 	// This annotation is used to detect any changes in ClusterConfiguration and trigger machine rollout in KCP.
-	OcneClusterConfigurationAnnotation = "controlplane.cluster.x-k8s.io/ocne-cluster-configuration"
+	OCNEClusterConfigurationAnnotation = "controlplane.cluster.x-k8s.io/ocne-cluster-configuration"
 )
 
-// OcneControlPlaneSpec defines the desired state of OCNEControlPlane.
-type OcneControlPlaneSpec struct {
+// OCNEControlPlaneSpec defines the desired state of OCNEControlPlane.
+type OCNEControlPlaneSpec struct {
 	// Number of desired machines. Defaults to 1. When stacked etcd is used only
 	// odd numbers are permitted, as per [etcd best practice](https://etcd.io/docs/v3.3.12/faq/#why-an-odd-number-of-cluster-members).
 	// This is a pointer to distinguish between explicit zero and not specified.
@@ -73,11 +73,11 @@ type OcneControlPlaneSpec struct {
 
 	// MachineTemplate contains information about how machines
 	// should be shaped when creating or updating a control plane.
-	MachineTemplate OcneControlPlaneMachineTemplate `json:"machineTemplate"`
+	MachineTemplate OCNEControlPlaneMachineTemplate `json:"machineTemplate"`
 
-	// OcneConfigSpec is a OcneConfigSpec
+	// OCNEConfigSpec is a OCNEConfigSpec
 	// to use for initializing and joining machines to the control plane.
-	OcneConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
+	OCNEConfigSpec bootstrapv1.OCNEConfigSpec `json:"ocneConfigSpec"`
 
 	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.
@@ -97,9 +97,9 @@ type OcneControlPlaneSpec struct {
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 }
 
-// OcneControlPlaneMachineTemplate defines the template for Machines
+// OCNEControlPlaneMachineTemplate defines the template for Machines
 // in a OCNEControlPlane object.
-type OcneControlPlaneMachineTemplate struct {
+type OCNEControlPlaneMachineTemplate struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
@@ -162,8 +162,8 @@ type RollingUpdate struct {
 	MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty"`
 }
 
-// OcneControlPlaneStatus defines the observed state of OCNEControlPlane.
-type OcneControlPlaneStatus struct {
+// OCNEControlPlaneStatus defines the observed state of OCNEControlPlane.
+type OCNEControlPlaneStatus struct {
 	// Selector is the label selector in string format to avoid introspection
 	// by clients, and is used to provide the CRD-based integration for the
 	// scale subresource and additional integrations for things like kubectl
@@ -250,8 +250,8 @@ type OCNEControlPlane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   OcneControlPlaneSpec   `json:"spec,omitempty"`
-	Status OcneControlPlaneStatus `json:"status,omitempty"`
+	Spec   OCNEControlPlaneSpec   `json:"spec,omitempty"`
+	Status OCNEControlPlaneStatus `json:"status,omitempty"`
 }
 
 // GetConditions returns the set of conditions for this object.

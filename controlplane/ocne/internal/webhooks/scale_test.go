@@ -54,8 +54,8 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 			Name:      "ocnecp-managed-etcd",
 			Namespace: "foo",
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					APIVersion: "test/v1alpha1",
 					Kind:       "UnknownInfraMachine",
@@ -73,7 +73,7 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 					},
 				},
 			},
-			OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+			OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 				InitConfiguration: &bootstrapv1.InitConfiguration{
 					LocalAPIEndpoint: bootstrapv1.APIEndpoint{
 						AdvertiseAddress: "127.0.0.1",
@@ -132,7 +132,7 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 
 	ocnecpExternalEtcd := ocnecpManagedEtcd.DeepCopy()
 	ocnecpExternalEtcd.ObjectMeta.Name = "ocnecp-external-etcd"
-	ocnecpExternalEtcd.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
+	ocnecpExternalEtcd.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.External = &bootstrapv1.ExternalEtcd{}
 
 	tests := []struct {
 		name              string

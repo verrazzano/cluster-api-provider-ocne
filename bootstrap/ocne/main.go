@@ -229,7 +229,7 @@ func setupChecks(mgr ctrl.Manager) {
 }
 
 func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
-	if err := (&ocnebootstrapcontrollers.OcneConfigReconciler{
+	if err := (&ocnebootstrapcontrollers.OCNEConfigReconciler{
 		Client:           mgr.GetClient(),
 		WatchFilterValue: watchFilterValue,
 		TokenTTL:         tokenTTL,

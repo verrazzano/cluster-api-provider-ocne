@@ -41,7 +41,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: OcneControlPlaneTemplateSpec defines the desired state of
+            description: OCNEControlPlaneTemplateSpec defines the desired state of
               OCNEControlPlaneTemplate.
             properties:
               template:
@@ -51,7 +51,7 @@ spec:
                   spec:
                     description: 'OCNEControlPlaneTemplateResourceSpec defines the
                       desired state of OCNEControlPlane. NOTE: OCNEControlPlaneTemplateResourceSpec
-                      is similar to OcneControlPlaneSpec but omits Replicas and Version
+                      is similar to OCNEControlPlaneSpec but omits Replicas and Version
                       fields. These fields do not make sense on the OCNEControlPlaneTemplate,
                       because they are calculated by the Cluster topology reconciler
                       during reconciliation and thus cannot be configured on the OCNEControlPlaneTemplate.'

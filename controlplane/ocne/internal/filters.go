@@ -41,7 +41,7 @@ func MatchesMachineSpec(infraConfigs map[string]*unstructured.Unstructured, mach
 			return matchMachineTemplateMetadata(ocnecp, machine)
 		},
 		collections.MatchesKubernetesVersion(ocnecp.Spec.Version),
-		MatchesOcneBootstrapConfig(machineConfigs, ocnecp),
+		MatchesOCNEBootstrapConfig(machineConfigs, ocnecp),
 		MatchesTemplateClonedFrom(infraConfigs, ocnecp),
 	)
 }
@@ -81,8 +81,8 @@ func MatchesTemplateClonedFrom(infraConfigs map[string]*unstructured.Unstructure
 	}
 }
 
-// MatchesOcneBootstrapConfig checks if machine's OCNEConfigSpec is equivalent with KCP's OCNEConfigSpec.
-func MatchesOcneBootstrapConfig(machineConfigs map[string]*bootstrapv1.OCNEConfig, ocnecp *controlplanev1.OCNEControlPlane) collections.Func {
+// MatchesOCNEBootstrapConfig checks if machine's OCNEConfigSpec is equivalent with KCP's OCNEConfigSpec.
+func MatchesOCNEBootstrapConfig(machineConfigs map[string]*bootstrapv1.OCNEConfig, ocnecp *controlplanev1.OCNEControlPlane) collections.Func {
 	return func(machine *clusterv1.Machine) bool {
 		if machine == nil {
 			return false
@@ -120,12 +120,12 @@ func MatchesOcneBootstrapConfig(machineConfigs map[string]*bootstrapv1.OCNEConfi
 }
 
 // matchClusterConfiguration verifies if KCP and machine ClusterConfiguration matches.
-// NOTE: Machines that have OcneClusterConfigurationAnnotation will have to match with KCP ClusterConfiguration.
+// NOTE: Machines that have OCNEClusterConfigurationAnnotation will have to match with KCP ClusterConfiguration.
 // If the annotation is not present (machine is either old or adopted), we won't roll out on any possible changes
 // made in KCP's ClusterConfiguration given that we don't have enough information to make a decision.
 // Users should use KCP.Spec.RolloutAfter field to force a rollout in this case.
 func matchClusterConfiguration(ocnecp *controlplanev1.OCNEControlPlane, machine *clusterv1.Machine) bool {
-	machineClusterConfigStr, ok := machine.GetAnnotations()[controlplanev1.OcneClusterConfigurationAnnotation]
+	machineClusterConfigStr, ok := machine.GetAnnotations()[controlplanev1.OCNEClusterConfigurationAnnotation]
 	if !ok {
 		// We don't have enough information to make a decision; don't' trigger a roll out.
 		return true
@@ -144,7 +144,7 @@ func matchClusterConfiguration(ocnecp *controlplanev1.OCNEControlPlane, machine 
 	if machineClusterConfig == nil {
 		machineClusterConfig = &bootstrapv1.ClusterConfiguration{}
 	}
-	ocnecpLocalClusterConfiguration := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration
+	ocnecpLocalClusterConfiguration := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration
 	if ocnecpLocalClusterConfiguration == nil {
 		ocnecpLocalClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
 	}
@@ -166,12 +166,12 @@ func matchInitOrJoinConfiguration(machineConfig *bootstrapv1.OCNEConfig, ocnecp 
 	// to allow a comparison with the OCNEConfig referenced from the machine.
 	ocnecpConfig := getAdjustedKcpConfig(ocnecp, machineConfig)
 
-	// Default both OcneConfigSpecs before comparison.
+	// Default both OCNEConfigSpecs before comparison.
 	// *Note* This assumes that newly added default values never
 	// introduce a semantic difference to the unset value.
 	// But that is something that is ensured by our API guarantees.
-	bootstrapv1.DefaultOcneConfigSpec(ocnecpConfig)
-	bootstrapv1.DefaultOcneConfigSpec(&machineConfig.Spec)
+	bootstrapv1.DefaultOCNEConfigSpec(ocnecpConfig)
+	bootstrapv1.DefaultOCNEConfigSpec(&machineConfig.Spec)
 
 	// cleanups all the fields that are not relevant for the comparison.
 	cleanupConfigFields(ocnecpConfig, machineConfig)
@@ -185,7 +185,7 @@ func matchInitOrJoinConfiguration(machineConfig *bootstrapv1.OCNEConfig, ocnecp 
 // mostly depending on the fact that the machine was the initial control plane node or a joining control plane node.
 // In this function we don't have such information, so we are making the OCNEConfigSpec similar to the OCNEConfig.
 func getAdjustedKcpConfig(ocnecp *controlplanev1.OCNEControlPlane, machineConfig *bootstrapv1.OCNEConfig) *bootstrapv1.OCNEConfigSpec {
-	ocnecpConfig := ocnecp.Spec.OcneConfigSpec.DeepCopy()
+	ocnecpConfig := ocnecp.Spec.OCNEConfigSpec.DeepCopy()
 
 	// Machine's join configuration is nil when it is the first machine in the control plane.
 	if machineConfig.Spec.JoinConfiguration == nil {

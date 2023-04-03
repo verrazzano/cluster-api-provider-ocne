@@ -37,8 +37,8 @@ import (
 )
 
 const (
-	// OcneControlPlaneControllerName defines the controller used when creating clients.
-	OcneControlPlaneControllerName = "ocne-controlplane-controller"
+	// OCNEControlPlaneControllerName defines the controller used when creating clients.
+	OCNEControlPlaneControllerName = "ocne-controlplane-controller"
 )
 
 // ManagementCluster defines all behaviors necessary for something to function as a management cluster.
@@ -103,7 +103,7 @@ func (m *Management) GetMachinePoolsForCluster(ctx context.Context, cluster *clu
 func (m *Management) GetWorkloadCluster(ctx context.Context, clusterKey client.ObjectKey) (WorkloadCluster, error) {
 	// TODO(chuckha): Inject this dependency.
 	// TODO(chuckha): memoize this function. The workload client only exists as long as a reconciliation loop.
-	restConfig, err := remote.RESTConfig(ctx, OcneControlPlaneControllerName, m.Client, clusterKey)
+	restConfig, err := remote.RESTConfig(ctx, OCNEControlPlaneControllerName, m.Client, clusterKey)
 	if err != nil {
 		return nil, err
 	}

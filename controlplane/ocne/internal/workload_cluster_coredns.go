@@ -113,11 +113,11 @@ func (w *Workload) UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCN
 	}
 
 	// Return early if the configuration is nil.
-	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration == nil {
+	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration == nil {
 		return nil
 	}
 
-	clusterConfig := ocnecp.Spec.OcneConfigSpec.ClusterConfiguration
+	clusterConfig := ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration
 
 	// Get the CoreDNS info needed for the upgrade.
 	info, err := w.getCoreDNSInfo(ctx, clusterConfig, version)
@@ -147,7 +147,7 @@ func (w *Workload) UpdateCoreDNS(ctx context.Context, ocnecp *controlplanev1.OCN
 	}
 
 	// Perform the upgrade.
-	if err := w.updateCoreDNSImageInfoInOcneConfigMap(ctx, &clusterConfig.DNS, version); err != nil {
+	if err := w.updateCoreDNSImageInfoInOCNEConfigMap(ctx, &clusterConfig.DNS, version); err != nil {
 		return err
 	}
 	if err := w.updateCoreDNSCorefile(ctx, info); err != nil {
@@ -271,8 +271,8 @@ func (w *Workload) updateCoreDNSDeployment(ctx context.Context, info *coreDNSInf
 	return helper.Patch(ctx, info.Deployment)
 }
 
-// updateCoreDNSImageInfoInOcneConfigMap updates the kubernetes version in the kubeadm config map.
-func (w *Workload) updateCoreDNSImageInfoInOcneConfigMap(ctx context.Context, dns *bootstrapv1.DNS, version semver.Version) error {
+// updateCoreDNSImageInfoInOCNEConfigMap updates the kubernetes version in the kubeadm config map.
+func (w *Workload) updateCoreDNSImageInfoInOCNEConfigMap(ctx context.Context, dns *bootstrapv1.DNS, version semver.Version) error {
 	return w.updateClusterConfiguration(ctx, func(c *bootstrapv1.ClusterConfiguration) {
 		c.DNS.ImageRepository = dns.ImageRepository
 		c.DNS.ImageTag = dns.ImageTag

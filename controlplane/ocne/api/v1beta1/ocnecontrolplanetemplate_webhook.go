@@ -48,7 +48,7 @@ var _ webhook.Defaulter = &OCNEControlPlaneTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *OCNEControlPlaneTemplate) Default() {
-	bootstrapv1.DefaultOcneConfigSpec(&r.Spec.Template.Spec.OCNEConfigSpec)
+	bootstrapv1.DefaultOCNEConfigSpec(&r.Spec.Template.Spec.OCNEConfigSpec)
 
 	r.Spec.Template.Spec.RolloutStrategy = defaultRolloutStrategy(r.Spec.Template.Spec.RolloutStrategy)
 }

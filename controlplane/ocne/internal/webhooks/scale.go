@@ -68,8 +68,8 @@ func (v *ScaleValidator) Handle(ctx context.Context, req admission.Request) admi
 	}
 
 	externalEtcd := false
-	if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration != nil {
-		if ocnecp.Spec.OcneConfigSpec.ClusterConfiguration.Etcd.External != nil {
+	if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration != nil {
+		if ocnecp.Spec.OCNEConfigSpec.ClusterConfiguration.Etcd.External != nil {
 			externalEtcd = true
 		}
 	}

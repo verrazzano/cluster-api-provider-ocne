@@ -67,14 +67,14 @@ func TestReconcileKubeconfigEmptyAPIEndpoints(t *testing.T) {
 			Name:      "foo",
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
 		},
 	}
 	clusterName := client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: "foo"}
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -117,13 +117,13 @@ func TestReconcileKubeconfigMissingCACertificate(t *testing.T) {
 			Name:      "foo",
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
 		},
 	}
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -166,7 +166,7 @@ func TestReconcileKubeconfigSecretAdoptsV1alpha2Secrets(t *testing.T) {
 			Name:      "foo",
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
 		},
 	}
@@ -183,7 +183,7 @@ func TestReconcileKubeconfigSecretAdoptsV1alpha2Secrets(t *testing.T) {
 	)
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -235,7 +235,7 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 			Name:      "foo",
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
 		},
 	}
@@ -258,7 +258,7 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 	}
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingKubeconfigSecret.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -304,7 +304,7 @@ func TestOCNEControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 			Name:      "foo",
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
 		},
 	}
@@ -318,7 +318,7 @@ func TestOCNEControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 	)
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), existingCACertSecret.DeepCopy())
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -370,8 +370,8 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 			Name:      "ocnecp-foo",
 			Namespace: cluster.Namespace,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       genericMachineTemplate.GetKind(),
 					APIVersion: genericMachineTemplate.GetAPIVersion(),
@@ -385,7 +385,7 @@ func TestCloneConfigsAndGenerateMachine(t *testing.T) {
 
 	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -454,8 +454,8 @@ func TestCloneConfigsAndGenerateMachineFail(t *testing.T) {
 			Name:      "ocnecp-foo",
 			Namespace: cluster.Namespace,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				InfrastructureRef: corev1.ObjectReference{
 					Kind:       genericMachineTemplate.GetKind(),
 					APIVersion: genericMachineTemplate.GetAPIVersion(),
@@ -469,7 +469,7 @@ func TestCloneConfigsAndGenerateMachineFail(t *testing.T) {
 
 	fakeClient := newFakeClient(cluster.DeepCopy(), ocnecp.DeepCopy(), genericMachineTemplate.DeepCopy())
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -514,9 +514,9 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 			Name:      "testControlPlane",
 			Namespace: cluster.Namespace,
 		},
-		Spec: controlplanev1.OcneControlPlaneSpec{
+		Spec: controlplanev1.OCNEControlPlaneSpec{
 			Version: "v1.16.6",
-			MachineTemplate: controlplanev1.OcneControlPlaneMachineTemplate{
+			MachineTemplate: controlplanev1.OCNEControlPlaneMachineTemplate{
 				ObjectMeta: ocnecpMachineTemplateObjectMeta,
 			},
 		},
@@ -542,7 +542,7 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 		},
 		InfrastructureRef: *infraRef.DeepCopy(),
 	}
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:            fakeClient,
 		managementCluster: &internal.Management{Client: fakeClient},
 		recorder:          record.NewFakeRecorder(32),
@@ -575,7 +575,7 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.ClusterLabelName))
 	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneLabelName))
 	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneNameLabel))
-	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations).NotTo(HaveKey(controlplanev1.OcneClusterConfigurationAnnotation))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations).NotTo(HaveKey(controlplanev1.OCNEClusterConfigurationAnnotation))
 }
 
 func TestOCNEControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
@@ -605,7 +605,7 @@ func TestOCNEControlPlaneReconciler_generateKubeadmConfig(t *testing.T) {
 		Name:       ocnecp.Name,
 	}
 
-	r := &OcneControlPlaneReconciler{
+	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
@@ -714,7 +714,7 @@ func TestOCNEControlPlaneReconciler_adoptKubeconfigSecret(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient := newFakeClient(cluster, ocnecp, tt.configSecret)
-			r := &OcneControlPlaneReconciler{
+			r := &OCNEControlPlaneReconciler{
 				APIReader: fakeClient,
 				Client:    fakeClient,
 			}

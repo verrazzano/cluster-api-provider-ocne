@@ -18,5 +18,5 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-// Package controllers implements the Ocne controllers.
+// Package controllers implements the OCNE controllers.
 package controllers

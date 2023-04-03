@@ -451,8 +451,8 @@ func TestUpdateEtcdConditions(t *testing.T) {
 		{
 			name: "Eternal etcd should set a condition at KCP level",
 			ocnecp: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							Etcd: bootstrapv1.Etcd{
 								External: &bootstrapv1.ExternalEtcd{},
@@ -692,8 +692,8 @@ func TestUpdateStaticPodConditions(t *testing.T) {
 		{
 			name: "Should surface control plane components health with eternal etcd",
 			ocnecp: &controlplanev1.OCNEControlPlane{
-				Spec: controlplanev1.OcneControlPlaneSpec{
-					OcneConfigSpec: bootstrapv1.OCNEConfigSpec{
+				Spec: controlplanev1.OCNEControlPlaneSpec{
+					OCNEConfigSpec: bootstrapv1.OCNEConfigSpec{
 						ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
 							Etcd: bootstrapv1.Etcd{
 								External: &bootstrapv1.ExternalEtcd{},

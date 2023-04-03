@@ -26,8 +26,8 @@ import (
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
 )
 
-// OcneControlPlaneTemplateSpec defines the desired state of OCNEControlPlaneTemplate.
-type OcneControlPlaneTemplateSpec struct {
+// OCNEControlPlaneTemplateSpec defines the desired state of OCNEControlPlaneTemplate.
+type OCNEControlPlaneTemplateSpec struct {
 	Template OCNEControlPlaneTemplateResource `json:"template"`
 }
 
@@ -41,7 +41,7 @@ type OCNEControlPlaneTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec OcneControlPlaneTemplateSpec `json:"spec,omitempty"`
+	Spec OCNEControlPlaneTemplateSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -63,7 +63,7 @@ type OCNEControlPlaneTemplateResource struct {
 }
 
 // OCNEControlPlaneTemplateResourceSpec defines the desired state of OCNEControlPlane.
-// NOTE: OCNEControlPlaneTemplateResourceSpec is similar to OcneControlPlaneSpec but
+// NOTE: OCNEControlPlaneTemplateResourceSpec is similar to OCNEControlPlaneSpec but
 // omits Replicas and Version fields. These fields do not make sense on the OCNEControlPlaneTemplate,
 // because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
 // be configured on the OCNEControlPlaneTemplate.
