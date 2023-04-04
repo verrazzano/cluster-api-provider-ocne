@@ -68,16 +68,16 @@ spec:
           - localhost
           - 127.0.0.1
       dns:
-        imageRepository: ${OCI_IMAGE_REPOSITORY}/${OCI_IMAGE_PATH}
+        imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
         imageTag: ${DNS_TAG}
       etcd:
         local:
-          imageRepository: ${OCI_IMAGE_REPOSITORY}/${OCI_IMAGE_PATH}
+          imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
           imageTag: ${ETCD_TAG}
       kubernetesVersion: ${KUBERNETES_VERSION}
       networking: {}
       scheduler: {}
-      imageRepository: ${OCI_IMAGE_REPOSITORY}/${OCI_IMAGE_PATH}
+      imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/crio/crio.sock
