@@ -146,14 +146,14 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 	}
 
 	// This is required in the beginning to help download utilities
-	if proxy != nil {
+	if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
 		ocneNodeOverrrides = append(ocneNodeOverrrides, yumOrdnfProxyOverrides...)
 	}
 
 	ocneNodeOverrrides = append(ocneNodeOverrrides, ocneUtilsInstall...)
 
 	// This is required after crio is installed
-	if proxy != nil {
+	if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
 		ocneNodeOverrrides = append(ocneNodeOverrrides, crioProxyOverrides...)
 	}
 
