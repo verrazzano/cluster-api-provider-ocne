@@ -1,4 +1,3 @@
-# This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
