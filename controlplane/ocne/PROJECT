@@ -1,3 +1,4 @@
+# This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 version: "2"
 domain: controlplane.cluster.x-k8s.io
 repo: github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne

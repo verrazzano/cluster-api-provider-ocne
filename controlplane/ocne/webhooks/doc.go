@@ -16,7 +16,5 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
-
 // Package webhooks provides the validating webhook for KubeadmControlPlane scale subresource.
 package webhooks
