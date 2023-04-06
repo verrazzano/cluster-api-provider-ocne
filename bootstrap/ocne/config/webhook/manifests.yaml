@@ -12,27 +12,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
-  failurePolicy: Fail
-  name: default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
-  rules:
-  - apiGroups:
-    - bootstrap.cluster.x-k8s.io
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - ocneconfigtemplates
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  - v1beta1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
       path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfig
   failurePolicy: Fail
   name: default.ocneconfig.bootstrap.cluster.x-k8s.io
@@ -47,13 +26,6 @@ webhooks:
     resources:
     - ocneconfigs
   sideEffects: None
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  creationTimestamp: null
-  name: validating-webhook-configuration
-webhooks:
 - admissionReviewVersions:
   - v1
   - v1beta1
@@ -61,10 +33,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
   failurePolicy: Fail
-  matchPolicy: Equivalent
-  name: validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
+  name: default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
   rules:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
@@ -76,6 +47,13 @@ webhooks:
     resources:
     - ocneconfigtemplates
   sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
 - admissionReviewVersions:
   - v1
   - v1beta1
@@ -97,4 +75,26 @@ webhooks:
     - UPDATE
     resources:
     - ocneconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
+  rules:
+  - apiGroups:
+    - bootstrap.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ocneconfigtemplates
   sideEffects: None
