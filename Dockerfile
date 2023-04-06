@@ -73,7 +73,7 @@ RUN groupadd -r ocne \
     && useradd --no-log-init -r -m -d /ocne -g ocne -u 1000 ocne \
     && mkdir -p /home/ocne \
     && chown -R 1000:ocne /manager /home/ocne \
-    && chmod 500 /manager \
+    && chmod 500 /manager
 RUN mkdir -p /license
 COPY LICENSE README.md THIRD_PARTY_LICENSES.txt /license/
 USER 1000
