@@ -1,0 +1,2343 @@
+/*
+Copyright 2019 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
+package controllers
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"reflect"
+	"testing"
+	"time"
+
+	ignition "github.com/flatcar/ignition/config/v2_3"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	bootstrapapi "k8s.io/cluster-bootstrap/token/api"
+	"k8s.io/utils/pointer"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/yaml"
+
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapbuilder "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/builder"
+	"github.com/verrazzano/cluster-api-provider-ocne/feature"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/test/builder"
+	"github.com/verrazzano/cluster-api-provider-ocne/util"
+	"github.com/verrazzano/cluster-api-provider-ocne/util/conditions"
+	"github.com/verrazzano/cluster-api-provider-ocne/util/patch"
+	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	fakeremote "sigs.k8s.io/cluster-api/controllers/remote/fake"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+)
+
+// MachineToBootstrapMapFunc return kubeadm bootstrap configref name when configref exists.
+func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
+	g := NewWithT(t)
+	cluster := builder.Cluster("my-cluster", metav1.NamespaceDefault).Build()
+	objs := []client.Object{cluster}
+	machineObjs := []client.Object{}
+	var expectedConfigName string
+	for i := 0; i < 3; i++ {
+		configName := fmt.Sprintf("my-config-%d", i)
+		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
+			WithVersion("v1.19.1").
+			WithClusterName(cluster.Name).
+			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "").Unstructured()).
+			Build()
+		if i == 1 {
+			c := newKubeadmConfig(metav1.NamespaceDefault, configName)
+			addKubeadmConfigToMachine(c, m)
+			objs = append(objs, m, c)
+			expectedConfigName = configName
+		} else {
+			objs = append(objs, m)
+		}
+		machineObjs = append(machineObjs, m)
+	}
+	fakeClient := fake.NewClientBuilder().WithObjects(objs...).Build()
+	reconciler := &OCNEConfigReconciler{
+		Client: fakeClient,
+	}
+	for i := 0; i < 3; i++ {
+		o := machineObjs[i]
+		configs := reconciler.MachineToBootstrapMapFunc(o)
+		if i == 1 {
+			g.Expect(configs[0].Name).To(Equal(expectedConfigName))
+		} else {
+			g.Expect(configs[0].Name).To(Equal(""))
+		}
+	}
+}
+
+// Reconcile returns early if the kubeadm config is ready because it should never re-generate bootstrap data.
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *testing.T) {
+	g := NewWithT(t)
+
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+	config.Status.Ready = true
+
+	objects := []client.Object{
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+}
+
+// Reconcile returns early if the kubeadm config is ready because it should never re-generate bootstrap data.
+func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.T) {
+	g := NewWithT(t)
+
+	clusterName := "my-cluster"
+	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithClusterName(clusterName).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	machine.Spec.Bootstrap.DataSecretName = pointer.String("something")
+
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+	config.SetOwnerReferences(util.EnsureOwnerRef(config.GetOwnerReferences(), metav1.OwnerReference{
+		APIVersion: machine.APIVersion,
+		Kind:       machine.Kind,
+		Name:       machine.Name,
+		UID:        machine.UID,
+	}))
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      config.Name,
+			Namespace: config.Namespace,
+		},
+		Type: corev1.SecretTypeBootstrapToken,
+	}
+	config.Status.Ready = true
+
+	objects := []client.Object{
+		config,
+		machine,
+		secret,
+		cluster,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	var err error
+	key := client.ObjectKeyFromObject(config)
+	actual := &corev1.Secret{}
+
+	t.Run("OCNEConfig ownerReference is added on first reconcile", func(t *testing.T) {
+		_, err = k.Reconcile(ctx, request)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(myclient.Get(ctx, key, actual)).To(Succeed())
+
+		controllerOwner := metav1.GetControllerOf(actual)
+		g.Expect(controllerOwner).To(Not(BeNil()))
+		g.Expect(controllerOwner.Kind).To(Equal(config.Kind))
+		g.Expect(controllerOwner.Name).To(Equal(config.Name))
+	})
+
+	t.Run("OCNEConfig ownerReference re-reconciled without error", func(t *testing.T) {
+		_, err = k.Reconcile(ctx, request)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(myclient.Get(ctx, key, actual)).To(Succeed())
+
+		controllerOwner := metav1.GetControllerOf(actual)
+		g.Expect(controllerOwner).To(Not(BeNil()))
+		g.Expect(controllerOwner.Kind).To(Equal(config.Kind))
+		g.Expect(controllerOwner.Name).To(Equal(config.Name))
+	})
+	t.Run("non-OCNEConfig controller OwnerReference is replaced", func(t *testing.T) {
+		g.Expect(myclient.Get(ctx, key, actual)).To(Succeed())
+
+		actual.SetOwnerReferences([]metav1.OwnerReference{
+			{
+				APIVersion: machine.APIVersion,
+				Kind:       machine.Kind,
+				Name:       machine.Name,
+				UID:        machine.UID,
+				Controller: pointer.Bool(true),
+			}})
+		g.Expect(myclient.Update(ctx, actual)).To(Succeed())
+
+		_, err = k.Reconcile(ctx, request)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(myclient.Get(ctx, key, actual)).To(Succeed())
+
+		controllerOwner := metav1.GetControllerOf(actual)
+		g.Expect(controllerOwner).To(Not(BeNil()))
+		g.Expect(controllerOwner.Kind).To(Equal(config.Kind))
+		g.Expect(controllerOwner.Name).To(Equal(config.Name))
+	})
+}
+
+// Reconcile returns nil if the referenced Machine cannot be found.
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t *testing.T) {
+	g := NewWithT(t)
+
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithVersion("v1.19.1").
+		Build()
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+	addKubeadmConfigToMachine(config, machine)
+	objects := []client.Object{
+		// intentionally omitting machine
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	_, err := k.Reconcile(ctx, request)
+	g.Expect(err).To(BeNil())
+}
+
+// If the machine has bootstrap data secret reference, there is no need to generate more bootstrap data.
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t *testing.T) {
+	g := NewWithT(t)
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	machine.Spec.Bootstrap.DataSecretName = pointer.String("something")
+
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+	objects := []client.Object{
+		machine,
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+}
+
+func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithClusterName(cluster.Name).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+	addKubeadmConfigToMachine(config, machine)
+
+	// cluster infra not ready
+	cluster.Status = clusterv1.ClusterStatus{
+		InfrastructureReady: false,
+	}
+
+	objects := []client.Object{
+		cluster,
+		machine,
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+
+	expectedResult := reconcile.Result{}
+	actualResult, actualError := k.Reconcile(ctx, request)
+	g.Expect(actualResult).To(Equal(expectedResult))
+	g.Expect(actualError).NotTo(HaveOccurred())
+	assertHasFalseCondition(g, myclient, request, bootstrapv1.DataSecretAvailableCondition, clusterv1.ConditionSeverityInfo, bootstrapv1.WaitingForClusterInfrastructureReason)
+}
+
+// Return early If the owning machine does not have an associated cluster.
+func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *testing.T) {
+	g := NewWithT(t)
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+
+	objects := []client.Object{
+		machine,
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	_, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// This does not expect an error, hoping the machine gets updated with a cluster.
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedCluster(t *testing.T) {
+	g := NewWithT(t)
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+
+	objects := []client.Object{
+		machine,
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	_, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// This does not expect an error, hoping that the associated cluster will be created.
+func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	machine := builder.Machine(metav1.NamespaceDefault, "machine").
+		WithVersion("v1.19.1").
+		WithClusterName(cluster.Name).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		Build()
+	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
+
+	objects := []client.Object{
+		// intentionally omitting cluster
+		machine,
+		config,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client: myclient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "cfg",
+		},
+	}
+	_, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// If the control plane isn't initialized then there is no cluster for either a worker or control plane node to join.
+func TestOCNEConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotInitialized(t *testing.T) {
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+
+	workerMachine := newWorkerMachineForCluster(cluster)
+	workerJoinConfig := newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, "worker-join-cfg")
+	addKubeadmConfigToMachine(workerJoinConfig, workerMachine)
+
+	controlPlaneJoinMachine := newControlPlaneMachine(cluster, "control-plane-join-machine")
+	controlPlaneJoinConfig := newControlPlaneJoinKubeadmConfig(controlPlaneJoinMachine.Namespace, "control-plane-join-cfg")
+	addKubeadmConfigToMachine(controlPlaneJoinConfig, controlPlaneJoinMachine)
+
+	testcases := []struct {
+		name    string
+		request ctrl.Request
+		objects []client.Object
+	}{
+		{
+			name: "requeue worker when control plane is not yet initialiezd",
+			request: ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: workerJoinConfig.Namespace,
+					Name:      workerJoinConfig.Name,
+				},
+			},
+			objects: []client.Object{
+				cluster,
+				workerMachine,
+				workerJoinConfig,
+			},
+		},
+		{
+			name: "requeue a secondary control plane when the control plane is not yet initialized",
+			request: ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: controlPlaneJoinConfig.Namespace,
+					Name:      controlPlaneJoinConfig.Name,
+				},
+			},
+			objects: []client.Object{
+				cluster,
+				controlPlaneJoinMachine,
+				controlPlaneJoinConfig,
+			},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
+
+			k := &OCNEConfigReconciler{
+				Client:          myclient,
+				KubeadmInitLock: &myInitLocker{},
+			}
+
+			result, err := k.Reconcile(ctx, tc.request)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(result.Requeue).To(BeFalse())
+			g.Expect(result.RequeueAfter).To(Equal(30 * time.Second))
+			assertHasFalseCondition(g, myclient, tc.request, bootstrapv1.DataSecretAvailableCondition, clusterv1.ConditionSeverityInfo, clusterv1.WaitingForControlPlaneAvailableReason)
+		})
+	}
+}
+
+// This generates cloud-config data but does not test the validity of it.
+func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	controlPlaneInitConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-cfg")
+	addKubeadmConfigToMachine(controlPlaneInitConfig, controlPlaneInitMachine)
+
+	objects := []client.Object{
+		cluster,
+		controlPlaneInitMachine,
+		controlPlaneInitConfig,
+	}
+	objects = append(objects, createSecrets(t, cluster, controlPlaneInitConfig)...)
+
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client:          myclient,
+		KubeadmInitLock: &myInitLocker{},
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-init-cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err := getKubeadmConfig(myclient, "control-plane-init-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Status.Ready).To(BeTrue())
+	g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+	assertHasTrueCondition(g, myclient, request, bootstrapv1.CertificatesAvailableCondition)
+	assertHasTrueCondition(g, myclient, request, bootstrapv1.DataSecretAvailableCondition)
+
+	// Ensure that we don't fail trying to refresh any bootstrap tokens
+	_, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// If a control plane has no JoinConfiguration, then we will create a default and no error will occur.
+func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConfiguration(t *testing.T) {
+	g := NewWithT(t)
+	// TODO: extract this kind of code into a setup function that puts the state of objects into an initialized controlplane (implies secrets exist)
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	controlPlaneInitConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-cfg")
+	addKubeadmConfigToMachine(controlPlaneInitConfig, controlPlaneInitMachine)
+
+	controlPlaneJoinMachine := newControlPlaneMachine(cluster, "control-plane-join-machine")
+	controlPlaneJoinConfig := newControlPlaneJoinKubeadmConfig(controlPlaneJoinMachine.Namespace, "control-plane-join-cfg")
+	controlPlaneJoinConfig.Spec.JoinConfiguration.ControlPlane = nil // Makes controlPlaneJoinConfig invalid for a control plane machine
+	addKubeadmConfigToMachine(controlPlaneJoinConfig, controlPlaneJoinMachine)
+
+	objects := []client.Object{
+		cluster,
+		controlPlaneJoinMachine,
+		controlPlaneJoinConfig,
+	}
+	objects = append(objects, createSecrets(t, cluster, controlPlaneInitConfig)...)
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client:             myclient,
+		KubeadmInitLock:    &myInitLocker{},
+		remoteClientGetter: fakeremote.NewClusterClient,
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-join-cfg",
+		},
+	}
+	_, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// If there is no APIEndpoint but everything is ready then requeue in hopes of a new APIEndpoint showing up eventually.
+func TestOCNEConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoints(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	controlPlaneInitConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-cfg")
+	addKubeadmConfigToMachine(controlPlaneInitConfig, controlPlaneInitMachine)
+
+	workerMachine := newWorkerMachineForCluster(cluster)
+	workerJoinConfig := newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, "worker-join-cfg")
+	addKubeadmConfigToMachine(workerJoinConfig, workerMachine)
+
+	objects := []client.Object{
+		cluster,
+		workerMachine,
+		workerJoinConfig,
+	}
+	objects = append(objects, createSecrets(t, cluster, controlPlaneInitConfig)...)
+
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+	k := &OCNEConfigReconciler{
+		Client:          myclient,
+		KubeadmInitLock: &myInitLocker{},
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "worker-join-cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(10 * time.Second))
+}
+
+func TestReconcileIfJoinNodesAndControlPlaneIsReady(t *testing.T) {
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+
+	useCases := []struct {
+		name          string
+		machine       *clusterv1.Machine
+		configName    string
+		configBuilder func(string, string) *bootstrapv1.OCNEConfig
+	}{
+		{
+			name:          "Join a worker node with a fully compiled kubeadm config object",
+			machine:       newWorkerMachineForCluster(cluster),
+			configName:    "worker-join-cfg",
+			configBuilder: newWorkerJoinKubeadmConfig,
+		},
+		{
+			name:          "Join a worker node  with an empty kubeadm config object (defaults apply)",
+			machine:       newWorkerMachineForCluster(cluster),
+			configName:    "worker-join-cfg",
+			configBuilder: newKubeadmConfig,
+		},
+		{
+			name:          "Join a control plane node with a fully compiled kubeadm config object",
+			machine:       newControlPlaneMachine(cluster, "control-plane-join-machine"),
+			configName:    "control-plane-join-cfg",
+			configBuilder: newControlPlaneJoinKubeadmConfig,
+		},
+		{
+			name:          "Join a control plane node with an empty kubeadm config object (defaults apply)",
+			machine:       newControlPlaneMachine(cluster, "control-plane-join-machine"),
+			configName:    "control-plane-join-cfg",
+			configBuilder: newKubeadmConfig,
+		},
+	}
+
+	for _, rt := range useCases {
+		rt := rt // pin!
+		t.Run(rt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			config := rt.configBuilder(rt.machine.Namespace, rt.configName)
+			addKubeadmConfigToMachine(config, rt.machine)
+
+			objects := []client.Object{
+				cluster,
+				rt.machine,
+				config,
+			}
+			objects = append(objects, createSecrets(t, cluster, config)...)
+			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+			k := &OCNEConfigReconciler{
+				Client:             myclient,
+				KubeadmInitLock:    &myInitLocker{},
+				remoteClientGetter: fakeremote.NewClusterClient,
+			}
+
+			request := ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: config.GetNamespace(),
+					Name:      rt.configName,
+				},
+			}
+			result, err := k.Reconcile(ctx, request)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(result.Requeue).To(BeFalse())
+			g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+			cfg, err := getKubeadmConfig(myclient, rt.configName, metav1.NamespaceDefault)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cfg.Status.Ready).To(BeTrue())
+			g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+			g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+			assertHasTrueCondition(g, myclient, request, bootstrapv1.DataSecretAvailableCondition)
+
+			l := &corev1.SecretList{}
+			err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(len(l.Items)).To(Equal(1))
+		})
+	}
+}
+
+func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
+	_ = feature.MutableGates.Set("MachinePool=true")
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+
+	useCases := []struct {
+		name          string
+		machinePool   *expv1.MachinePool
+		configName    string
+		configBuilder func(string, string) *bootstrapv1.OCNEConfig
+	}{
+		{
+			name:        "Join a worker node with a fully compiled kubeadm config object",
+			machinePool: newWorkerMachinePoolForCluster(cluster),
+			configName:  "workerpool-join-cfg",
+			configBuilder: func(namespace, name string) *bootstrapv1.OCNEConfig {
+				return newWorkerJoinKubeadmConfig(namespace, "workerpool-join-cfg")
+			},
+		},
+		{
+			name:          "Join a worker node  with an empty kubeadm config object (defaults apply)",
+			machinePool:   newWorkerMachinePoolForCluster(cluster),
+			configName:    "workerpool-join-cfg",
+			configBuilder: newKubeadmConfig,
+		},
+	}
+
+	for _, rt := range useCases {
+		rt := rt // pin!
+		t.Run(rt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			config := rt.configBuilder(rt.machinePool.Namespace, rt.configName)
+			addKubeadmConfigToMachinePool(config, rt.machinePool)
+
+			objects := []client.Object{
+				cluster,
+				rt.machinePool,
+				config,
+			}
+			objects = append(objects, createSecrets(t, cluster, config)...)
+			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+			k := &OCNEConfigReconciler{
+				Client:             myclient,
+				KubeadmInitLock:    &myInitLocker{},
+				remoteClientGetter: fakeremote.NewClusterClient,
+			}
+
+			request := ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: config.GetNamespace(),
+					Name:      rt.configName,
+				},
+			}
+			result, err := k.Reconcile(ctx, request)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(result.Requeue).To(BeFalse())
+			g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+			cfg, err := getKubeadmConfig(myclient, rt.configName, metav1.NamespaceDefault)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cfg.Status.Ready).To(BeTrue())
+			g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+			g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+
+			l := &corev1.SecretList{}
+			err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(len(l.Items)).To(Equal(1))
+		})
+	}
+}
+
+// Ensure bootstrap data is generated in the correct format based on the format specified in the
+// OCNEConfig resource.
+func TestBootstrapDataFormat(t *testing.T) {
+	testcases := []struct {
+		name               string
+		isWorker           bool
+		format             bootstrapv1.Format
+		clusterInitialized bool
+	}{
+		{
+			name:   "cloud-config init config",
+			format: bootstrapv1.CloudConfig,
+		},
+		{
+			name:   "Ignition init config",
+			format: bootstrapv1.Ignition,
+		},
+		{
+			name:               "Ignition control plane join config",
+			format:             bootstrapv1.Ignition,
+			clusterInitialized: true,
+		},
+		{
+			name:               "Ignition worker join config",
+			isWorker:           true,
+			format:             bootstrapv1.Ignition,
+			clusterInitialized: true,
+		},
+		{
+			name: "Empty format field",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+			cluster.Status.InfrastructureReady = true
+			cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+			if tc.clusterInitialized {
+				conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+			}
+
+			var machine *clusterv1.Machine
+			var config *bootstrapv1.OCNEConfig
+			var configName string
+			if tc.isWorker {
+				machine = newWorkerMachineForCluster(cluster)
+				configName = "worker-join-cfg"
+				config = newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, configName)
+				addKubeadmConfigToMachine(config, machine)
+			} else {
+				machine = newControlPlaneMachine(cluster, "machine")
+				configName = "cfg"
+				config = newControlPlaneInitKubeadmConfig(metav1.NamespaceDefault, configName)
+				addKubeadmConfigToMachine(config, machine)
+			}
+			config.Spec.Format = tc.format
+
+			objects := []client.Object{
+				cluster,
+				machine,
+				config,
+			}
+			objects = append(objects, createSecrets(t, cluster, config)...)
+
+			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+
+			k := &OCNEConfigReconciler{
+				Client:             myclient,
+				KubeadmInitLock:    &myInitLocker{},
+				remoteClientGetter: fakeremote.NewClusterClient,
+			}
+			request := ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: metav1.NamespaceDefault,
+					Name:      configName,
+				},
+			}
+
+			// Reconcile the OCNEConfig resource.
+			_, err := k.Reconcile(ctx, request)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			// Verify the OCNEConfig resource state is correct.
+			cfg, err := getKubeadmConfig(myclient, configName, metav1.NamespaceDefault)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cfg.Status.Ready).To(BeTrue())
+			g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+
+			// Read the secret containing the bootstrap data which was generated by the
+			// OCNEConfig controller.
+			key := client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      *cfg.Status.DataSecretName,
+			}
+			secret := &corev1.Secret{}
+			err = myclient.Get(ctx, key, secret)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			// Verify the format field of the bootstrap data secret is correct.
+			g.Expect(string(secret.Data["format"])).To(Equal(string(tc.format)))
+
+			// Verify the bootstrap data value is in the correct format.
+			data := secret.Data["value"]
+			switch tc.format {
+			case bootstrapv1.CloudConfig, "":
+				// Verify the bootstrap data is valid YAML.
+				// TODO: Verify the YAML document is valid cloud-config?
+				var out interface{}
+				err = yaml.Unmarshal(data, &out)
+				g.Expect(err).NotTo(HaveOccurred())
+			case bootstrapv1.Ignition:
+				// Verify the bootstrap data is valid Ignition.
+				_, reports, err := ignition.Parse(data)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(reports.IsFatal()).NotTo(BeTrue())
+			}
+		})
+	}
+}
+
+// during kubeadmconfig reconcile it is possible that bootstrap secret gets created
+// but kubeadmconfig is not patched, do not error if secret already exists.
+// ignore the alreadyexists error and update the status to ready.
+func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	initConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-config")
+	addKubeadmConfigToMachine(initConfig, controlPlaneInitMachine)
+
+	workerMachine := newWorkerMachineForCluster(cluster)
+	workerJoinConfig := newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, "worker-join-cfg")
+	addKubeadmConfigToMachine(workerJoinConfig, workerMachine)
+	objects := []client.Object{
+		cluster,
+		workerMachine,
+		workerJoinConfig,
+	}
+
+	objects = append(objects, createSecrets(t, cluster, initConfig)...)
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+	k := &OCNEConfigReconciler{
+		Client:             myclient,
+		KubeadmInitLock:    &myInitLocker{},
+		remoteClientGetter: fakeremote.NewClusterClient,
+	}
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "worker-join-cfg",
+		},
+	}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workerJoinConfig.Name,
+			Namespace: workerJoinConfig.Namespace,
+			Labels: map[string]string{
+				clusterv1.ClusterLabelName: cluster.Name,
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: bootstrapv1.GroupVersion.String(),
+					Kind:       "OCNEConfig",
+					Name:       workerJoinConfig.Name,
+					UID:        workerJoinConfig.UID,
+					Controller: pointer.Bool(true),
+				},
+			},
+		},
+		Data: map[string][]byte{
+			"value": nil,
+		},
+		Type: clusterv1.ClusterSecretType,
+	}
+
+	err := myclient.Create(ctx, secret)
+	g.Expect(err).ToNot(HaveOccurred())
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err := getKubeadmConfig(myclient, "worker-join-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Status.Ready).To(BeTrue())
+	g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+}
+
+func TestBootstrapTokenTTLExtension(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	initConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-config")
+	addKubeadmConfigToMachine(initConfig, controlPlaneInitMachine)
+
+	workerMachine := newWorkerMachineForCluster(cluster)
+	workerJoinConfig := newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, "worker-join-cfg")
+	addKubeadmConfigToMachine(workerJoinConfig, workerMachine)
+
+	controlPlaneJoinMachine := newControlPlaneMachine(cluster, "control-plane-join-machine")
+	controlPlaneJoinConfig := newControlPlaneJoinKubeadmConfig(controlPlaneJoinMachine.Namespace, "control-plane-join-cfg")
+	addKubeadmConfigToMachine(controlPlaneJoinConfig, controlPlaneJoinMachine)
+	objects := []client.Object{
+		cluster,
+		workerMachine,
+		workerJoinConfig,
+		controlPlaneJoinMachine,
+		controlPlaneJoinConfig,
+	}
+
+	objects = append(objects, createSecrets(t, cluster, initConfig)...)
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+	k := &OCNEConfigReconciler{
+		Client:             myclient,
+		KubeadmInitLock:    &myInitLocker{},
+		TokenTTL:           DefaultTokenTTL,
+		remoteClientGetter: fakeremote.NewClusterClient,
+	}
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "worker-join-cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err := getKubeadmConfig(myclient, "worker-join-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Status.Ready).To(BeTrue())
+	g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+
+	request = ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-join-cfg",
+		},
+	}
+	result, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err = getKubeadmConfig(myclient, "control-plane-join-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Status.Ready).To(BeTrue())
+	g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+
+	l := &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(2))
+
+	// ensure that the token is refreshed...
+	tokenExpires := make([][]byte, len(l.Items))
+
+	for i, item := range l.Items {
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	<-time.After(1 * time.Second)
+
+	for _, req := range []ctrl.Request{
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "worker-join-cfg",
+			},
+		},
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "control-plane-join-cfg",
+			},
+		},
+	} {
+		result, err := k.Reconcile(ctx, req)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.RequeueAfter).NotTo(BeNumerically(">=", k.TokenTTL))
+	}
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(2))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeFalse())
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	// ...the infrastructure is marked "ready", but token should still be refreshed...
+	patchHelper, err := patch.NewHelper(workerMachine, myclient)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	workerMachine.Status.InfrastructureReady = true
+	g.Expect(patchHelper.Patch(ctx, workerMachine)).To(Succeed())
+
+	patchHelper, err = patch.NewHelper(controlPlaneJoinMachine, myclient)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	controlPlaneJoinMachine.Status.InfrastructureReady = true
+	g.Expect(patchHelper.Patch(ctx, controlPlaneJoinMachine)).To(Succeed())
+
+	<-time.After(1 * time.Second)
+
+	for _, req := range []ctrl.Request{
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "worker-join-cfg",
+			},
+		},
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "control-plane-join-cfg",
+			},
+		},
+	} {
+		result, err := k.Reconcile(ctx, req)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.RequeueAfter).NotTo(BeNumerically(">=", k.TokenTTL))
+	}
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(2))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeFalse())
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	// ...until the Nodes have actually joined the cluster and we get a nodeRef
+	patchHelper, err = patch.NewHelper(workerMachine, myclient)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	workerMachine.Status.NodeRef = &corev1.ObjectReference{
+		APIVersion: "v1",
+		Kind:       "Node",
+		Name:       "worker-node",
+	}
+	g.Expect(patchHelper.Patch(ctx, workerMachine)).To(Succeed())
+
+	patchHelper, err = patch.NewHelper(controlPlaneJoinMachine, myclient)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	controlPlaneJoinMachine.Status.NodeRef = &corev1.ObjectReference{
+		APIVersion: "v1",
+		Kind:       "Node",
+		Name:       "control-plane-node",
+	}
+	g.Expect(patchHelper.Patch(ctx, controlPlaneJoinMachine)).To(Succeed())
+
+	<-time.After(1 * time.Second)
+
+	for _, req := range []ctrl.Request{
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "worker-join-cfg",
+			},
+		},
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "control-plane-join-cfg",
+			},
+		},
+	} {
+		result, err := k.Reconcile(ctx, req)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.Requeue).To(BeFalse())
+		g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+	}
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(2))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeTrue())
+	}
+}
+
+func TestBootstrapTokenRotationMachinePool(t *testing.T) {
+	_ = feature.MutableGates.Set("MachinePool=true")
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
+
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	initConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-config")
+
+	addKubeadmConfigToMachine(initConfig, controlPlaneInitMachine)
+
+	workerMachinePool := newWorkerMachinePoolForCluster(cluster)
+	workerJoinConfig := newWorkerJoinKubeadmConfig(workerMachinePool.Namespace, "workerpool-join-cfg")
+	addKubeadmConfigToMachinePool(workerJoinConfig, workerMachinePool)
+	objects := []client.Object{
+		cluster,
+		workerMachinePool,
+		workerJoinConfig,
+	}
+
+	objects = append(objects, createSecrets(t, cluster, initConfig)...)
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+	k := &OCNEConfigReconciler{
+		Client:             myclient,
+		KubeadmInitLock:    &myInitLocker{},
+		TokenTTL:           DefaultTokenTTL,
+		remoteClientGetter: fakeremote.NewClusterClient,
+	}
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "workerpool-join-cfg",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err := getKubeadmConfig(myclient, "workerpool-join-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(cfg.Status.Ready).To(BeTrue())
+	g.Expect(cfg.Status.DataSecretName).NotTo(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+
+	l := &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(1))
+
+	// ensure that the token is refreshed...
+	tokenExpires := make([][]byte, len(l.Items))
+
+	for i, item := range l.Items {
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	<-time.After(1 * time.Second)
+
+	for _, req := range []ctrl.Request{
+		{
+			NamespacedName: client.ObjectKey{
+				Namespace: metav1.NamespaceDefault,
+				Name:      "workerpool-join-cfg",
+			},
+		},
+	} {
+		result, err := k.Reconcile(ctx, req)
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result.RequeueAfter).NotTo(BeNumerically(">=", k.TokenTTL))
+	}
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(1))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeFalse())
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	// ...the infrastructure is marked "ready", but token should still be refreshed...
+	patchHelper, err := patch.NewHelper(workerMachinePool, myclient)
+	g.Expect(err).ShouldNot(HaveOccurred())
+	workerMachinePool.Status.InfrastructureReady = true
+	g.Expect(patchHelper.Patch(ctx, workerMachinePool, patch.WithStatusObservedGeneration{})).To(Succeed())
+
+	<-time.After(1 * time.Second)
+
+	request = ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "workerpool-join-cfg",
+		},
+	}
+	result, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.RequeueAfter).NotTo(BeNumerically(">=", k.TokenTTL))
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(1))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeFalse())
+		tokenExpires[i] = item.Data[bootstrapapi.BootstrapTokenExpirationKey]
+	}
+
+	// ...until all nodes have joined
+	workerMachinePool.Status.NodeRefs = []corev1.ObjectReference{
+		{
+			Kind:      "Node",
+			Namespace: metav1.NamespaceDefault,
+			Name:      "node-0",
+		},
+	}
+	g.Expect(patchHelper.Patch(ctx, workerMachinePool, patch.WithStatusObservedGeneration{})).To(Succeed())
+
+	<-time.After(1 * time.Second)
+
+	request = ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "workerpool-join-cfg",
+		},
+	}
+	result, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.RequeueAfter).To(Equal(k.TokenTTL / 3))
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(1))
+
+	for i, item := range l.Items {
+		g.Expect(bytes.Equal(tokenExpires[i], item.Data[bootstrapapi.BootstrapTokenExpirationKey])).To(BeTrue())
+	}
+
+	// before token expires, it should rotate it
+	tokenExpires[0] = []byte(time.Now().UTC().Add(k.TokenTTL / 5).Format(time.RFC3339))
+	l.Items[0].Data[bootstrapapi.BootstrapTokenExpirationKey] = tokenExpires[0]
+	err = myclient.Update(ctx, &l.Items[0])
+	g.Expect(err).NotTo(HaveOccurred())
+
+	request = ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "workerpool-join-cfg",
+		},
+	}
+	result, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	l = &corev1.SecretList{}
+	err = myclient.List(ctx, l, client.ListOption(client.InNamespace(metav1.NamespaceSystem)))
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(len(l.Items)).To(Equal(2))
+	foundOld := false
+	foundNew := true
+	for _, item := range l.Items {
+		if bytes.Equal(item.Data[bootstrapapi.BootstrapTokenExpirationKey], tokenExpires[0]) {
+			foundOld = true
+		} else {
+			expirationTime, err := time.Parse(time.RFC3339, string(item.Data[bootstrapapi.BootstrapTokenExpirationKey]))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(expirationTime).Should(BeTemporally("~", time.Now().UTC().Add(k.TokenTTL), 10*time.Second))
+			foundNew = true
+		}
+	}
+	g.Expect(foundOld).To(BeTrue())
+	g.Expect(foundNew).To(BeTrue())
+}
+
+// Ensure the discovery portion of the JoinConfiguration gets generated correctly.
+func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileBehaviors(t *testing.T) {
+	k := &OCNEConfigReconciler{
+		Client:             fake.NewClientBuilder().Build(),
+		KubeadmInitLock:    &myInitLocker{},
+		remoteClientGetter: fakeremote.NewClusterClient,
+	}
+
+	caHash := []string{"...."}
+	bootstrapToken := bootstrapv1.Discovery{
+		BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
+			CACertHashes: caHash,
+		},
+	}
+	goodcluster := &clusterv1.Cluster{
+		Spec: clusterv1.ClusterSpec{
+			ControlPlaneEndpoint: clusterv1.APIEndpoint{
+				Host: "example.com",
+				Port: 6443,
+			},
+		},
+	}
+	testcases := []struct {
+		name              string
+		cluster           *clusterv1.Cluster
+		config            *bootstrapv1.OCNEConfig
+		validateDiscovery func(*WithT, *bootstrapv1.OCNEConfig) error
+	}{
+		{
+			name:    "Automatically generate token if discovery not specified",
+			cluster: goodcluster,
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapToken,
+					},
+				},
+			},
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
+				d := c.Spec.JoinConfiguration.Discovery
+				g.Expect(d.BootstrapToken).NotTo(BeNil())
+				g.Expect(d.BootstrapToken.Token).NotTo(Equal(""))
+				g.Expect(d.BootstrapToken.APIServerEndpoint).To(Equal("example.com:6443"))
+				g.Expect(d.BootstrapToken.UnsafeSkipCAVerification).To(BeFalse())
+				return nil
+			},
+		},
+		{
+			name:    "Respect discoveryConfiguration.File",
+			cluster: goodcluster,
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapv1.Discovery{
+							File: &bootstrapv1.FileDiscovery{},
+						},
+					},
+				},
+			},
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
+				d := c.Spec.JoinConfiguration.Discovery
+				g.Expect(d.BootstrapToken).To(BeNil())
+				return nil
+			},
+		},
+		{
+			name:    "Respect discoveryConfiguration.BootstrapToken.APIServerEndpoint",
+			cluster: goodcluster,
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapv1.Discovery{
+							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
+								CACertHashes:      caHash,
+								APIServerEndpoint: "bar.com:6443",
+							},
+						},
+					},
+				},
+			},
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
+				d := c.Spec.JoinConfiguration.Discovery
+				g.Expect(d.BootstrapToken.APIServerEndpoint).To(Equal("bar.com:6443"))
+				return nil
+			},
+		},
+		{
+			name:    "Respect discoveryConfiguration.BootstrapToken.Token",
+			cluster: goodcluster,
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapv1.Discovery{
+							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
+								CACertHashes: caHash,
+								Token:        "abcdef.0123456789abcdef",
+							},
+						},
+					},
+				},
+			},
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
+				d := c.Spec.JoinConfiguration.Discovery
+				g.Expect(d.BootstrapToken.Token).To(Equal("abcdef.0123456789abcdef"))
+				return nil
+			},
+		},
+		{
+			name:    "Respect discoveryConfiguration.BootstrapToken.CACertHashes",
+			cluster: goodcluster,
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapv1.Discovery{
+							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
+								CACertHashes: caHash,
+							},
+						},
+					},
+				},
+			},
+			validateDiscovery: func(g *WithT, c *bootstrapv1.OCNEConfig) error {
+				d := c.Spec.JoinConfiguration.Discovery
+				g.Expect(reflect.DeepEqual(d.BootstrapToken.CACertHashes, caHash)).To(BeTrue())
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			res, err := k.reconcileDiscovery(ctx, tc.cluster, tc.config, secret.Certificates{})
+			g.Expect(res.IsZero()).To(BeTrue())
+			g.Expect(err).NotTo(HaveOccurred())
+
+			err = tc.validateDiscovery(g, tc.config)
+			g.Expect(err).NotTo(HaveOccurred())
+		})
+	}
+}
+
+// Test failure cases for the discovery reconcile function.
+func TestOCNEConfigReconciler_Reconcile_DiscoveryReconcileFailureBehaviors(t *testing.T) {
+	k := &OCNEConfigReconciler{}
+
+	testcases := []struct {
+		name    string
+		cluster *clusterv1.Cluster
+		config  *bootstrapv1.OCNEConfig
+
+		result ctrl.Result
+		err    error
+	}{
+		{
+			name:    "Should requeue if cluster has not ControlPlaneEndpoint",
+			cluster: &clusterv1.Cluster{}, // cluster without endpoints
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					JoinConfiguration: &bootstrapv1.JoinConfiguration{
+						Discovery: bootstrapv1.Discovery{
+							BootstrapToken: &bootstrapv1.BootstrapTokenDiscovery{
+								CACertHashes: []string{"item"},
+							},
+						},
+					},
+				},
+			},
+			result: ctrl.Result{RequeueAfter: 10 * time.Second},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			res, err := k.reconcileDiscovery(ctx, tc.cluster, tc.config, secret.Certificates{})
+			g.Expect(res).To(Equal(tc.result))
+			if tc.err == nil {
+				g.Expect(err).To(BeNil())
+			} else {
+				g.Expect(err).To(Equal(tc.err))
+			}
+		})
+	}
+}
+
+// Set cluster configuration defaults based on dynamic values from the cluster object.
+func TestOCNEConfigReconciler_Reconcile_DynamicDefaultsForClusterConfiguration(t *testing.T) {
+	k := &OCNEConfigReconciler{}
+
+	testcases := []struct {
+		name    string
+		cluster *clusterv1.Cluster
+		machine *clusterv1.Machine
+		config  *bootstrapv1.OCNEConfig
+	}{
+		{
+			name: "Config settings have precedence",
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{
+						ClusterName:       "mycluster",
+						KubernetesVersion: "myversion",
+						Networking: bootstrapv1.Networking{
+							PodSubnet:     "myPodSubnet",
+							ServiceSubnet: "myServiceSubnet",
+							DNSDomain:     "myDNSDomain",
+						},
+						ControlPlaneEndpoint: "myControlPlaneEndpoint:6443",
+					},
+				},
+			},
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "OtherName",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
+						Services:      &clusterv1.NetworkRanges{CIDRBlocks: []string{"otherServicesCidr"}},
+						Pods:          &clusterv1.NetworkRanges{CIDRBlocks: []string{"otherPodsCidr"}},
+						ServiceDomain: "otherServiceDomain",
+					},
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "otherVersion", Port: 0},
+				},
+			},
+			machine: &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
+					Version: pointer.String("otherVersion"),
+				},
+			},
+		},
+		{
+			name: "Top level object settings are used in case config settings are missing",
+			config: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					ClusterConfiguration: &bootstrapv1.ClusterConfiguration{},
+				},
+			},
+			cluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "mycluster",
+				},
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
+						Services:      &clusterv1.NetworkRanges{CIDRBlocks: []string{"myServiceSubnet"}},
+						Pods:          &clusterv1.NetworkRanges{CIDRBlocks: []string{"myPodSubnet"}},
+						ServiceDomain: "myDNSDomain",
+					},
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{Host: "myControlPlaneEndpoint", Port: 6443},
+				},
+			},
+			machine: &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
+					Version: pointer.String("myversion"),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			k.reconcileTopLevelObjectSettings(ctx, tc.cluster, tc.machine, tc.config)
+
+			g.Expect(tc.config.Spec.ClusterConfiguration.ControlPlaneEndpoint).To(Equal("myControlPlaneEndpoint:6443"))
+			g.Expect(tc.config.Spec.ClusterConfiguration.ClusterName).To(Equal("mycluster"))
+			g.Expect(tc.config.Spec.ClusterConfiguration.Networking.PodSubnet).To(Equal("myPodSubnet"))
+			g.Expect(tc.config.Spec.ClusterConfiguration.Networking.ServiceSubnet).To(Equal("myServiceSubnet"))
+			g.Expect(tc.config.Spec.ClusterConfiguration.Networking.DNSDomain).To(Equal("myDNSDomain"))
+			g.Expect(tc.config.Spec.ClusterConfiguration.KubernetesVersion).To(Equal("myversion"))
+		})
+	}
+}
+
+// Allow users to skip CA Verification if they *really* want to.
+func TestOCNEConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessRequestedToSkip(t *testing.T) {
+	// Setup work for an initialized cluster
+	clusterName := "my-cluster"
+	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
+	conditions.MarkTrue(cluster, clusterv1.ControlPlaneInitializedCondition)
+	cluster.Status.InfrastructureReady = true
+	cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		Host: "example.com",
+		Port: 6443,
+	}
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "my-control-plane-init-machine")
+	initConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "my-control-plane-init-config")
+
+	controlPlaneMachineName := "my-machine"
+	machine := builder.Machine(metav1.NamespaceDefault, controlPlaneMachineName).
+		WithVersion("v1.19.1").
+		WithClusterName(cluster.Name).
+		Build()
+
+	workerMachineName := "my-worker"
+	workerMachine := builder.Machine(metav1.NamespaceDefault, workerMachineName).
+		WithVersion("v1.19.1").
+		WithClusterName(cluster.Name).
+		Build()
+
+	controlPlaneConfigName := "my-config"
+	config := newKubeadmConfig(metav1.NamespaceDefault, controlPlaneConfigName)
+
+	objects := []client.Object{
+		cluster, machine, workerMachine, config,
+	}
+	objects = append(objects, createSecrets(t, cluster, initConfig)...)
+
+	testcases := []struct {
+		name               string
+		discovery          *bootstrapv1.BootstrapTokenDiscovery
+		skipCAVerification bool
+	}{
+		{
+			name:               "Do not skip CA verification by default",
+			discovery:          &bootstrapv1.BootstrapTokenDiscovery{},
+			skipCAVerification: false,
+		},
+		{
+			name: "Skip CA verification if requested by the user",
+			discovery: &bootstrapv1.BootstrapTokenDiscovery{
+				UnsafeSkipCAVerification: true,
+			},
+			skipCAVerification: true,
+		},
+		{
+			// skipCAVerification should be true since no Cert Hashes are provided, but reconcile will *always* get or create certs.
+			// TODO: Certificate get/create behavior needs to be mocked to enable this test.
+			name: "cannot test for defaulting behavior through the reconcile function",
+			discovery: &bootstrapv1.BootstrapTokenDiscovery{
+				CACertHashes: []string{""},
+			},
+			skipCAVerification: false,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+			reconciler := OCNEConfigReconciler{
+				Client:             myclient,
+				KubeadmInitLock:    &myInitLocker{},
+				remoteClientGetter: fakeremote.NewClusterClient,
+			}
+
+			wc := newWorkerJoinKubeadmConfig(metav1.NamespaceDefault, "worker-join-cfg")
+			wc.Spec.JoinConfiguration.Discovery.BootstrapToken = tc.discovery
+			key := client.ObjectKey{Namespace: wc.Namespace, Name: wc.Name}
+			err := myclient.Create(ctx, wc)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			req := ctrl.Request{NamespacedName: key}
+			_, err = reconciler.Reconcile(ctx, req)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			cfg := &bootstrapv1.OCNEConfig{}
+			err = myclient.Get(ctx, key, cfg)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(cfg.Spec.JoinConfiguration.Discovery.BootstrapToken.UnsafeSkipCAVerification).To(Equal(tc.skipCAVerification))
+		})
+	}
+}
+
+// If a cluster object changes then all associated KubeadmConfigs should be re-reconciled.
+// This allows us to not requeue a kubeadm config while we wait for InfrastructureReady.
+func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
+	_ = feature.MutableGates.Set("MachinePool=true")
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "my-cluster").Build()
+	objs := []client.Object{cluster}
+	expectedNames := []string{}
+	for i := 0; i < 3; i++ {
+		configName := fmt.Sprintf("my-config-%d", i)
+		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
+			WithVersion("v1.19.1").
+			WithClusterName(cluster.Name).
+			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, configName).Unstructured()).
+			Build()
+		c := newKubeadmConfig(metav1.NamespaceDefault, configName)
+		addKubeadmConfigToMachine(c, m)
+		expectedNames = append(expectedNames, configName)
+		objs = append(objs, m, c)
+	}
+	for i := 3; i < 6; i++ {
+		mp := newMachinePool(cluster, fmt.Sprintf("my-machinepool-%d", i))
+		configName := fmt.Sprintf("my-config-%d", i)
+		c := newKubeadmConfig(mp.Namespace, configName)
+		addKubeadmConfigToMachinePool(c, mp)
+		expectedNames = append(expectedNames, configName)
+		objs = append(objs, mp, c)
+	}
+	fakeClient := fake.NewClientBuilder().WithObjects(objs...).Build()
+	reconciler := &OCNEConfigReconciler{
+		Client: fakeClient,
+	}
+	configs := reconciler.ClusterToOCNEConfigs(cluster)
+	names := make([]string, 6)
+	for i := range configs {
+		names[i] = configs[i].Name
+	}
+	for _, name := range expectedNames {
+		found := false
+		for _, foundName := range names {
+			if foundName == name {
+				found = true
+			}
+		}
+		g.Expect(found).To(BeTrue())
+	}
+}
+
+// Reconcile should not fail if the Etcd CA Secret already exists.
+func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "my-cluster").Build()
+	cluster.Status.InfrastructureReady = true
+	m := newControlPlaneMachine(cluster, "control-plane-machine")
+	configName := "my-config"
+	c := newControlPlaneInitKubeadmConfig(m.Namespace, configName)
+	scrt := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", cluster.Name, secret.EtcdCA),
+			Namespace: metav1.NamespaceDefault,
+		},
+		Data: map[string][]byte{
+			"tls.crt": []byte("hello world"),
+			"tls.key": []byte("hello world"),
+		},
+	}
+	fakec := fake.NewClientBuilder().WithObjects(cluster, m, c, scrt).Build()
+	reconciler := &OCNEConfigReconciler{
+		Client:          fakec,
+		KubeadmInitLock: &myInitLocker{},
+	}
+	req := ctrl.Request{
+		NamespacedName: client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: configName},
+	}
+	_, err := reconciler.Reconcile(ctx, req)
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+// Exactly one control plane machine initializes if there are multiple control plane machines defined.
+func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+
+	controlPlaneInitMachineFirst := newControlPlaneMachine(cluster, "control-plane-init-machine-first")
+	controlPlaneInitConfigFirst := newControlPlaneInitKubeadmConfig(controlPlaneInitMachineFirst.Namespace, "control-plane-init-cfg-first")
+	addKubeadmConfigToMachine(controlPlaneInitConfigFirst, controlPlaneInitMachineFirst)
+
+	controlPlaneInitMachineSecond := newControlPlaneMachine(cluster, "control-plane-init-machine-second")
+	controlPlaneInitConfigSecond := newControlPlaneInitKubeadmConfig(controlPlaneInitMachineSecond.Namespace, "control-plane-init-cfg-second")
+	addKubeadmConfigToMachine(controlPlaneInitConfigSecond, controlPlaneInitMachineSecond)
+
+	objects := []client.Object{
+		cluster,
+		controlPlaneInitMachineFirst,
+		controlPlaneInitConfigFirst,
+		controlPlaneInitMachineSecond,
+		controlPlaneInitConfigSecond,
+	}
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+	k := &OCNEConfigReconciler{
+		Client:          myclient,
+		KubeadmInitLock: &myInitLocker{},
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-init-cfg-first",
+		},
+	}
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	request = ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-init-cfg-second",
+		},
+	}
+	result, err = k.Reconcile(ctx, request)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(30 * time.Second))
+}
+
+// Patch should be applied if there is an error in reconcile.
+func TestOCNEConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
+	g := NewWithT(t)
+
+	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
+	cluster.Status.InfrastructureReady = true
+
+	controlPlaneInitMachine := newControlPlaneMachine(cluster, "control-plane-init-machine")
+	controlPlaneInitConfig := newControlPlaneInitKubeadmConfig(controlPlaneInitMachine.Namespace, "control-plane-init-cfg")
+	addKubeadmConfigToMachine(controlPlaneInitConfig, controlPlaneInitMachine)
+	// set InitConfiguration as nil, we will check this to determine if the kubeadm config has been patched
+	controlPlaneInitConfig.Spec.InitConfiguration = nil
+
+	objects := []client.Object{
+		cluster,
+		controlPlaneInitMachine,
+		controlPlaneInitConfig,
+	}
+
+	secrets := createSecrets(t, cluster, controlPlaneInitConfig)
+	for _, obj := range secrets {
+		s := obj.(*corev1.Secret)
+		delete(s.Data, secret.TLSCrtDataName) // destroy the secrets, which will cause Reconcile to fail
+		objects = append(objects, s)
+	}
+
+	myclient := fake.NewClientBuilder().WithObjects(objects...).Build()
+	k := &OCNEConfigReconciler{
+		Client:          myclient,
+		KubeadmInitLock: &myInitLocker{},
+	}
+
+	request := ctrl.Request{
+		NamespacedName: client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      "control-plane-init-cfg",
+		},
+	}
+
+	result, err := k.Reconcile(ctx, request)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(result.Requeue).To(BeFalse())
+	g.Expect(result.RequeueAfter).To(Equal(time.Duration(0)))
+
+	cfg, err := getKubeadmConfig(myclient, "control-plane-init-cfg", metav1.NamespaceDefault)
+	g.Expect(err).NotTo(HaveOccurred())
+	// check if the kubeadm config has been patched
+	g.Expect(cfg.Spec.InitConfiguration).ToNot(BeNil())
+	g.Expect(cfg.Status.ObservedGeneration).NotTo(BeNil())
+}
+
+func TestOCNEConfigReconciler_ResolveFiles(t *testing.T) {
+	testSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "source",
+		},
+		Data: map[string][]byte{
+			"key": []byte("foo"),
+		},
+	}
+
+	cases := map[string]struct {
+		cfg     *bootstrapv1.OCNEConfig
+		objects []client.Object
+		expect  []bootstrapv1.File
+	}{
+		"content should pass through": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Files: []bootstrapv1.File{
+						{
+							Content:     "foo",
+							Path:        "/path",
+							Owner:       "root:root",
+							Permissions: "0600",
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.File{
+				{
+					Content:     "foo",
+					Path:        "/path",
+					Owner:       "root:root",
+					Permissions: "0600",
+				},
+			},
+		},
+		"contentFrom should convert correctly": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Files: []bootstrapv1.File{
+						{
+							ContentFrom: &bootstrapv1.FileSource{
+								Secret: bootstrapv1.SecretFileSource{
+									Name: "source",
+									Key:  "key",
+								},
+							},
+							Path:        "/path",
+							Owner:       "root:root",
+							Permissions: "0600",
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.File{
+				{
+					Content:     "foo",
+					Path:        "/path",
+					Owner:       "root:root",
+					Permissions: "0600",
+				},
+			},
+			objects: []client.Object{testSecret},
+		},
+		"multiple files should work correctly": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Files: []bootstrapv1.File{
+						{
+							Content:     "bar",
+							Path:        "/bar",
+							Owner:       "root:root",
+							Permissions: "0600",
+						},
+						{
+							ContentFrom: &bootstrapv1.FileSource{
+								Secret: bootstrapv1.SecretFileSource{
+									Name: "source",
+									Key:  "key",
+								},
+							},
+							Path:        "/path",
+							Owner:       "root:root",
+							Permissions: "0600",
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.File{
+				{
+					Content:     "bar",
+					Path:        "/bar",
+					Owner:       "root:root",
+					Permissions: "0600",
+				},
+				{
+					Content:     "foo",
+					Path:        "/path",
+					Owner:       "root:root",
+					Permissions: "0600",
+				},
+			},
+			objects: []client.Object{testSecret},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
+			k := &OCNEConfigReconciler{
+				Client:          myclient,
+				KubeadmInitLock: &myInitLocker{},
+			}
+
+			// make a list of files we expect to be sourced from secrets
+			// after we resolve files, assert that the original spec has
+			// not been mutated and all paths we expected to be sourced
+			// from secrets still are.
+			contentFrom := map[string]bool{}
+			for _, file := range tc.cfg.Spec.Files {
+				if file.ContentFrom != nil {
+					contentFrom[file.Path] = true
+				}
+			}
+
+			files, err := k.resolveFiles(ctx, tc.cfg)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(files).To(Equal(tc.expect))
+			for _, file := range tc.cfg.Spec.Files {
+				if contentFrom[file.Path] {
+					g.Expect(file.ContentFrom).NotTo(BeNil())
+					g.Expect(file.Content).To(Equal(""))
+				}
+			}
+		})
+	}
+}
+
+func TestOCNEConfigReconciler_ResolveUsers(t *testing.T) {
+	fakePasswd := "bar"
+	testSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "source",
+		},
+		Data: map[string][]byte{
+			"key": []byte(fakePasswd),
+		},
+	}
+
+	cases := map[string]struct {
+		cfg     *bootstrapv1.OCNEConfig
+		objects []client.Object
+		expect  []bootstrapv1.User
+	}{
+		"password should pass through": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Users: []bootstrapv1.User{
+						{
+							Name:   "foo",
+							Passwd: &fakePasswd,
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.User{
+				{
+					Name:   "foo",
+					Passwd: &fakePasswd,
+				},
+			},
+		},
+		"passwdFrom should convert correctly": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Users: []bootstrapv1.User{
+						{
+							Name: "foo",
+							PasswdFrom: &bootstrapv1.PasswdSource{
+								Secret: bootstrapv1.SecretPasswdSource{
+									Name: "source",
+									Key:  "key",
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.User{
+				{
+					Name:   "foo",
+					Passwd: &fakePasswd,
+				},
+			},
+			objects: []client.Object{testSecret},
+		},
+		"multiple users should work correctly": {
+			cfg: &bootstrapv1.OCNEConfig{
+				Spec: bootstrapv1.OCNEConfigSpec{
+					Users: []bootstrapv1.User{
+						{
+							Name:   "foo",
+							Passwd: &fakePasswd,
+						},
+						{
+							Name: "bar",
+							PasswdFrom: &bootstrapv1.PasswdSource{
+								Secret: bootstrapv1.SecretPasswdSource{
+									Name: "source",
+									Key:  "key",
+								},
+							},
+						},
+					},
+				},
+			},
+			expect: []bootstrapv1.User{
+				{
+					Name:   "foo",
+					Passwd: &fakePasswd,
+				},
+				{
+					Name:   "bar",
+					Passwd: &fakePasswd,
+				},
+			},
+			objects: []client.Object{testSecret},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			myclient := fake.NewClientBuilder().WithObjects(tc.objects...).Build()
+			k := &OCNEConfigReconciler{
+				Client:          myclient,
+				KubeadmInitLock: &myInitLocker{},
+			}
+
+			// make a list of password we expect to be sourced from secrets
+			// after we resolve users, assert that the original spec has
+			// not been mutated and all password we expected to be sourced
+			// from secret still are.
+			passwdFrom := map[string]bool{}
+			for _, user := range tc.cfg.Spec.Users {
+				if user.PasswdFrom != nil {
+					passwdFrom[user.Name] = true
+				}
+			}
+
+			users, err := k.resolveUsers(ctx, tc.cfg)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(users).To(Equal(tc.expect))
+			for _, user := range tc.cfg.Spec.Users {
+				if passwdFrom[user.Name] {
+					g.Expect(user.PasswdFrom).NotTo(BeNil())
+					g.Expect(user.Passwd).To(BeNil())
+				}
+			}
+		})
+	}
+}
+
+// test utils.
+
+// newWorkerMachineForCluster returns a Machine with the passed Cluster's information and a pre-configured name.
+func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
+	return builder.Machine(cluster.Namespace, "worker-machine").
+		WithVersion("v1.19.1").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
+		WithClusterName(cluster.Name).
+		Build()
+}
+
+// newControlPlaneMachine returns a Machine with the passed Cluster information and a MachineControlPlaneLabelName.
+func newControlPlaneMachine(cluster *clusterv1.Cluster, name string) *clusterv1.Machine {
+	m := builder.Machine(cluster.Namespace, name).
+		WithVersion("v1.19.1").
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
+		WithClusterName(cluster.Name).
+		WithLabels(map[string]string{clusterv1.MachineControlPlaneLabelName: ""}).
+		Build()
+	return m
+}
+
+// newMachinePool return a MachinePool object with the passed Cluster information and a basic bootstrap template.
+func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool {
+	m := builder.MachinePool(cluster.Namespace, name).
+		WithClusterName(cluster.Name).
+		WithLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}).
+		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
+		WithVersion("1.19.1").
+		Build()
+	return m
+}
+
+// newWorkerMachinePoolForCluster returns a MachinePool with the passed Cluster's information and a pre-configured name.
+func newWorkerMachinePoolForCluster(cluster *clusterv1.Cluster) *expv1.MachinePool {
+	return newMachinePool(cluster, "worker-machinepool")
+}
+
+// newKubeadmConfig return a CABPK OCNEConfig object.
+func newKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
+	return bootstrapbuilder.OCNEConfig(namespace, name).
+		Build()
+}
+
+// newKubeadmConfig return a CABPK OCNEConfig object with a worker JoinConfiguration.
+func newWorkerJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
+	return bootstrapbuilder.OCNEConfig(namespace, name).
+		WithJoinConfig(&bootstrapv1.JoinConfiguration{
+			ControlPlane: nil,
+		}).
+		Build()
+}
+
+// newKubeadmConfig returns a CABPK OCNEConfig object with a ControlPlane JoinConfiguration.
+func newControlPlaneJoinKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
+	return bootstrapbuilder.OCNEConfig(namespace, name).
+		WithJoinConfig(&bootstrapv1.JoinConfiguration{
+			ControlPlane: &bootstrapv1.JoinControlPlane{},
+		}).
+		Build()
+}
+
+// newControlPlaneJoinConfig returns a CABPK OCNEConfig object with a ControlPlane InitConfiguration and ClusterConfiguration.
+func newControlPlaneInitKubeadmConfig(namespace, name string) *bootstrapv1.OCNEConfig {
+	return bootstrapbuilder.OCNEConfig(namespace, name).
+		WithInitConfig(&bootstrapv1.InitConfiguration{}).
+		WithClusterConfig(&bootstrapv1.ClusterConfiguration{}).
+		Build()
+}
+
+// addKubeadmConfigToMachine adds the config details to the passed Machine, and adds the Machine to the OCNEConfig as an ownerReference.
+func addKubeadmConfigToMachine(config *bootstrapv1.OCNEConfig, machine *clusterv1.Machine) {
+	if machine == nil {
+		panic("no machine passed to function")
+	}
+	config.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		{
+			Kind:       "Machine",
+			APIVersion: clusterv1.GroupVersion.String(),
+			Name:       machine.Name,
+			UID:        types.UID(fmt.Sprintf("%s uid", machine.Name)),
+		},
+	}
+
+	machine.Spec.Bootstrap.ConfigRef.Name = config.Name
+	machine.Spec.Bootstrap.ConfigRef.Namespace = config.Namespace
+}
+
+// addKubeadmConfigToMachine adds the config details to the passed MachinePool and adds the Machine to the OCNEConfig as an ownerReference.
+func addKubeadmConfigToMachinePool(config *bootstrapv1.OCNEConfig, machinePool *expv1.MachinePool) {
+	if machinePool == nil {
+		panic("no machinePool passed to function")
+	}
+	config.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		{
+			Kind:       "MachinePool",
+			APIVersion: expv1.GroupVersion.String(),
+			Name:       machinePool.Name,
+			UID:        types.UID(fmt.Sprintf("%s uid", machinePool.Name)),
+		},
+	}
+	machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Name = config.Name
+	machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace = config.Namespace
+}
+
+func createSecrets(t *testing.T, cluster *clusterv1.Cluster, config *bootstrapv1.OCNEConfig) []client.Object {
+	t.Helper()
+
+	out := []client.Object{}
+	if config.Spec.ClusterConfiguration == nil {
+		config.Spec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{}
+	}
+	certificates := secret.NewCertificatesForInitialControlPlane(config.Spec.ClusterConfiguration)
+	if err := certificates.Generate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, certificate := range certificates {
+		out = append(out, certificate.AsSecret(util.ObjectKey(cluster), *metav1.NewControllerRef(config, bootstrapv1.GroupVersion.WithKind("OCNEConfig"))))
+	}
+	return out
+}
+
+type myInitLocker struct {
+	locked bool
+}
+
+func (m *myInitLocker) Lock(_ context.Context, _ *clusterv1.Cluster, _ *clusterv1.Machine) bool {
+	if !m.locked {
+		m.locked = true
+		return true
+	}
+	return false
+}
+
+func (m *myInitLocker) Unlock(_ context.Context, _ *clusterv1.Cluster) bool {
+	if m.locked {
+		m.locked = false
+	}
+	return true
+}
+
+func assertHasFalseCondition(g *WithT, myclient client.Client, req ctrl.Request, t clusterv1.ConditionType, s clusterv1.ConditionSeverity, r string) {
+	config := &bootstrapv1.OCNEConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name,
+			Namespace: req.Namespace,
+		},
+	}
+
+	configKey := client.ObjectKeyFromObject(config)
+	g.Expect(myclient.Get(ctx, configKey, config)).To(Succeed())
+	c := conditions.Get(config, t)
+	g.Expect(c).ToNot(BeNil())
+	g.Expect(c.Status).To(Equal(corev1.ConditionFalse))
+	g.Expect(c.Severity).To(Equal(s))
+	g.Expect(c.Reason).To(Equal(r))
+}
+
+func assertHasTrueCondition(g *WithT, myclient client.Client, req ctrl.Request, t clusterv1.ConditionType) {
+	config := &bootstrapv1.OCNEConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name,
+			Namespace: req.Namespace,
+		},
+	}
+	configKey := client.ObjectKeyFromObject(config)
+	g.Expect(myclient.Get(ctx, configKey, config)).To(Succeed())
+	c := conditions.Get(config, t)
+	g.Expect(c).ToNot(BeNil())
+	g.Expect(c.Status).To(Equal(corev1.ConditionTrue))
+}
