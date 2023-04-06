@@ -111,7 +111,7 @@ type OCNEConfigSpec struct {
 	// Proxy contains proxy server info that may be required for installing dependencies.
 	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
-	Proxy ProxySpec `json:"proxy,omitempty"`
+	Proxy *ProxySpec `json:"proxy,omitempty"`
 }
 
 type ProxySpec struct {

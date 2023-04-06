@@ -108,17 +108,19 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 
 // GetOCNEOverrides Updates the cloud init with OCNE override instructions
 func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) []string {
-	var ocneNodeOverrrides []string
+	var ocneNodeOverrrides, yumOrdnfProxyOverrides, crioProxyOverrides []string
 	k8sversion := extractVersionString(kubernetesVersion)
-	yumOrdnfProxyOverrides := []string{
-		fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/yum.conf`, proxy.HttpProxy),
-		fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/dnf/dnf.conf`, proxy.HttpProxy),
-	}
+	if proxy != nil {
+		yumOrdnfProxyOverrides = []string{
+			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/yum.conf`, proxy.HttpProxy),
+			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/dnf/dnf.conf`, proxy.HttpProxy),
+		}
 
-	// noProxy should be of type localhost,podSubnet,serviceSubnet,/var/run/shared-tmpfs/csi.sock
-	crioProxyOverrides := []string{
-		`mkdir -p /etc/systemd/system/crio.service.d && sudo touch /etc/systemd/system/crio.service.d/proxy.conf`,
-		fmt.Sprintf(`echo -e "[Service]\nEnvironment="HTTP_PROXY=%s"\nEnvironment="HTTPS_PROXY=%s"\nEnvironment="NO_PROXY=%s""| sudo tee /etc/systemd/system/crio.service.d/proxy.conf`, proxy.HttpProxy, proxy.HttpsProxy, constructNoProxy(proxy.NoProxy, podSubnet, serviceSubnet)),
+		// noProxy should be of type localhost,podSubnet,serviceSubnet,/var/run/shared-tmpfs/csi.sock
+		crioProxyOverrides = []string{
+			`mkdir -p /etc/systemd/system/crio.service.d && sudo touch /etc/systemd/system/crio.service.d/proxy.conf`,
+			fmt.Sprintf(`echo -e "[Service]\nEnvironment="HTTP_PROXY=%s"\nEnvironment="HTTPS_PROXY=%s"\nEnvironment="NO_PROXY=%s""| sudo tee /etc/systemd/system/crio.service.d/proxy.conf`, proxy.HttpProxy, proxy.HttpsProxy, constructNoProxy(proxy.NoProxy, podSubnet, serviceSubnet)),
+		}
 	}
 
 	ocneUtilsInstall := []string{
@@ -146,17 +148,20 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 	}
 
 	// This is required in the beginning to help download utilities
-	if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
-		ocneNodeOverrrides = append(ocneNodeOverrrides, yumOrdnfProxyOverrides...)
+	if proxy != nil {
+		if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
+			ocneNodeOverrrides = append(ocneNodeOverrrides, yumOrdnfProxyOverrides...)
+		}
 	}
 
 	ocneNodeOverrrides = append(ocneNodeOverrrides, ocneUtilsInstall...)
 
 	// This is required after crio is installed
-	if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
-		ocneNodeOverrrides = append(ocneNodeOverrrides, crioProxyOverrides...)
+	if proxy != nil {
+		if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
+			ocneNodeOverrrides = append(ocneNodeOverrrides, crioProxyOverrides...)
+		}
 	}
-
 	return append(ocneNodeOverrrides, ocneServicesStart...)
 }
 

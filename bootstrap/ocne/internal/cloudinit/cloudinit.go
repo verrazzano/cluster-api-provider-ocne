@@ -62,7 +62,7 @@ type BaseUserData struct {
 	SentinelFileCommand  string
 	KubernetesVersion    string
 	OCNEImageRepository  string
-	Proxy                bootstrapv1.ProxySpec
+	Proxy                *bootstrapv1.ProxySpec
 	PodSubnet            string
 	ServiceSubnet        string
 	KubeadmVerbosity     string
@@ -70,7 +70,7 @@ type BaseUserData struct {
 
 func (input *BaseUserData) prepare() error {
 	if strings.ToLower(input.Header) != "test" {
-		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, &input.Proxy)
+		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
 	}
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)

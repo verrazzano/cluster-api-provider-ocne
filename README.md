@@ -45,8 +45,11 @@ Before we install the providers we need to build them from source.
 
 ```shell
 git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
+export MAJOR_VERSION=0
+export MINOR_VERSION=1
+export PATCH_VERSION=0
 export TAG="<image tag>"
-export REGISTRY="<image-registry>"
+export REGISTRY="<image-registry>" # default is ghcr.io/verrazzano
 make ocnebuild
 ```
 
@@ -57,11 +60,11 @@ The release artifacts are created in the following folder structure
 ```shell
 release
 ├── bootstrap-ocne
-│   └── v0.0.1
+│   └── v0.1.0
 │       ├── bootstrap-components.yaml
 │       └── metadata.yaml
 └── control-plane-ocne
-    └── v0.0.1
+    └── v0.1.0
         ├── control-plane-components.yaml
         └── metadata.yaml
 ```
@@ -73,10 +76,10 @@ release
 ```shell
 providers:
   - name: "ocne"
-    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.0.1/bootstrap-components.yaml"
+    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.1.0/bootstrap-components.yaml"
     type: "BootstrapProvider"
   - name: "ocne"
-    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.0.1/control-plane-components.yaml"
+    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.1.0/control-plane-components.yaml"
     type: "ControlPlaneProvider"
 ```
 
