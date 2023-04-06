@@ -141,7 +141,7 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 	}
 
 	ocneServicesStart := []string{
-		`sudo systemctl enable crio && sudo systemctl restart crio && sudo systemctl enable kubelet`,
+		`sudo rm -rf /etc/cni/net.d/100-crio-bridge.conf && sudo systemctl enable crio && sudo systemctl restart crio && sudo systemctl enable kubelet`,
 		`sudo systemctl disable firewalld && sudo systemctl stop firewalld`,
 	}
 
