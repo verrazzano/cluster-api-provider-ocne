@@ -244,11 +244,11 @@ func getArtifactData(mappingData *OCNEVersionMappings, k8sVersion, dataType, dat
 }
 
 func GetContainerImageVersion(k8sVersion, containerName string) (string, error) {
-	return getArtifactData(&OCNEK8sMappingData, "container-image", containerName, k8sVersion)
+	return getArtifactData(&OCNEK8sMappingData, k8sVersion, "container-image", containerName)
 }
 
 func GetPackageVersion(k8sVersion, packageName string) (string, error) {
-	return getArtifactData(&OCNEK8sMappingData, "package", packageName, k8sVersion)
+	return getArtifactData(&OCNEK8sMappingData, k8sVersion, "package", packageName)
 }
 
 func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
