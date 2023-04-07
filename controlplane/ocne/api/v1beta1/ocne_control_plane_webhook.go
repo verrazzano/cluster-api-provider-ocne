@@ -418,6 +418,51 @@ func validateClusterConfiguration(newClusterConfiguration, oldClusterConfigurati
 				),
 			)
 		}
+
+		newClusterCoreDNSTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "coredns")
+		if err != nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("dns", "imageTag"),
+					newClusterConfiguration.DNS.ImageTag,
+					fmt.Sprintf("coreDNS image tag not found : %v", err),
+				),
+			)
+		}
+
+		if newClusterConfiguration.DNS.ImageTag != newClusterCoreDNSTag {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("dns", "imageTag"),
+					newClusterConfiguration.DNS.ImageTag,
+					fmt.Sprintf("not supported coreDNS image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
+				),
+			)
+		}
+
+	}
+
+	if newClusterConfiguration.Etcd.Local != nil {
+		newClusterEtcdTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "etcd")
+		if err != nil {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("etcd", "local", "imageTag"),
+					newClusterConfiguration.Etcd.Local.ImageTag,
+					fmt.Sprintf("etcd image tag not found : %v", err),
+				),
+			)
+		}
+
+		if newClusterConfiguration.Etcd.Local.ImageTag != newClusterEtcdTag {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("etcd", "local", "imageTag"),
+					newClusterConfiguration.Etcd.Local.ImageTag,
+					fmt.Sprintf("not supported etcd image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
+				),
+			)
+		}
 	}
 
 	// TODO: Remove when kubeadm types include OpenAPI validation
@@ -523,32 +568,6 @@ func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allE
 	}
 	// return if either current or target versions is empty
 	if prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
-		return allErrs
-	}
-
-	prevDnsTagFromMap, err := ocne.GetContainerImageVersion(prev.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion, "coredns")
-	fmt.Println("+++++ TAG = %v ++++", prevDnsTagFromMap)
-	if err != nil {
-		allErrs = append(allErrs,
-			field.Invalid(
-				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
-				prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag,
-				fmt.Sprintf("invalid current CoreDNS imageTag. Supported value %v : %v", prevDnsTagFromMap, err),
-			),
-		)
-		return allErrs
-	}
-
-	inDnsTagFromMap, err := ocne.GetContainerImageVersion(in.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion, "coredns")
-	fmt.Println("+++++ TAG = %v ++++", inDnsTagFromMap)
-	if err != nil {
-		allErrs = append(allErrs,
-			field.Invalid(
-				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
-				in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag,
-				fmt.Sprintf("invalid current CoreDNS imageTag. Supported value %v : %v", inDnsTagFromMap, err),
-			),
-		)
 		return allErrs
 	}
 
