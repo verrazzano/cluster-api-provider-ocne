@@ -73,11 +73,6 @@ const (
 	DefaultTokenTTL = 15 * time.Minute
 )
 
-const (
-	// DefaultOCNESocket is the crio socket used for OCNE
-	DefaultOCNESocket = "/var/run/crio/crio.sock"
-)
-
 // InitLocker is a lock that is used around ocne init.
 type InitLocker interface {
 	Lock(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) bool
@@ -497,7 +492,7 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	}
 
 	// Overriding the criSocket for ocne
-	scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = DefaultOCNESocket
+	scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
 
 	var podSubnet, serviceSubnet string
 	if scope.Cluster.Spec.ClusterNetwork != nil {
