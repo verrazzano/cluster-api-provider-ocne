@@ -76,10 +76,10 @@ release
 ```shell
 providers:
   - name: "ocne"
-    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.1.0/bootstrap-components.yaml"
+    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.1.0/bootstrap-components.yaml"
     type: "BootstrapProvider"
   - name: "ocne"
-    url: "${GOPATH}/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.1.0/control-plane-components.yaml"
+    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.1.0/control-plane-components.yaml"
     type: "ControlPlaneProvider"
 ```
 
@@ -108,7 +108,7 @@ You may also find useful manifests for property configuration under the [templat
 * Generate and deploy the cluster
 ```shell
 source templates/variables.env
-clusterctl generate cluster ocne-cluster --from-file templates/cluster-template-existingvcnwithaddonsandproxy.yaml | kubeactl apply -f -
+clusterctl generate cluster ocne-cluster --from-file templates/cluster-template-existingvcnwithaddonsandproxy.yaml | kubectl apply -f -
 ```
 
 * Once the cluster is deployed successfully you should see a cluster description similar to the following:
