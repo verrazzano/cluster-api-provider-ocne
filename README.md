@@ -10,12 +10,12 @@ Started by the Kubernetes Special Interest Group (SIG) Cluster Lifecycle, the Cl
 
 ### ⚙️ Providers
 
-Cluster API can be extended to support any infrastructure (AWS, Azure, vSphere, etc.), bootstrap or control plane (kubeadm is built-in) provider. There is a growing list of [supported providers](https://cluster-api.sigs.k8s.io/reference/providers.html) available.
+Cluster API can be extended to support any infrastructure (AWS, Azure, vSphere, etc.), bootstrap or control plane provider (kubeadm is built in). There is a growing list of [supported providers](https://cluster-api.sigs.k8s.io/reference/providers.html) available.
 
 ### ⚙️ OCNE Provider
 
 OCNE Provider for CAPI is used to bootstrap and control OCNE instances on top of major infrastructure providers like OCI, AWS and Azure. This extends the kubeadm bootstrap and  control plane provider functionality.
-The OCNE Provider does use pre-baked images. Instead it uses vanilla OL8 images and installs the dependancies at boot time. 
+The OCNE Provider does not use pre-baked images but rather uses vanilla OL8 images and installs the dependancies at boot time. 
 
 ### Prerequisites
 
@@ -41,7 +41,7 @@ kind create cluster --config kind-cluster-with-extramounts.yaml
 
 ### Build OCNE Providers
 
-Before we install the providers we need to build them from source. 
+Before we install the providers we need to build them from source: 
 
 ```shell
 git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
@@ -53,9 +53,9 @@ export REGISTRY="<image-registry>" # default is ghcr.io/verrazzano
 make ocnebuild
 ```
 
-This will create the release manifests and also push the images for OCNE bootstrap and OCNE control plane providers to the specified registry and tag. 
+These commands will create the release manifests and also push the images for the OCNE bootstrap and OCNE control plane providers to the specified registry and tag. 
 
-The release artifacts are created in the following folder structure 
+The release artifacts are created in the following folder structure: 
 
 ```shell
 release
@@ -71,7 +71,7 @@ release
 
 ### Installation
 
-* To install the OCNE providers, convert the existing cluster into a management cluster. Update the `clusterctl` configuration file `~/.cluster-api/clusterctl.yaml` to point to the release artifacts folder
+* To install the OCNE providers, convert the existing KIND cluster created above into a management cluster. Update the `clusterctl` configuration file `~/.cluster-api/clusterctl.yaml` to point to the release artifacts folder:
 
 ```shell
 providers:
@@ -83,15 +83,15 @@ providers:
     type: "ControlPlaneProvider"
 ```
 
-You will now be able now to initialize clusterctl with the OCNE providers:
+You will now be able to initialize clusterctl with the OCNE providers:
 
 ```
 clusterctl init --bootstrap ocne --control-plane ocne -i oci:v0.8.0
 ```
 
-**NOTE**: Currently OCNE Provider is verified only for OCI infrastructure provider. Follow the instructions [here](https://oracle.github.io/cluster-api-provider-oci/gs/install-cluster-api.html) for setting up OCI provider.
+**NOTE**: Currently OCNE Provider is verified only for the OCI infrastructure provider. Follow the instructions [here](https://oracle.github.io/cluster-api-provider-oci/gs/install-cluster-api.html) for setting up OCI provider.
 
-* Once initialization is complete the following pods should be seen on the cluster 
+* Once initialization is complete pods such as the following should be running in the cluster 
 ```shell
 capi-ocne-bootstrap-system           capi-ocne-bootstrap-controller-manager-7cd89b4bbb-bwsbs           1/1     Running   0              34m
 capi-ocne-control-plane-system       capi-ocne-control-plane-controller-manager-5cdf88667f-vqq27       1/1     Running   0              34m
@@ -101,9 +101,9 @@ cluster-api-provider-oci-system      capoci-controller-manager-5f5d9d49b5-mht2p 
 
 ### Usage 
 
-When the OCNE bootstrap and control plane clusters are up and running you can apply cluster manifests with the desired specs  to provision a cluster of your choice.
-OCNE provider configuration is similar to `Kubeadm` configuration with some additional properties like `proxy`, that is required for dependency install, in case the environment has it configured. Proxy can be set ```via spec.controlPlaneConfig.proxy``` in the `OCNEControlPlane` object and `spec.proxy.httpProxy` in `OCNEConfigTemplate`
-You may also find useful the manifests found under the [templates](./templates/) directory.
+When the OCNE bootstrap and control plane clusters are up and running you can apply cluster manifests with the desired specs to provision a cluster of your choice.
+OCNE provider configuration is similar to `Kubeadm` configuration with some additional properties.  For example, the `proxy` property may be required to enable dependency installation in environmentis that have a proxy configured. For such a case, the ```spec.controlPlaneConfig.proxy``` property can be set in the `OCNEControlPlane` object and `spec.proxy.httpProxy` in the `OCNEConfigTemplate`.
+You may also find useful manifests for property configuration under the [templates](./templates/) directory.
 
 * Generate and deploy the cluster
 ```shell
@@ -111,17 +111,17 @@ source templates/variables.env
 clusterctl generate cluster ocne-cluster --from-file templates/cluster-template-existingvcnwithaddonsandproxy.yaml | kubeactl apply -f -
 ```
 
-* Once cluster is deployed successfully you should see the following output
+* Once the cluster is deployed successfully you should see a cluster description similar to the following:
 ```shell
 clusterctl describe cluster ocne-cluster
 NAME                                                            READY  SEVERITY  REASON  SINCE  MESSAGE
 Cluster/ocne-cluster                                             True                     45m
-¿¿ClusterInfrastructure - OCICluster/ocne-cluster                True                     56m
-¿¿ControlPlane - KubeadmControlPlane/ocne-cluster-control-plane  True                     45m
-¿ ¿¿Machine/ocne-cluster-control-plane-z47bj                     True                     55m
-¿¿Workers
-  ¿¿MachineDeployment/ocne-cluster-md-0                          True                     36m
-    ¿¿Machine/ocne-cluster-md-0-846df89cb4-dbrdn                 True                     44m
+  ClusterInfrastructure - OCICluster/ocne-cluster                True                     56m
+  ControlPlane - KubeadmControlPlane/ocne-cluster-control-plane  True                     45m
+    Machine/ocne-cluster-control-plane-z47bj                     True                     55m
+  Workers
+    MachineDeployment/ocne-cluster-md-0                          True                     36m
+      Machine/ocne-cluster-md-0-846df89cb4-dbrdn                 True                     44m
 ```
 
 
