@@ -525,6 +525,33 @@ func (in *OCNEControlPlane) validateCoreDNSVersion(prev *OCNEControlPlane) (allE
 	if prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" || in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
 		return allErrs
 	}
+
+	prevDnsTagFromMap, err := ocne.GetContainerImageVersion(prev.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion, "coredns")
+	fmt.Println("+++++ TAG = %v ++++", prevDnsTagFromMap)
+	if err != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
+				prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag,
+				fmt.Sprintf("invalid current CoreDNS imageTag. Supported value %v : %v", prevDnsTagFromMap, err),
+			),
+		)
+		return allErrs
+	}
+
+	inDnsTagFromMap, err := ocne.GetContainerImageVersion(in.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion, "coredns")
+	fmt.Println("+++++ TAG = %v ++++", inDnsTagFromMap)
+	if err != nil {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration", "dns", "imageTag"),
+				in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag,
+				fmt.Sprintf("invalid current CoreDNS imageTag. Supported value %v : %v", inDnsTagFromMap, err),
+			),
+		)
+		return allErrs
+	}
+
 	targetDNS := &in.Spec.ControlPlaneConfig.ClusterConfiguration.DNS
 
 	fromVersion, err := version.ParseMajorMinorPatchTolerant(prev.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag)

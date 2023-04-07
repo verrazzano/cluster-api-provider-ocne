@@ -34,9 +34,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-controlplane-cluster-x-k8s-io-v1beta1-kubeadmcontrolplanetemplate
+      path: /mutate-controlplane-cluster-x-k8s-io-v1beta1-ocnecontrolplanetemplate
   failurePolicy: Fail
-  name: default.kubeadmcontrolplanetemplate.controlplane.cluster.x-k8s.io
+  name: default.ocnecontrolplanetemplate.controlplane.cluster.x-k8s.io
   rules:
   - apiGroups:
     - controlplane.cluster.x-k8s.io
@@ -46,7 +46,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - kubeadmcontrolplanetemplates
+    - ocnecontrolplanetemplates
   sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -84,9 +84,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-controlplane-cluster-x-k8s-io-v1beta1-kubeadmcontrolplanetemplate
+      path: /validate-controlplane-cluster-x-k8s-io-v1beta1-ocnecontrolplanetemplate
   failurePolicy: Fail
-  name: validation.kubeadmcontrolplanetemplate.controlplane.cluster.x-k8s.io
+  name: validation.ocnecontrolplanetemplate.controlplane.cluster.x-k8s.io
   rules:
   - apiGroups:
     - controlplane.cluster.x-k8s.io
@@ -96,7 +96,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - kubeadmcontrolplanetemplates
+    - ocnecontrolplanetemplates
   sideEffects: None
 - admissionReviewVersions:
   - v1

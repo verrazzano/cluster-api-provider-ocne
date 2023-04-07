@@ -218,7 +218,7 @@ func GetDefaultRegistry(version semver.Version) string {
 	}
 
 	// If v1.24.9  <= version return registry.k8s.io
-	return DefaultImageRepository
+	return DefaultOCNEImageRepository
 }
 
 func getArtifactData(mappingData *OCNEVersionMappings, k8sVersion, dataType, dataName string) (string, error) {
@@ -357,8 +357,6 @@ func extractVersionString(version string) string {
 	re := regexp.MustCompile(`\d[\d]*`)
 	submatchall := re.FindAllString(version, -1)
 	var newversion []string
-	for _, element := range submatchall {
-		newversion = append(newversion, element)
-	}
+	newversion = append(newversion, submatchall...)
 	return strings.Join(newversion, ".")
 }
