@@ -419,49 +419,52 @@ func validateClusterConfiguration(newClusterConfiguration, oldClusterConfigurati
 			)
 		}
 
-		newClusterCoreDNSTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "coredns")
-		if err != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("dns", "imageTag"),
-					newClusterConfiguration.DNS.ImageTag,
-					fmt.Sprintf("coreDNS image tag not found : %v", err),
-				),
-			)
-		}
+		if newClusterConfiguration.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
+			newClusterCoreDNSTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "coredns")
+			if err != nil {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("dns", "imageTag"),
+						newClusterConfiguration.DNS.ImageTag,
+						fmt.Sprintf("coreDNS image tag not found : %v", err),
+					),
+				)
+			}
 
-		if newClusterConfiguration.DNS.ImageTag != newClusterCoreDNSTag {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("dns", "imageTag"),
-					newClusterConfiguration.DNS.ImageTag,
-					fmt.Sprintf("not supported coreDNS image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
-				),
-			)
+			if newClusterConfiguration.DNS.ImageTag != newClusterCoreDNSTag {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("dns", "imageTag"),
+						newClusterConfiguration.DNS.ImageTag,
+						fmt.Sprintf("not supported coreDNS image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
+					),
+				)
+			}
 		}
-
 	}
 
 	if newClusterConfiguration.Etcd.Local != nil {
-		newClusterEtcdTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "etcd")
-		if err != nil {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("etcd", "local", "imageTag"),
-					newClusterConfiguration.Etcd.Local.ImageTag,
-					fmt.Sprintf("etcd image tag not found : %v", err),
-				),
-			)
-		}
+		if newClusterConfiguration.Etcd.Local.ImageRepository == ocne.DefaultOCNEImageRepository {
+			newClusterEtcdTag, err := ocne.GetContainerImageVersion(strings.Trim(newClusterConfiguration.KubernetesVersion, "v"), "etcd")
+			if err != nil {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("etcd", "local", "imageTag"),
+						newClusterConfiguration.Etcd.Local.ImageTag,
+						fmt.Sprintf("etcd image tag not found : %v", err),
+					),
+				)
+			}
 
-		if newClusterConfiguration.Etcd.Local.ImageTag != newClusterEtcdTag {
-			allErrs = append(allErrs,
-				field.Invalid(
-					field.NewPath("etcd", "local", "imageTag"),
-					newClusterConfiguration.Etcd.Local.ImageTag,
-					fmt.Sprintf("not supported etcd image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
-				),
-			)
+			if newClusterConfiguration.Etcd.Local.ImageTag != newClusterEtcdTag {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("etcd", "local", "imageTag"),
+						newClusterConfiguration.Etcd.Local.ImageTag,
+						fmt.Sprintf("not supported etcd image tag for kubernetes version %v.", newClusterConfiguration.KubernetesVersion),
+					),
+				)
+			}
 		}
 	}
 
@@ -685,6 +688,7 @@ func (in *OCNEControlPlane) validateVersion(previousVersion string) (allErrs fie
 		toVersion.LT(ocne.NextKubernetesVersionImageRegistryMigration) &&
 		// and the default registry of the new Kubernetes/kubeadm version is the old default registry.
 		ocne.GetDefaultRegistry(toVersion) == ocne.OldDefaultImageRepository {
+		fmt.Println("+++ WEBHOOK MIN MAX K8s Version check +++")
 		allErrs = append(allErrs,
 			field.Forbidden(
 				field.NewPath("spec", "version"),

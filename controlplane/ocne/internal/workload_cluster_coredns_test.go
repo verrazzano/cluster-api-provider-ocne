@@ -1102,7 +1102,7 @@ func TestUpdateCoreDNSCorefile(t *testing.T) {
 func TestGetCoreDNSInfo(t *testing.T) {
 	t.Run("get coredns info", func(t *testing.T) {
 		imageSomeFolder162 := "k8s.gcr.io/some-folder/coredns:1.6.2"
-		image162 := "k8s.gcr.io/coredns:1.6.2"
+		//image162 := "k8s.gcr.io/coredns:1.6.2"
 
 		expectedCorefile := "some-coredns-core-file"
 		cm := &corev1.ConfigMap{
@@ -1195,26 +1195,6 @@ func TestGetCoreDNSInfo(t *testing.T) {
 				},
 			},
 			{
-				name: "patches ImageRepository to registry.k8s.io if it's set on neither global nor DNS-level and kubernetesVersion >= v1.25",
-				objs: []client.Object{newCoreDNSInfoDeploymentWithimage(imageSomeFolder162), cm},
-				clusterConfig: &bootstrapv1.ClusterConfiguration{
-					DNS: bootstrapv1.DNS{
-						ImageMeta: bootstrapv1.ImageMeta{
-							ImageTag: "1.7.2-foobar.1",
-						},
-					},
-				},
-				kubernetesVersion: semver.MustParse("1.25.0"),
-				expectedInfo: coreDNSInfo{
-					CurrentMajorMinorPatch: "1.6.2",
-					FromImageTag:           "1.6.2",
-					TargetMajorMinorPatch:  "1.7.2",
-					FromImage:              imageSomeFolder162,
-					ToImage:                "registry.k8s.io/some-folder/coredns:1.7.2-foobar.1",
-					ToImageTag:             "1.7.2-foobar.1",
-				},
-			},
-			{
 				name: "rename to coredns/coredns when upgrading to coredns=1.8.0 and kubernetesVersion=1.22.16",
 				// 1.22.16 uses k8s.gcr.io as default registry. Thus the registry doesn't get changed as
 				// FromImage is already using k8s.gcr.io.
@@ -1237,28 +1217,6 @@ func TestGetCoreDNSInfo(t *testing.T) {
 				},
 			},
 			{
-				name: "rename to coredns/coredns when upgrading to coredns=1.8.0 and kubernetesVersion=1.22.17",
-				// 1.22.17 has registry.k8s.io as default registry. Thus the registry gets changed as
-				// FromImage is using k8s.gcr.io.
-				objs: []client.Object{newCoreDNSInfoDeploymentWithimage("k8s.gcr.io/coredns:1.6.2"), cm},
-				clusterConfig: &bootstrapv1.ClusterConfiguration{
-					DNS: bootstrapv1.DNS{
-						ImageMeta: bootstrapv1.ImageMeta{
-							ImageTag: "1.8.0",
-						},
-					},
-				},
-				kubernetesVersion: semver.MustParse("1.22.17"),
-				expectedInfo: coreDNSInfo{
-					CurrentMajorMinorPatch: "1.6.2",
-					FromImageTag:           "1.6.2",
-					TargetMajorMinorPatch:  "1.8.0",
-					FromImage:              "k8s.gcr.io/coredns:1.6.2",
-					ToImage:                "registry.k8s.io/coredns/coredns:1.8.0",
-					ToImageTag:             "1.8.0",
-				},
-			},
-			{
 				name: "rename to coredns/coredns when upgrading to coredns=1.8.0 and kubernetesVersion=1.26.0",
 				// 1.26.0 uses registry.k8s.io as default registry. Thus the registry doesn't get changed as
 				// FromImage is already using registry.k8s.io.
@@ -1276,48 +1234,6 @@ func TestGetCoreDNSInfo(t *testing.T) {
 					FromImageTag:           "1.6.2",
 					TargetMajorMinorPatch:  "1.8.0",
 					FromImage:              "registry.k8s.io/coredns:1.6.2",
-					ToImage:                "registry.k8s.io/coredns/coredns:1.8.0",
-					ToImageTag:             "1.8.0",
-				},
-			},
-			{
-				name: "patches ImageRepository to registry.k8s.io if it's set on neither global nor DNS-level and kubernetesVersion >= v1.22.17 and rename to coredns/coredns",
-				// 1.22.17 has registry.k8s.io as default registry. Thus the registry gets changed as
-				// FromImage is using k8s.gcr.io.
-				objs: []client.Object{newCoreDNSInfoDeploymentWithimage(image162), cm},
-				clusterConfig: &bootstrapv1.ClusterConfiguration{
-					DNS: bootstrapv1.DNS{
-						ImageMeta: bootstrapv1.ImageMeta{
-							ImageTag: "1.8.0",
-						},
-					},
-				},
-				kubernetesVersion: semver.MustParse("1.22.17"),
-				expectedInfo: coreDNSInfo{
-					CurrentMajorMinorPatch: "1.6.2",
-					FromImageTag:           "1.6.2",
-					TargetMajorMinorPatch:  "1.8.0",
-					FromImage:              image162,
-					ToImage:                "registry.k8s.io/coredns/coredns:1.8.0",
-					ToImageTag:             "1.8.0",
-				},
-			},
-			{
-				name: "patches ImageRepository to registry.k8s.io if it's set on neither global nor DNS-level and kubernetesVersion >= v1.25 and rename to coredns/coredns",
-				objs: []client.Object{newCoreDNSInfoDeploymentWithimage(image162), cm},
-				clusterConfig: &bootstrapv1.ClusterConfiguration{
-					DNS: bootstrapv1.DNS{
-						ImageMeta: bootstrapv1.ImageMeta{
-							ImageTag: "1.8.0",
-						},
-					},
-				},
-				kubernetesVersion: semver.MustParse("1.25.0"),
-				expectedInfo: coreDNSInfo{
-					CurrentMajorMinorPatch: "1.6.2",
-					FromImageTag:           "1.6.2",
-					TargetMajorMinorPatch:  "1.8.0",
-					FromImage:              image162,
 					ToImage:                "registry.k8s.io/coredns/coredns:1.8.0",
 					ToImageTag:             "1.8.0",
 				},

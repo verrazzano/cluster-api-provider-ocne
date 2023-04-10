@@ -19,6 +19,7 @@ package ocne
 
 import (
 	"fmt"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
 	"testing"
 
 	"github.com/blang/semver"
@@ -49,14 +50,14 @@ func TestGetDefaultRegistry(t *testing.T) {
 
 		// v1.24
 		{version: "1.24.0", expectedRegistry: OldDefaultImageRepository},
-		{version: "1.24.8", expectedRegistry: OldDefaultImageRepository},
-		{version: "1.24.9", expectedRegistry: DefaultImageRepository},
-		{version: "1.24.99", expectedRegistry: DefaultImageRepository},
+		{version: "1.24.8", expectedRegistry: DefaultOCNEImageRepository},
+		{version: "1.24.9", expectedRegistry: DefaultOCNEImageRepository},
+		{version: "1.24.99", expectedRegistry: DefaultOCNEImageRepository},
 
 		// > v1.24
-		{version: "1.25.0", expectedRegistry: DefaultImageRepository},
-		{version: "1.26.1", expectedRegistry: DefaultImageRepository},
-		{version: "1.27.2", expectedRegistry: DefaultImageRepository},
+		{version: "1.25.0", expectedRegistry: DefaultOCNEImageRepository},
+		{version: "1.26.1", expectedRegistry: DefaultOCNEImageRepository},
+		{version: "1.27.2", expectedRegistry: DefaultOCNEImageRepository},
 	}
 
 	for _, tt := range tests {
@@ -64,6 +65,87 @@ func TestGetDefaultRegistry(t *testing.T) {
 			g := NewWithT(t)
 
 			g.Expect(GetDefaultRegistry(semver.MustParse(tt.version))).To(Equal(tt.expectedRegistry))
+		})
+	}
+}
+
+// TestGetOCNEOverrides verified the TestGetOCNEOverrides method with various combinations
+func TestGetOCNEOverrides(t *testing.T) {
+	tests := []struct {
+		testName          string
+		kubernetesVersion string
+		ocneImageRepo     string
+		podSubnet         string
+		serviceSubnet     string
+		proxy             *bootstrapv1.ProxySpec
+		expectedError     bool
+		overrideLength    int
+	}{
+		{
+			testName:          "Valid K8s version and proxy",
+			kubernetesVersion: "1.24.8",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			proxy: &bootstrapv1.ProxySpec{
+				HttpProxy:  "foo",
+				HttpsProxy: "bar",
+				NoProxy:    "hello",
+			},
+			expectedError:  false,
+			overrideLength: 22,
+		},
+		{
+			testName:          "Not Supported K8s version",
+			kubernetesVersion: "1.24.7",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			proxy: &bootstrapv1.ProxySpec{
+				HttpProxy:  "foo",
+				HttpsProxy: "bar",
+				NoProxy:    "hello",
+			},
+			expectedError:  true,
+			overrideLength: 0,
+		},
+		{
+			testName:          "Not Supported K8s version",
+			kubernetesVersion: "1.25.6",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			proxy: &bootstrapv1.ProxySpec{
+				HttpProxy:  "foo",
+				HttpsProxy: "bar",
+				NoProxy:    "hello",
+			},
+			expectedError:  true,
+			overrideLength: 0,
+		},
+		{
+			testName:          "Supported K8s version and no proxy",
+			kubernetesVersion: "1.24.8",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			expectedError:     false,
+			overrideLength:    18,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%s", tt.testName), func(t *testing.T) {
+			g := NewWithT(t)
+			data, err := GetOCNEOverrides(tt.kubernetesVersion, tt.ocneImageRepo, tt.podSubnet, tt.serviceSubnet, tt.proxy)
+			if tt.expectedError {
+				// if expectedErr is true, then err returned is not nil
+				g.Expect(err).To(Not(BeNil()))
+			} else {
+				// if expectedErr is false, then err returned is nil
+				g.Expect(err).To(BeNil())
+			}
+			g.Expect(len(data)).To(Equal(tt.overrideLength))
 		})
 	}
 }

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/blang/semver"
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
-	"regexp"
 	"strings"
 )
 
@@ -68,11 +67,11 @@ type OCNEVersionMappings struct {
 var (
 	// MinKubernetesVersionImageRegistryMigration is the first Kubernetes minor version which
 	// has patch versions where the default image registry in kubeadm is registry.k8s.io instead of k8s.gcr.io.
-	MinKubernetesVersionImageRegistryMigration = semver.MustParse("1.22.0")
+	MinKubernetesVersionImageRegistryMigration = semver.MustParse("1.24.8")
 
 	// NextKubernetesVersionImageRegistryMigration is the next minor version after
 	// the default image registry in kubeadm changed to registry.k8s.io.
-	NextKubernetesVersionImageRegistryMigration = semver.MustParse("1.26.0")
+	NextKubernetesVersionImageRegistryMigration = semver.MustParse("1.25.7")
 
 	OCNEK8sMappingData OCNEVersionMappings
 )
@@ -213,7 +212,7 @@ func GetDefaultRegistry(version semver.Version) string {
 
 	// If v1.24.0  <= version <= v1.24.8 return k8s.gcr.io
 	if version.GTE(semver.MustParse("1.24.0")) &&
-		version.LTE(semver.MustParse("1.24.8")) {
+		version.LTE(semver.MustParse("1.24.7")) {
 		return OldDefaultImageRepository
 	}
 
@@ -240,7 +239,7 @@ func getArtifactData(mappingData *OCNEVersionMappings, k8sVersion, dataType, dat
 			}
 		}
 	}
-	return "", fmt.Errorf("'%s' '%s' not found for '%s' in OCNE mapping data", dataType, dataName, k8sVersion)
+	return "", fmt.Errorf("%s %s not found for kubernetes version '%s' in OCNE mapping data", dataType, dataName, k8sVersion)
 }
 
 func GetContainerImageVersion(k8sVersion, containerName string) (string, error) {
@@ -279,7 +278,11 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 // GetOCNEOverrides Updates the cloud init with OCNE override instructions
 func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) ([]string, error) {
 	var ocneNodeOverrrides, yumOrdnfProxyOverrides, crioProxyOverrides []string
-	k8sversion := extractVersionString(kubernetesVersion)
+	if kubernetesVersion == "" {
+		kubernetesVersion = K8sVersionOneTwoFourEight
+	}
+	k8sversion := strings.Trim(kubernetesVersion, "v")
+
 	if proxy != nil {
 		yumOrdnfProxyOverrides = []string{
 			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/yum.conf`, proxy.HttpProxy),
@@ -351,12 +354,4 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 		}
 	}
 	return append(ocneNodeOverrrides, ocneServicesStart...), nil
-}
-
-func extractVersionString(version string) string {
-	re := regexp.MustCompile(`\d[\d]*`)
-	submatchall := re.FindAllString(version, -1)
-	var newversion []string
-	newversion = append(newversion, submatchall...)
-	return strings.Join(newversion, ".")
 }

@@ -183,7 +183,7 @@ func TestUpdateKubeProxyImageInfo(t *testing.T) {
 			name:        "does update image repository to new default registry for v1.25 updates",
 			ds:          newKubeProxyDSWithImage("k8s.gcr.io/kube-proxy:v1.24.0"),
 			expectErr:   false,
-			expectImage: "registry.k8s.io/kube-proxy:v1.25.0-alpha.1",
+			expectImage: "container-registry.oracle.com/olcne/kube-proxy:v1.25.0-alpha.1",
 			KCP: &controlplanev1.OCNEControlPlane{
 				Spec: controlplanev1.OCNEControlPlaneSpec{
 					Version: "v1.25.0-alpha.1",
