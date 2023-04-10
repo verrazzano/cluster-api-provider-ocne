@@ -688,7 +688,6 @@ func (in *OCNEControlPlane) validateVersion(previousVersion string) (allErrs fie
 		toVersion.LT(ocne.NextKubernetesVersionImageRegistryMigration) &&
 		// and the default registry of the new Kubernetes/kubeadm version is the old default registry.
 		ocne.GetDefaultRegistry(toVersion) == ocne.OldDefaultImageRepository {
-		fmt.Println("+++ WEBHOOK MIN MAX K8s Version check +++")
 		allErrs = append(allErrs,
 			field.Forbidden(
 				field.NewPath("spec", "version"),
