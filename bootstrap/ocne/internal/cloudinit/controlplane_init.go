@@ -21,7 +21,6 @@ package cloudinit
 import (
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
-	"strings"
 )
 
 const (
@@ -62,13 +61,11 @@ type ControlPlaneInput struct {
 
 // NewInitControlPlane returns the user data string to be used on a controlplane instance.
 func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
-	var err error
-	if strings.ToLower(input.Header) != "test" {
-		input.PreOCNECommands, err = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
-		if err != nil {
-			return nil, err
-		}
+	ocneCommands, err := ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+	if err != nil {
+		return nil, err
 	}
+	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
 	input.Header = cloudConfigHeader
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
