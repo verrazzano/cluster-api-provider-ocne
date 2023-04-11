@@ -77,7 +77,6 @@ spec:
         local:
           imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
           imageTag: ${ETCD_TAG}
-      kubernetesVersion: ${KUBERNETES_VERSION}
       networking: {}
       scheduler: {}
       imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}

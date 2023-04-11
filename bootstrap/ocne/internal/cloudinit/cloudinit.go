@@ -69,8 +69,12 @@ type BaseUserData struct {
 }
 
 func (input *BaseUserData) prepare() error {
+	var err error
 	if strings.ToLower(input.Header) != "test" {
-		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+		input.PreOCNECommands, err = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+		if err != nil {
+			return err
+		}
 	}
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)

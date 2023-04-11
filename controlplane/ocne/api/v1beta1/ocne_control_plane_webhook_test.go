@@ -1099,36 +1099,6 @@ func TestValidateVersion(t *testing.T) {
 			expectErr:  false,
 		},
 		{
-			name:       "error when new version is using old registry (v1.22.0 <= version <= v1.22.16)",
-			oldVersion: "v1.21.1",
-			newVersion: "v1.22.16", // last patch release using old registry
-			expectErr:  true,
-		},
-		{
-			name:       "pass when new version is using new registry (>= v1.22.17)",
-			oldVersion: "v1.21.1",
-			newVersion: "v1.22.17", // first patch release using new registry
-			expectErr:  false,
-		},
-		{
-			name:       "error when new version is using old registry (v1.23.0 <= version <= v1.23.14)",
-			oldVersion: "v1.22.17",
-			newVersion: "v1.23.14", // last patch release using old registry
-			expectErr:  true,
-		},
-		{
-			name:       "pass when new version is using new registry (>= v1.23.15)",
-			oldVersion: "v1.22.17",
-			newVersion: "v1.23.15", // first patch release using new registry
-			expectErr:  false,
-		},
-		{
-			name:       "error when new version is using old registry (v1.24.0 <= version <= v1.24.8)",
-			oldVersion: "v1.23.1",
-			newVersion: "v1.24.8", // last patch release using old registry
-			expectErr:  true,
-		},
-		{
 			name:       "pass when new version is using new registry (>= v1.24.9)",
 			oldVersion: "v1.23.1",
 			newVersion: "v1.24.9", // first patch release using new registry

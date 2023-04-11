@@ -61,8 +61,12 @@ type ControlPlaneJoinInput struct {
 // NewJoinControlPlane returns the user data string to be used on a new control plane instance.
 func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, error) {
 	// TODO: Consider validating that the correct certificates exist. It is different for external/stacked etcd
+	var err error
 	if strings.ToLower(input.Header) != "test" {
-		input.PreOCNECommands = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+		input.PreOCNECommands, err = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+		if err != nil {
+			return nil, err
+		}
 	}
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.ControlPlane = true
