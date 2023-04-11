@@ -23,7 +23,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -69,13 +68,11 @@ type BaseUserData struct {
 }
 
 func (input *BaseUserData) prepare() error {
-	var err error
-	if strings.ToLower(input.Header) != "test" {
-		input.PreOCNECommands, err = ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
-		if err != nil {
-			return err
-		}
+	ocneCommands, err := ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+	if err != nil {
+		return err
 	}
+	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
 	input.OCNECommand = fmt.Sprintf(standardJoinCommand, input.OCNEVerbosity)
