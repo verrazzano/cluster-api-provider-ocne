@@ -1693,7 +1693,7 @@ func Test_validateSelectors(t *testing.T) {
 		{
 			name: "pass if selector targets an existing MachineDeploymentClass BootstrapTemplate",
 			selector: clusterv1.PatchSelector{
-				APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+				APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 				Kind:       "BootstrapTemplate",
 				MatchResources: clusterv1.PatchSelectorMatch{
 					MachineDeploymentClass: &clusterv1.PatchSelectorMatchMachineDeploymentClass{
@@ -1711,7 +1711,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1739,7 +1739,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1767,7 +1767,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1779,7 +1779,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1875,7 +1875,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1887,7 +1887,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1931,7 +1931,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1943,7 +1943,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -1987,7 +1987,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),
@@ -2039,7 +2039,7 @@ func Test_validateSelectors(t *testing.T) {
 							})).
 						WithBootstrapTemplate(
 							refToUnstructured(&corev1.ObjectReference{
-								APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+								APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 								Kind:       "BootstrapTemplate",
 							})).
 						Build(),

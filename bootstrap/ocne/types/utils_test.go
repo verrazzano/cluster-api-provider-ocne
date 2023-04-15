@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/types/upstreamv1beta1"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/types/upstreamv1beta2"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/types/upstreamv1beta3"

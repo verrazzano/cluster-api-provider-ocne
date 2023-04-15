@@ -30,8 +30,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
-	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/test/builder"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/conditions"
@@ -530,7 +530,7 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 	}
 	bootstrapRef := &corev1.ObjectReference{
 		Kind:       "BootstrapKind",
-		APIVersion: "bootstrap.cluster.x-k8s.io/v1beta1",
+		APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
 		Name:       "bootstrap",
 		Namespace:  cluster.Namespace,
 	}

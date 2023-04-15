@@ -16,4 +16,9 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package v1beta1
+package v1alpha1
+
+func (*OCNEControlPlane) Hub()             {}
+func (*OCNEControlPlaneList) Hub()         {}
+func (*OCNEControlPlaneTemplate) Hub()     {}
+func (*OCNEControlPlaneTemplateList) Hub() {}

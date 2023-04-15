@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	bootstrapbuilder "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/builder"
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/test/builder"

@@ -22,7 +22,7 @@ package ocne
 import (
 	"fmt"
 	"github.com/blang/semver"
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"strings"
 )
 

@@ -64,7 +64,7 @@ spec:
       jsonPath: .spec.version
       name: Version
       type: string
-    name: v1beta1
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: OCNEControlPlane is the Schema for the OCNEControlPlane API.
