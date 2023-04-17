@@ -14,10 +14,40 @@ Cluster API can be extended to support any infrastructure (AWS, Azure, vSphere, 
 
 ### ⚙️ OCNE Provider
 
-OCNE Provider for CAPI is used to bootstrap and control OCNE instances on top of major infrastructure providers like OCI, AWS and Azure. This extends the kubeadm bootstrap and  control plane provider functionality.
+OCNE Provider for CAPI (CAPOCNE) is used to bootstrap and control OCNE instances on top of major infrastructure providers like OCI, AWS and Azure. This extends the kubeadm bootstrap and  control plane provider functionality.
 The OCNE Provider does not use pre-baked images but rather uses vanilla OL8 images and installs the dependancies at boot time. 
 
-### Prerequisites
+### ⚙️ Cluster API Versions
+
+CAPOCNE supports the following Cluster API versions.
+
+|                          | Cluster API `v1beta1` (`v1.x.x`) |
+|--------------------------|----------------------------------|
+| OCNE Provider `(v0.x.x)` | ✓                                |
+
+
+### ⚙️ CAPOCNE OeratingSytem Support
+
+CAPOCNE enables dynamic installation of dependencies without the need to maintain images per region. The following is the support matrix for CAPOCNE:
+
+| Operating System | Infrastructure Provider |
+|------------------|-------------------------|
+| Oracle Linux 8   | CAPOCI                  |
+
+
+### ⚙️ CAPOCNE Kubernetes Version Support
+
+CAPOCNE provider follows the below support matrix with regards Kubernetes distribution. All images are hosted at `container-registry.oracle.com`. 
+
+
+| K8s Version   | DNS Image   | ETCD Image   |
+|---------------|-------------|--------------|
+| 1.24.8        | 1.8.3       | 3.5.3        |
+| ------------- | ----------- | ------------ |
+| 1.25.7        | v1.9.3      | 3.5.6        |
+
+
+### ⚙️ Prerequisites
 
 * Install clusterctl following the [upstream instructions](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
 ```
@@ -39,7 +69,7 @@ EOF
 kind create cluster --config kind-cluster-with-extramounts.yaml
 ```
 
-### Build OCNE Providers
+### ⚙️ Build OCNE Providers
 
 Before we install the providers we need to build them from source: 
 
@@ -69,7 +99,7 @@ release
         └── metadata.yaml
 ```
 
-### Installation
+### ⚙️ Installation
 
 * To install the OCNE providers, convert the existing KIND cluster created above into a management cluster. Update the `clusterctl` configuration file `~/.cluster-api/clusterctl.yaml` to point to the release artifacts folder:
 
@@ -99,7 +129,7 @@ capi-system                          capi-controller-manager-8b477f66b-tcgcg    
 cluster-api-provider-oci-system      capoci-controller-manager-5f5d9d49b5-mht2p                        1/1     Running   0              34m
 ```
 
-### Usage 
+### ⚙️ Usage 
 
 When the OCNE bootstrap and control plane clusters are up and running you can apply cluster manifests with the desired specs to provision a cluster of your choice.
 OCNE provider configuration is similar to `Kubeadm` configuration with some additional properties.  For example, the `proxy` property may be required to enable dependency installation in environmentis that have a proxy configured. For such a case, the ```spec.controlPlaneConfig.proxy``` property can be set in the `OCNEControlPlane` object and `spec.proxy.httpProxy` in the `OCNEConfigTemplate`.

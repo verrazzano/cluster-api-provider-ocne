@@ -85,10 +85,10 @@ linters-settings:
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
       # CABPOCNE
-      - pkg: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1
+      - pkg: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1
         alias: bootstrapv1
       # CACPOCNE
-      - pkg: github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1
+      - pkg: github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1
         alias: controlplanev1
       - pkg: github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/client
         alias: runtimeclient

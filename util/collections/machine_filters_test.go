@@ -27,7 +27,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/collections"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/conditions"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

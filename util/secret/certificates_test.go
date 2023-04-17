@@ -23,7 +23,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
 )
 

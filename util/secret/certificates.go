@@ -38,7 +38,7 @@ import (
 	"k8s.io/client-go/util/cert"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/certs"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )

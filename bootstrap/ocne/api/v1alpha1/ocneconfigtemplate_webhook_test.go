@@ -16,7 +16,7 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package v1beta1_test
+package v1alpha1_test
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
 )
 

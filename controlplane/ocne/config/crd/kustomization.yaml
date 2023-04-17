@@ -1,6 +1,6 @@
 # This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 commonLabels:
-  cluster.x-k8s.io/v1beta1: v1beta1
+  cluster.x-k8s.io/v1beta1: v1alpha1
 
 # This kustomization.yaml is not intended to be run by itself,
 # since it depends on service name and namespace that are out of this kustomize package.

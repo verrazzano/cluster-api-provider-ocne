@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/etcd"
 	etcdutil "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/etcd/util"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"

@@ -44,9 +44,9 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	ocnetypes "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/types"
-	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/proxy"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"github.com/verrazzano/cluster-api-provider-ocne/util"

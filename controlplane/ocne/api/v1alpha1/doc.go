@@ -16,14 +16,4 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package v1beta1
-
-func (*OCNEConfig) Hub()             {}
-func (*OCNEConfigList) Hub()         {}
-func (*OCNEConfigTemplate) Hub()     {}
-func (*OCNEConfigTemplateList) Hub() {}
-
-func (*ClusterConfiguration) Hub() {}
-func (*ClusterStatus) Hub()        {}
-func (*InitConfiguration) Hub()    {}
-func (*JoinConfiguration) Hub()    {}
+package v1alpha1

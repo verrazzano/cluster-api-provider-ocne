@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/pointer"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/cloudinit"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/ignition/clc"
 )

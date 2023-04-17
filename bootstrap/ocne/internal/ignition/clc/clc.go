@@ -47,7 +47,7 @@ import (
 	ignitionTypes "github.com/flatcar/ignition/config/v2_3/types"
 	"github.com/pkg/errors"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/cloudinit"
 )
 

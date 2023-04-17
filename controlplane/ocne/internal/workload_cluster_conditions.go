@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1beta1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/etcd"
 	etcdutil "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/etcd/util"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/collections"

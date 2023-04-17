@@ -1,10 +1,10 @@
-version: "2"
+version: "1"
 domain: cluster.x-k8s.io
 repo: github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne
 resources:
 - group: bootstrap
-  version: v1beta1
+  version: v1alpha1
   kind: OCNEConfig
 - group: bootstrap
-  version: v1beta1
+  version: v1alpha1
   kind: OCNEConfigTemplate

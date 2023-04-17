@@ -24,7 +24,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 )
 
 func TestNewNode(t *testing.T) {

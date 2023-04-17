@@ -16,7 +16,7 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package v1beta1
+package v1alpha1
 
 import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +32,7 @@ func (r *OCNEConfigTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate,mutating=true,failurePolicy=fail,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1beta1,name=default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/mutate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfigtemplate,mutating=true,failurePolicy=fail,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1alpha1,name=default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1alpha1
 
 var _ webhook.Defaulter = &OCNEConfigTemplate{}
 
@@ -41,7 +41,7 @@ func (r *OCNEConfigTemplate) Default() {
 	DefaultOCNEConfigSpec(&r.Spec.Template.Spec)
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1beta1,name=validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfigtemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigtemplates,versions=v1alpha1,name=validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io,sideEffects=None,admissionReviewVersions=v1;v1alpha1
 
 var _ webhook.Validator = &OCNEConfigTemplate{}
 

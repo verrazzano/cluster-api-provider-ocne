@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1beta1"
+	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/cloudinit"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/ignition"
 	"github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/internal/locking"
@@ -416,7 +416,7 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	if scope.Config.Spec.InitConfiguration == nil {
 		scope.Config.Spec.InitConfiguration = &bootstrapv1.InitConfiguration{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ocne.k8s.io/v1beta1",
+				APIVersion: "ocne.k8s.io/v1alpha1",
 				Kind:       "InitConfiguration",
 			},
 		}
@@ -430,7 +430,7 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	if scope.Config.Spec.ClusterConfiguration == nil {
 		scope.Config.Spec.ClusterConfiguration = &bootstrapv1.ClusterConfiguration{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ocne.k8s.io/v1beta1",
+				APIVersion: "ocne.k8s.io/v1alpha1",
 				Kind:       "ClusterConfiguration",
 			},
 		}

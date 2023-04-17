@@ -7,19 +7,19 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1alpha1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfig
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfig
   failurePolicy: Fail
   name: default.ocneconfig.bootstrap.cluster.x-k8s.io
   rules:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1alpha1
     operations:
     - CREATE
     - UPDATE
@@ -28,19 +28,19 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1alpha1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
+      path: /mutate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfigtemplate
   failurePolicy: Fail
   name: default.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
   rules:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1alpha1
     operations:
     - CREATE
     - UPDATE
@@ -56,12 +56,12 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1alpha1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfig
+      path: /validate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfig
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.ocneconfig.bootstrap.cluster.x-k8s.io
@@ -69,7 +69,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1alpha1
     operations:
     - CREATE
     - UPDATE
@@ -78,12 +78,12 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
+  - v1alpha1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-bootstrap-cluster-x-k8s-io-v1beta1-ocneconfigtemplate
+      path: /validate-bootstrap-cluster-x-k8s-io-v1alpha1-ocneconfigtemplate
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.ocneconfigtemplate.bootstrap.cluster.x-k8s.io
@@ -91,7 +91,7 @@ webhooks:
   - apiGroups:
     - bootstrap.cluster.x-k8s.io
     apiVersions:
-    - v1beta1
+    - v1alpha1
     operations:
     - CREATE
     - UPDATE
