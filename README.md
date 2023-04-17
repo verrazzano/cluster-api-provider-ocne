@@ -26,7 +26,7 @@ CAPOCNE supports the following Cluster API versions.
 | OCNE Provider `(v0.x.x)` | ✓                                |
 
 
-### ⚙️ CAPOCNE OeratingSytem Support
+### ⚙️ CAPOCNE Operating System Support
 
 CAPOCNE enables dynamic installation of dependencies without the need to maintain images per region. The following is the support matrix for CAPOCNE:
 
@@ -43,7 +43,6 @@ CAPOCNE provider follows the below support matrix with regards Kubernetes distri
 | K8s Version   | DNS Image   | ETCD Image   |
 |---------------|-------------|--------------|
 | 1.24.8        | 1.8.3       | 3.5.3        |
-| ------------- | ----------- | ------------ |
 | 1.25.7        | v1.9.3      | 3.5.6        |
 
 
