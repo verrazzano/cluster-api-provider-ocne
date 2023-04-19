@@ -93,10 +93,11 @@ spec:
         kubeletExtraArgs:
           cloud-provider: external
           provider-id: oci://{{ ds["id"] }}
-    proxy:
-      httpProxy: "${NETWORK_PROXY}"
-      httpsProxy: "${NETWORK_PROXY}"
-      noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
+    imageConfiguration:
+      proxy:
+        httpProxy: "${NETWORK_PROXY}"
+        httpsProxy: "${NETWORK_PROXY}"
+        noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -155,10 +156,11 @@ spec:
           kubeletExtraArgs:
             cloud-provider: external
             provider-id: oci://{{ ds["id"] }}
-      proxy:
-        httpProxy: "${NETWORK_PROXY}"
-        httpsProxy: "${NETWORK_PROXY}"
-        noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
+      imageConfiguration:
+        proxy:
+          httpProxy: "${NETWORK_PROXY}"
+          httpsProxy: "${NETWORK_PROXY}"
+          noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
