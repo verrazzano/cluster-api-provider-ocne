@@ -525,6 +525,12 @@ spec:
                         type: boolean
                     type: object
                 type: object
+              ignoreArtifactInstall:
+                description: SkipArtifactInstall is the flag that can be used to tell
+                  the provider to skip installing dependencies. The value, if true
+                  will be used to skip overrides on OCNEConfigSpec. By default, this
+                  value is false.
+                type: boolean
               initConfiguration:
                 description: InitConfiguration along with ClusterConfiguration are
                   the configurations necessary for the init command

@@ -112,6 +112,12 @@ type OCNEConfigSpec struct {
 	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	Proxy *ProxySpec `json:"proxy,omitempty"`
+
+	// SkipArtifactInstall is the flag that can be used to tell the provider to skip installing dependencies.
+	// The value, if true will be used to skip overrides on OCNEConfigSpec.
+	// By default, this value is false.
+	// +optional
+	IgnoreArtifactInstall bool `json:"ignoreArtifactInstall,omitempty"`
 }
 
 type ProxySpec struct {

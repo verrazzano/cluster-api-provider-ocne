@@ -524,6 +524,7 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			Proxy:               scope.Config.Spec.Proxy,
 			PodSubnet:           podSubnet,
 			ServiceSubnet:       serviceSubnet,
+			SkipInstall:         scope.Config.Spec.IgnoreArtifactInstall,
 		},
 		InitConfiguration:    initdata,
 		ClusterConfiguration: clusterdata,
@@ -650,6 +651,7 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
 			KubernetesVersion:    kubernetesVersion,
+			SkipInstall:          scope.Config.Spec.IgnoreArtifactInstall,
 		},
 		JoinConfiguration: joinData,
 	}
@@ -780,6 +782,7 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 			Proxy:                scope.Config.Spec.Proxy,
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
+			SkipInstall:          scope.Config.Spec.IgnoreArtifactInstall,
 		},
 	}
 

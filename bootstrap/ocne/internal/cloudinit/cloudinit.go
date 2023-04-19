@@ -65,10 +65,19 @@ type BaseUserData struct {
 	PodSubnet            string
 	ServiceSubnet        string
 	KubeadmVerbosity     string
+	SkipInstall          bool
 }
 
 func (input *BaseUserData) prepare() error {
-	ocneCommands, err := ocne.GetOCNEOverrides(input.KubernetesVersion, input.OCNEImageRepository, input.PodSubnet, input.ServiceSubnet, input.Proxy)
+	ocneData := ocne.OCNEOverrideData{
+		KubernetesVersion:   input.KubernetesVersion,
+		OCNEImageRepository: input.OCNEImageRepository,
+		PodSubnet:           input.PodSubnet,
+		ServiceSubnet:       input.ServiceSubnet,
+		Proxy:               input.Proxy,
+		SkipInstall:         input.SkipInstall,
+	}
+	ocneCommands, err := ocne.GetOCNEOverrides(&ocneData)
 	if err != nil {
 		return err
 	}

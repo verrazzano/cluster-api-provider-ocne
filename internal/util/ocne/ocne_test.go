@@ -80,6 +80,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		proxy             *bootstrapv1.ProxySpec
 		expectedError     bool
 		overrideLength    int
+		skipInstall       bool
 	}{
 		{
 			testName:          "Valid K8s version and proxy",
@@ -132,12 +133,45 @@ func TestGetOCNEOverrides(t *testing.T) {
 			expectedError:     false,
 			overrideLength:    18,
 		},
+		{
+			testName:          "Supported K8s version and proxy with skipinstall true",
+			kubernetesVersion: "1.24.8",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			expectedError:     false,
+			overrideLength:    16,
+			proxy: &bootstrapv1.ProxySpec{
+				HttpProxy:  "foo",
+				HttpsProxy: "bar",
+				NoProxy:    "hello",
+			},
+			skipInstall: true,
+		},
+		{
+			testName:          "Supported K8s version and no proxy with skipinstall true",
+			kubernetesVersion: "1.24.8",
+			ocneImageRepo:     "foo",
+			podSubnet:         "1.1.1.1/24",
+			serviceSubnet:     "2.2.2.2/24",
+			expectedError:     false,
+			overrideLength:    12,
+			skipInstall:       true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s", tt.testName), func(t *testing.T) {
 			g := NewWithT(t)
-			data, err := GetOCNEOverrides(tt.kubernetesVersion, tt.ocneImageRepo, tt.podSubnet, tt.serviceSubnet, tt.proxy)
+			ocneData := OCNEOverrideData{
+				KubernetesVersion:   tt.kubernetesVersion,
+				OCNEImageRepository: tt.ocneImageRepo,
+				PodSubnet:           tt.podSubnet,
+				ServiceSubnet:       tt.serviceSubnet,
+				Proxy:               tt.proxy,
+				SkipInstall:         tt.skipInstall,
+			}
+			data, err := GetOCNEOverrides(&ocneData)
 			if tt.expectedError {
 				// if expectedErr is true, then err returned is not nil
 				g.Expect(err).To(Not(BeNil()))
