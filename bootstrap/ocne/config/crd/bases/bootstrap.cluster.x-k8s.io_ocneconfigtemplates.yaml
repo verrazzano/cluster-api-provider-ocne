@@ -559,12 +559,6 @@ spec:
                                 type: boolean
                             type: object
                         type: object
-                      ignoreArtifactInstall:
-                        description: SkipArtifactInstall is the flag that can be used
-                          to tell the provider to skip installing dependencies. The
-                          value, if true will be used to skip overrides on OCNEConfigSpec.
-                          By default, this value is false.
-                        type: boolean
                       initConfiguration:
                         description: InitConfiguration along with ClusterConfiguration
                           are the configurations necessary for the init command
@@ -1051,6 +1045,13 @@ spec:
                               to install and configure repositories.
                             type: string
                         type: object
+                      skipDependencyInstallation:
+                        description: SkipDependencyInstallation is the flag that can
+                          be used to tell the provider to skip install of OCNE dependencies.
+                          The value, if set to true, will be used to skip the overrides
+                          installation on OCNEConfigSpec. By default, this value is
+                          false.
+                        type: boolean
                       useExperimentalRetryJoin:
                         description: "UseExperimentalRetryJoin replaces a basic kubeadm
                           command with a shell script with retries for joins. \n This
