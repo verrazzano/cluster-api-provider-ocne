@@ -105,6 +105,7 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(spec.ControlPlaneConfig.ClusterConfiguration, nil, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
 	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
+	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
 		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
@@ -229,6 +230,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	allErrs = append(allErrs, in.validateVersion(prev.Spec.Version)...)
 	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.ControlPlaneConfig.ClusterConfiguration, prev.Spec.ControlPlaneConfig.ClusterConfiguration, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
 	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
+	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, in.validateCoreDNSVersion(prev)...)
 	allErrs = append(allErrs, in.Spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 
@@ -708,6 +710,39 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 			}
 		}
 	}
+	return allErrs
+}
+
+func (in *OCNEControlPlane) validateOCNESocket(controlPlaneConfigSpec *bootstrapv1.OCNEConfigSpec) (allErrs field.ErrorList) {
+
+	if controlPlaneConfigSpec == nil || controlPlaneConfigSpec.InitConfiguration == nil || controlPlaneConfigSpec.JoinConfiguration == nil {
+		return allErrs
+	}
+
+	if controlPlaneConfigSpec.InitConfiguration.NodeRegistration.CRISocket != "" {
+		if controlPlaneConfigSpec.InitConfiguration.NodeRegistration.CRISocket != ocne.DefaultOCNESocket {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("initConfiguration", "nodeRegistration", "criSocket"),
+					controlPlaneConfigSpec.InitConfiguration.NodeRegistration.CRISocket,
+					fmt.Sprintf("only '%v' is supported as criSocket with OCNE", ocne.DefaultOCNESocket),
+				),
+			)
+		}
+	}
+
+	if controlPlaneConfigSpec.JoinConfiguration.NodeRegistration.CRISocket != "" {
+		if controlPlaneConfigSpec.JoinConfiguration.NodeRegistration.CRISocket != ocne.DefaultOCNESocket {
+			allErrs = append(allErrs,
+				field.Invalid(
+					field.NewPath("joinConfiguration", "nodeRegistration", "criSocket"),
+					controlPlaneConfigSpec.JoinConfiguration.NodeRegistration.CRISocket,
+					fmt.Sprintf("only '%v' is supported as criSocket with OCNE", ocne.DefaultOCNESocket),
+				),
+			)
+		}
+	}
+
 	return allErrs
 }
 
