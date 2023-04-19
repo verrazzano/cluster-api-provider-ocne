@@ -714,7 +714,7 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 
 func (in *OCNEControlPlane) validateOCNESocket(controlPlaneConfigSpec *bootstrapv1.OCNEConfigSpec) (allErrs field.ErrorList) {
 
-	if controlPlaneConfigSpec == nil {
+	if controlPlaneConfigSpec == nil || controlPlaneConfigSpec.InitConfiguration == nil || controlPlaneConfigSpec.JoinConfiguration == nil {
 		return allErrs
 	}
 
