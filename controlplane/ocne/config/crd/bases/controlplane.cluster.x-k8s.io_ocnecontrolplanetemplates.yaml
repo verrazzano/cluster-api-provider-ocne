@@ -587,6 +587,46 @@ spec:
                                     type: boolean
                                 type: object
                             type: object
+                          imageConfiguration:
+                            description: ImageConfiguration contains configuration
+                              required for the base image.
+                            properties:
+                              proxy:
+                                description: Proxy contains proxy server info that
+                                  may be required for installing dependencies. The
+                                  value, if specified is used in conjunction with
+                                  preOCNECommands to install and configure repositories.
+                                properties:
+                                  httpProxy:
+                                    description: HttpProxy contains http proxy server
+                                      info that may be required for installing dependencies.
+                                      The value, if specified is used in conjunction
+                                      with preOCNECommands to install and configure
+                                      repositories.
+                                    type: string
+                                  httpsProxy:
+                                    description: HttpsProxy contains https proxy server
+                                      info that may be required for installing dependencies.
+                                      The value, if specified is used in conjunction
+                                      with preOCNECommands to install and configure
+                                      repositories.
+                                    type: string
+                                  noProxy:
+                                    description: NoProxy contains addresses that needs
+                                      to be skipped when proxy server is being used.
+                                      The value, if specified is used in conjunction
+                                      with preOCNECommands to install and configure
+                                      repositories.
+                                    type: string
+                                type: object
+                              skipDependencyInstallation:
+                                description: SkipDependencyInstallation is the flag
+                                  that can be used to tell the provider to skip install
+                                  of OCNE dependencies. The value, if set to true,
+                                  will be used to skip the overrides installation
+                                  on OCNEConfigSpec. By default, this value is false.
+                                type: boolean
+                            type: object
                           initConfiguration:
                             description: InitConfiguration along with ClusterConfiguration
                               are the configurations necessary for the init command
@@ -1069,38 +1109,6 @@ spec:
                             items:
                               type: string
                             type: array
-                          proxy:
-                            description: Proxy contains proxy server info that may
-                              be required for installing dependencies. The value,
-                              if specified is used in conjunction with preOCNECommands
-                              to install and configure repositories.
-                            properties:
-                              httpProxy:
-                                description: HttpProxy contains http proxy server
-                                  info that may be required for installing dependencies.
-                                  The value, if specified is used in conjunction with
-                                  preOCNECommands to install and configure repositories.
-                                type: string
-                              httpsProxy:
-                                description: HttpsProxy contains https proxy server
-                                  info that may be required for installing dependencies.
-                                  The value, if specified is used in conjunction with
-                                  preOCNECommands to install and configure repositories.
-                                type: string
-                              noProxy:
-                                description: NoProxy contains addresses that needs
-                                  to be skipped when proxy server is being used. The
-                                  value, if specified is used in conjunction with
-                                  preOCNECommands to install and configure repositories.
-                                type: string
-                            type: object
-                          skipDependencyInstallation:
-                            description: SkipDependencyInstallation is the flag that
-                              can be used to tell the provider to skip install of
-                              OCNE dependencies. The value, if set to true, will be
-                              used to skip the overrides installation on OCNEConfigSpec.
-                              By default, this value is false.
-                            type: boolean
                           useExperimentalRetryJoin:
                             description: "UseExperimentalRetryJoin replaces a basic
                               kubeadm command with a shell script with retries for

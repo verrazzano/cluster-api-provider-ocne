@@ -108,6 +108,12 @@ type OCNEConfigSpec struct {
 	// +optional
 	Ignition *IgnitionSpec `json:"ignition,omitempty"`
 
+	// ImageConfiguration contains configuration required for the base image.
+	// +optional
+	ImageConfiguration *ImageConfigurationSpec `json:"imageConfiguration,omitempty"`
+}
+
+type ImageConfigurationSpec struct {
 	// Proxy contains proxy server info that may be required for installing dependencies.
 	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
