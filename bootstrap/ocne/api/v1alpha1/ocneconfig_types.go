@@ -119,11 +119,17 @@ type ImageConfigurationSpec struct {
 	// +optional
 	Proxy *ProxySpec `json:"proxy,omitempty"`
 
-	// SkipDependencyInstallation is the flag that can be used to tell the provider to skip install of OCNE dependencies.
+	// Dependencies contains details about dependencies on the image that can be configured at boot time.
+	// +optional
+	Dependencies *DependencySpec `json:"dependencies,,omitempty"`
+}
+
+type DependencySpec struct {
+	// SkipInstall is the flag that can be used to tell the provider to skip install of OCNE dependencies.
 	// The value, if set to true, will be used to skip the overrides installation on OCNEConfigSpec.
 	// By default, this value is false.
 	// +optional
-	SkipDependencyInstallation bool `json:"skipDependencyInstallation,omitempty"`
+	SkipInstall bool `json:"skipInstall,omitempty"`
 }
 
 type ProxySpec struct {
