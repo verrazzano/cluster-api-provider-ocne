@@ -98,6 +98,8 @@ spec:
         httpProxy: "${NETWORK_PROXY}"
         httpsProxy: "${NETWORK_PROXY}"
         noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
+      dependencies:
+        skipInstall: true
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -161,6 +163,8 @@ spec:
           httpProxy: "${NETWORK_PROXY}"
           httpsProxy: "${NETWORK_PROXY}"
           noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
+        dependencies:
+          skipInstall: true
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment

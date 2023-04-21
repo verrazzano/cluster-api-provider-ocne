@@ -22,7 +22,6 @@ package ocne
 import (
 	"fmt"
 	"github.com/blang/semver"
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"strings"
 )
 
@@ -43,26 +42,6 @@ const (
 	K8sVersionOneTwoFourEight = "1.24.8"
 	K8sVersionOneTwoFiveSeven = "1.25.7"
 )
-
-type packages struct {
-	packageName    string
-	packageVersion string
-}
-
-type containerImages struct {
-	containerImageName    string
-	containerImageVersion string
-}
-
-type OCNEVersionData struct {
-	version            string
-	packageData        []packages
-	containerImageData []containerImages
-}
-
-type OCNEVersionMappings struct {
-	versionData []OCNEVersionData
-}
 
 var (
 	// MinKubernetesVersionImageRegistryMigration is the first Kubernetes minor version which
@@ -276,23 +255,24 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 }
 
 // GetOCNEOverrides Updates the cloud init with OCNE override instructions
-func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec) ([]string, error) {
+func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
+	//kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec
 	var ocneNodeOverrrides, yumOrdnfProxyOverrides, crioProxyOverrides []string
-	if kubernetesVersion == "" {
-		kubernetesVersion = K8sVersionOneTwoFourEight
+	if userData.KubernetesVersion == "" {
+		userData.KubernetesVersion = K8sVersionOneTwoFourEight
 	}
-	k8sversion := strings.Trim(kubernetesVersion, "v")
+	k8sversion := strings.Trim(userData.KubernetesVersion, "v")
 
-	if proxy != nil {
+	if userData.Proxy != nil {
 		yumOrdnfProxyOverrides = []string{
-			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/yum.conf`, proxy.HttpProxy),
-			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/dnf/dnf.conf`, proxy.HttpProxy),
+			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/yum.conf`, userData.Proxy.HttpProxy),
+			fmt.Sprintf(`echo "proxy=%s"| sudo tee -a /etc/dnf/dnf.conf`, userData.Proxy.HttpProxy),
 		}
 
 		// noProxy should be of type localhost,podSubnet,serviceSubnet,/var/run/shared-tmpfs/csi.sock
 		crioProxyOverrides = []string{
 			`mkdir -p /etc/systemd/system/crio.service.d && sudo touch /etc/systemd/system/crio.service.d/proxy.conf`,
-			fmt.Sprintf(`echo -e "[Service]\nEnvironment="HTTP_PROXY=%s"\nEnvironment="HTTPS_PROXY=%s"\nEnvironment="NO_PROXY=%s""| sudo tee /etc/systemd/system/crio.service.d/proxy.conf`, proxy.HttpProxy, proxy.HttpsProxy, constructNoProxy(proxy.NoProxy, podSubnet, serviceSubnet)),
+			fmt.Sprintf(`echo -e "[Service]\nEnvironment="HTTP_PROXY=%s"\nEnvironment="HTTPS_PROXY=%s"\nEnvironment="NO_PROXY=%s""| sudo tee /etc/systemd/system/crio.service.d/proxy.conf`, userData.Proxy.HttpProxy, userData.Proxy.HttpsProxy, constructNoProxy(userData.Proxy.NoProxy, userData.PodSubnet, userData.ServiceSubnet)),
 		}
 	}
 
@@ -314,7 +294,7 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 		return nil, err
 	}
 
-	ocneUtilsInstall := []string{
+	ocneBasicConfig := []string{
 		`sudo dd iflag=direct if=/dev/oracleoci/oraclevda of=/dev/null count=1`,
 		"echo 1 | sudo tee /sys/class/block/`readlink /dev/oracleoci/oraclevda | cut -d'/' -f 2`/device/rescan",
 		`sudo /usr/libexec/oci-growfs -y`,
@@ -325,31 +305,39 @@ func GetOCNEOverrides(kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet
 		`sudo sh -c 'echo -e "overlay\nbr_netfilter" | sudo tee /etc/modules-load.d/k8s.conf'`,
 		`sudo sh -c 'echo -e "net.bridge.bridge-nf-call-iptables  = 1\nnet.bridge.bridge-nf-call-ip6tables = 1\nnet.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.d/k8s.conf'`,
 		`sudo sysctl --system`,
+	}
+
+	ocneDependenciesInstall := []string{
 		`sudo dnf install -y oracle-olcne-release-el8`,
 		`sudo dnf config-manager --enable ol8_olcne16 ol8_olcne15 ol8_addons ol8_baseos_latest ol8_appstream ol8_UEKR6`,
 		`sudo dnf config-manager --disable ol8_olcne14 ol8_olcne13 ol8_olcne12 ol8_developer`,
 		fmt.Sprintf("sudo dnf install -y kubelet-%s.el8 kubeadm-%s.el8 kubectl-%s.el8", kubeletPackage, kubeadmPackage, kubectlPackage),
 		`sudo dnf install -y oraclelinux-developer-release-el8 python36-oci-cli olcnectl olcne-api-server olcne-utils`,
-		fmt.Sprintf(`sudo sh -c 'echo -e "[ crio ]\n[ crio.api ]\n[ crio.image ]\npause_image = \"%s/pause:%s\"\npause_image_auth_file = \"/run/containers/0/auth.json\"\nregistries = [\"docker.io\", \"%s\"]\n[ crio.metrics ]\n[ crio.network ]\nplugin_dirs = [\"/opt/cni/bin\"]\n[crio.runtime]\ncgroup_manager = \"systemd\"\nconmon = \"/usr/bin/conmon\"\nconmon_cgroup = \"system.slice\"\nmanage_network_ns_lifecycle = true\nmanage_ns_lifecycle = true\nselinux = false\n[ crio.runtime.runtimes ]\n[ crio.runtime.runtimes.kata ]\nruntime_path = \"/usr/bin/kata-runtime\"\nruntime_type = \"oci\"\n[ crio.runtime.runtimes.runc ]\nallowed_annotations = [\"io.containers.trace-syscall\"]\nmonitor_cgroup = \"system.slice\"\nmonitor_env = [\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"]\nmonitor_exec_cgroup = \"\"\nmonitor_path = \"/usr/bin/conmon\"\nprivileged_without_host_devices = false\nruntime_config_path = \"\"\nruntime_path = \"\"\nruntime_root = \"/run/runc\"\nruntime_type = \"oci\"\n[ crio.stats ]\n[ crio.tracing ]\n"| sudo tee /etc/crio/crio.conf'`, ocneImageRepo, pausePackage, ocneImageRepo),
 	}
 
 	ocneServicesStart := []string{
+		fmt.Sprintf(`sudo sh -c 'echo -e "[ crio ]\n[ crio.api ]\n[ crio.image ]\npause_image = \"%s/pause:%s\"\npause_image_auth_file = \"/run/containers/0/auth.json\"\nregistries = [\"docker.io\", \"%s\"]\n[ crio.metrics ]\n[ crio.network ]\nplugin_dirs = [\"/opt/cni/bin\"]\n[crio.runtime]\ncgroup_manager = \"systemd\"\nconmon = \"/usr/bin/conmon\"\nconmon_cgroup = \"system.slice\"\nmanage_network_ns_lifecycle = true\nmanage_ns_lifecycle = true\nselinux = false\n[ crio.runtime.runtimes ]\n[ crio.runtime.runtimes.kata ]\nruntime_path = \"/usr/bin/kata-runtime\"\nruntime_type = \"oci\"\n[ crio.runtime.runtimes.runc ]\nallowed_annotations = [\"io.containers.trace-syscall\"]\nmonitor_cgroup = \"system.slice\"\nmonitor_env = [\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"]\nmonitor_exec_cgroup = \"\"\nmonitor_path = \"/usr/bin/conmon\"\nprivileged_without_host_devices = false\nruntime_config_path = \"\"\nruntime_path = \"\"\nruntime_root = \"/run/runc\"\nruntime_type = \"oci\"\n[ crio.stats ]\n[ crio.tracing ]\n"| sudo tee /etc/crio/crio.conf'`, userData.OCNEImageRepository, pausePackage, userData.OCNEImageRepository),
 		`sudo rm -rf /etc/cni/net.d/100-crio-bridge.conf && sudo systemctl enable crio && sudo systemctl restart crio && sudo systemctl enable kubelet`,
 		`sudo systemctl disable firewalld && sudo systemctl stop firewalld`,
 	}
 
 	// This is required in the beginning to help download utilities
-	if proxy != nil {
-		if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
+	if userData.Proxy != nil {
+		if userData.Proxy.HttpProxy != "" || userData.Proxy.HttpsProxy != "" {
 			ocneNodeOverrrides = append(ocneNodeOverrrides, yumOrdnfProxyOverrides...)
 		}
 	}
 
-	ocneNodeOverrrides = append(ocneNodeOverrrides, ocneUtilsInstall...)
+	ocneNodeOverrrides = append(ocneNodeOverrrides, ocneBasicConfig...)
+
+	// if SkipInstallDependencies is set as true as we skip dependency install via cloudInit
+	if !userData.SkipInstall {
+		ocneNodeOverrrides = append(ocneNodeOverrrides, ocneDependenciesInstall...)
+	}
 
 	// This is required after crio is installed
-	if proxy != nil {
-		if proxy.HttpProxy != "" || proxy.HttpsProxy != "" {
+	if userData.Proxy != nil {
+		if userData.Proxy.HttpProxy != "" || userData.Proxy.HttpsProxy != "" {
 			ocneNodeOverrrides = append(ocneNodeOverrrides, crioProxyOverrides...)
 		}
 	}

@@ -509,6 +509,17 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		}
 	}
 
+	skipInstall := false
+	var proxy *bootstrapv1.ProxySpec
+	if scope.Config.Spec.ImageConfiguration != nil {
+		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
+			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+		}
+		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
+			proxy = scope.Config.Spec.ImageConfiguration.Proxy
+		}
+	}
+
 	controlPlaneInput := &cloudinit.ControlPlaneInput{
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:     files,
@@ -521,9 +532,10 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			OCNEVerbosity:       verbosityFlag,
 			KubernetesVersion:   kubernetesVersion,
 			OCNEImageRepository: ocneRepository,
-			Proxy:               scope.Config.Spec.Proxy,
+			Proxy:               proxy,
 			PodSubnet:           podSubnet,
 			ServiceSubnet:       serviceSubnet,
+			SkipInstall:         skipInstall,
 		},
 		InitConfiguration:    initdata,
 		ClusterConfiguration: clusterdata,
@@ -634,6 +646,17 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 		}
 	}
 
+	skipInstall := false
+	var proxy *bootstrapv1.ProxySpec
+	if scope.Config.Spec.ImageConfiguration != nil {
+		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
+			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+		}
+		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
+			proxy = scope.Config.Spec.ImageConfiguration.Proxy
+		}
+	}
+
 	nodeInput := &cloudinit.NodeInput{
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:      files,
@@ -646,10 +669,11 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 			OCNEVerbosity:        verbosityFlag,
 			UseExperimentalRetry: scope.Config.Spec.UseExperimentalRetryJoin,
 			OCNEImageRepository:  ocneRepository,
-			Proxy:                scope.Config.Spec.Proxy,
+			Proxy:                proxy,
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
 			KubernetesVersion:    kubernetesVersion,
+			SkipInstall:          skipInstall,
 		},
 		JoinConfiguration: joinData,
 	}
@@ -762,6 +786,17 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 		}
 	}
 
+	skipInstall := false
+	var proxy *bootstrapv1.ProxySpec
+	if scope.Config.Spec.ImageConfiguration != nil {
+		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
+			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+		}
+		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
+			proxy = scope.Config.Spec.ImageConfiguration.Proxy
+		}
+	}
+
 	controlPlaneJoinInput := &cloudinit.ControlPlaneJoinInput{
 		JoinConfiguration: joinData,
 		Certificates:      certificates,
@@ -777,9 +812,10 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 			UseExperimentalRetry: scope.Config.Spec.UseExperimentalRetryJoin,
 			KubernetesVersion:    kubernetesVersion,
 			OCNEImageRepository:  ocneRepository,
-			Proxy:                scope.Config.Spec.Proxy,
+			Proxy:                proxy,
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
+			SkipInstall:          skipInstall,
 		},
 	}
 
