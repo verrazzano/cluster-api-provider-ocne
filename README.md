@@ -132,12 +132,12 @@ cluster-api-provider-oci-system      capoci-controller-manager-5f5d9d49b5-mht2p 
 
 When the OCNE bootstrap and control plane clusters are up and running you can apply cluster manifests with the desired specs to provision a cluster of your choice.
 OCNE provider configuration is similar to `Kubeadm` configuration with some additional properties.  For example, the `proxy` property may be required to enable dependency installation in environmentis that have a proxy configured. For such a case, the ```spec.controlPlaneConfig.proxy``` property can be set in the `OCNEControlPlane` object and `spec.proxy.httpProxy` in the `OCNEConfigTemplate`.
-You may also find useful manifests for property configuration under the [templates](./templates/) directory.
+You may also find useful manifests for property configuration under the [examples](./examples/) directory.
 
 * Generate and deploy the cluster
 ```shell
-source templates/variables.env
-clusterctl generate cluster ocne-cluster --from-file templates/cluster-template-existingvcnwithaddonsandproxy.yaml | kubectl apply -f -
+source examples/variables.env
+clusterctl generate cluster ocne-cluster --from-file examples/cluster-template-existingvcnwithaddonsandproxy.yaml | kubectl apply -f -
 ```
 
 * Once the cluster is deployed successfully you should see a cluster description similar to the following:
