@@ -137,7 +137,7 @@ You may also find useful manifests for property configuration under the [example
 * Generate and deploy the cluster
 ```shell
 source examples/variables.env
-clusterctl generate cluster ocne-cluster --from-file examples/cluster-template-existingvcnwithaddonsandproxy.yaml | kubectl apply -f -
+clusterctl generate cluster ocne-cluster --from-file examples/cluster-template-existingvcnwithaddonsandproxy.yaml | kubectl create -f -
 ```
 
 * Once the cluster is deployed successfully you should see a cluster description similar to the following:
