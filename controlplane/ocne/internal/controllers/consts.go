@@ -32,4 +32,8 @@ const (
 	// dependentCertRequeueAfter is how long to wait before checking again to see if
 	// dependent certificates have been created.
 	dependentCertRequeueAfter = 30 * time.Second
+
+	// KubernetesVersionsFile references the metadata file containing the Kubernetes to OCNE
+	// versions mappings as well as the versions of major Kuberenetes components (etcd, kube-proxy, etc)
+	KubernetesVersionsFile = "/kubernetes-versions.yaml"
 )
