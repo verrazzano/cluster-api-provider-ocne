@@ -66,9 +66,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
 # Production image
 FROM ghcr.io/oracle/oraclelinux:8-slim
 RUN microdnf update \
-    && microdnf clean all \
     && microdnf install -y oracle-olcne-release-el8 cpio \
     && microdnf install -y --enablerepo=ol8_olcne16 yq \
+    && microdnf clean all \
     && curl https://yum.oracle.com/repo/OracleLinux/OL8/olcne16/x86_64/getPackage/olcne-api-server-1.6.0-4.el8.x86_64.rpm |\
       rpm2cpio |\
       cpio -idmv \
