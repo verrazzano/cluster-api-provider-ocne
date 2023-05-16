@@ -23,6 +23,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/controllers"
+	"github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
@@ -209,6 +211,11 @@ func main() {
 	setupChecks(mgr)
 	setupReconcilers(ctx, mgr)
 	setupWebhooks(mgr)
+
+	if err = ocne.CreateOCNEMetadataConfigMap(context.Background(), controllers.KubernetesVersionsFile); err != nil {
+		setupLog.Error(err, "problem obtaining OCNE metadata")
+		os.Exit(1)
+	}
 
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager", "version", version.Get().String())
