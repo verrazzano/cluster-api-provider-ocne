@@ -46,6 +46,7 @@ replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.0.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.17.0
 	github.com/prometheus/client_golang v1.14.0 => github.com/prometheus/client_golang v1.12.1
+	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
 	golang.org/x/text v0.7.0 => golang.org/x/text v0.4.0
 	k8s.io/api v0.26.1 => k8s.io/api v0.25.4
 	k8s.io/apiextensions-apiserver v0.26.1 => k8s.io/apiextensions-apiserver v0.25.4
