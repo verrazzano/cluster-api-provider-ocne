@@ -45,27 +45,31 @@ const (
 
 // BaseUserData is shared across all the various types of files written to disk.
 type BaseUserData struct {
-	Header               string
-	PreOCNECommands      []string
-	PostOCNECommands     []string
-	AdditionalFiles      []bootstrapv1.File
-	WriteFiles           []bootstrapv1.File
-	Users                []bootstrapv1.User
-	NTP                  *bootstrapv1.NTP
-	DiskSetup            *bootstrapv1.DiskSetup
-	Mounts               []bootstrapv1.MountPoints
-	ControlPlane         bool
-	UseExperimentalRetry bool
-	OCNECommand          string
-	OCNEVerbosity        string
-	SentinelFileCommand  string
-	KubernetesVersion    string
-	OCNEImageRepository  string
-	Proxy                *bootstrapv1.ProxySpec
-	PodSubnet            string
-	ServiceSubnet        string
-	KubeadmVerbosity     string
-	SkipInstall          bool
+	Header                   string
+	PreOCNECommands          []string
+	PostOCNECommands         []string
+	AdditionalFiles          []bootstrapv1.File
+	WriteFiles               []bootstrapv1.File
+	Users                    []bootstrapv1.User
+	NTP                      *bootstrapv1.NTP
+	DiskSetup                *bootstrapv1.DiskSetup
+	Mounts                   []bootstrapv1.MountPoints
+	ControlPlane             bool
+	UseExperimentalRetry     bool
+	OCNECommand              string
+	OCNEVerbosity            string
+	SentinelFileCommand      string
+	KubernetesVersion        string
+	OCNEImageRepository      string
+	Proxy                    *bootstrapv1.ProxySpec
+	PodSubnet                string
+	ServiceSubnet            string
+	KubeadmVerbosity         string
+	SkipInstall              bool
+	DNSImageRepository       string
+	DNSImageTag              string
+	LocalEtcdImageRepository string
+	LocalEtcdImageTag        string
 }
 
 func (input *BaseUserData) prepare() error {
