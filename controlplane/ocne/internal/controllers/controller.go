@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
-	"os"
 	"time"
 
 	"github.com/blang/semver"
@@ -293,13 +292,6 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 
 	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "" {
 		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository = ocne.DefaultOCNEImageRepository
-	}
-
-	namespace, _ := os.LookupEnv("POD_NAMESPACE")
-	if namespace == "verrazzano-capi" {
-		ocnecp.Spec.ControlPlaneConfig.AddOnInstall[0].ChartName = "cert-manager"
-		ocnecp.Spec.ControlPlaneConfig.AddOnInstall[0].ChartName = "jetstack/cert-managerr"
-		ocnecp.Spec.ControlPlaneConfig.AddOnInstall[0].ChartName = "--namespace cert-manager --create-namespace  --version v1.7.1"
 	}
 
 	return nil

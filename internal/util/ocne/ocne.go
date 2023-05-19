@@ -187,16 +187,3 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 	}
 	return append(ocneNodeOverrrides, ocneServicesStart...), nil
 }
-
-func GetOCNEPostInstallOverrides(userData *OCNEOverrideData) []string {
-	postOCNECommands := []string{
-		`mkdir -p $HOME/.kube`,
-		`sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`,
-		`sudo chown $(id -u):$(id -g) $HOME/.kube/config`,
-		`kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.7.1/cert-manager.crds.yaml`,
-	}
-	for _, addons := range userData.AddonInstall {
-		postOCNECommands = append(postOCNECommands, fmt.Sprintf("helm install %s %s %s", addons.ChartName, addons.ChartLocation, addons.Arguments))
-	}
-	return postOCNECommands
-}
