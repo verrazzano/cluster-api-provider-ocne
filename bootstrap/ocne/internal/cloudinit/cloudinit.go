@@ -70,7 +70,6 @@ type BaseUserData struct {
 	DNSImageTag              string
 	LocalEtcdImageRepository string
 	LocalEtcdImageTag        string
-	AddonInstall             []bootstrapv1.AddonInstall
 }
 
 func (input *BaseUserData) prepare() error {

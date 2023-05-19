@@ -518,11 +518,6 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		}
 	}
 
-	var addons []bootstrapv1.AddonInstall
-	if scope.Config.Spec.AddOnInstall != nil {
-		addons = scope.Config.Spec.AddOnInstall
-	}
-
 	controlPlaneInput := &cloudinit.ControlPlaneInput{
 		BaseUserData: cloudinit.BaseUserData{
 			AdditionalFiles:     files,
@@ -539,7 +534,6 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			PodSubnet:           podSubnet,
 			ServiceSubnet:       serviceSubnet,
 			SkipInstall:         skipInstall,
-			AddonInstall:        addons,
 		},
 		InitConfiguration:    initdata,
 		ClusterConfiguration: clusterdata,
