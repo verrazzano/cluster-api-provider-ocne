@@ -10,5 +10,4 @@ type OCNEOverrideData struct {
 	PodSubnet           string
 	ServiceSubnet       string
 	SkipInstall         bool
-	AddonInstall        []bootstrapv1.AddonInstall
 }
