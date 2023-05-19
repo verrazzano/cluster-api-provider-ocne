@@ -1,0 +1,35 @@
+apiVersion: v1
+entries:
+  oci-ccm:
+    - apiVersion: v1
+      appVersion: 1.25.0
+      created: "2023-05-18T13:11:16.630779-04:00"
+      description: Oracle Cloud Infrastructure (OCI) cloud controller manager
+      digest: 303db242eb62fe260a3333902706d7960db4770f24d96edcb8929573beee2f9b
+      kubeVersion: ^1.23.0-0
+      maintainers:
+        - email: thomas.tanaka@oracle.com
+          name: Thomas Tanaka
+        - email: shih-chang.chen@oracle.com
+          name: Shih-Chang Chen
+      name: oci-ccm
+      urls:
+        - oci-ccm-1.25.0.tgz
+      version: 1.25.0
+  tigera-operator:
+    - apiVersion: v2
+      appVersion: v3.25.0
+      created: "2023-05-18T13:11:16.938007-04:00"
+      description: Installs the Tigera operator for Calico
+      digest: 6949207ed1b4e4f72f9cbfb3547e815d5989ad015a01d25ad514ab0b2c7c6ede
+      home: https://projectcalico.docs.tigera.io/about/about-calico
+      icon: https://projectcalico.docs.tigera.io/images/felix_icon.png
+      name: tigera-operator
+      sources:
+        - https://github.com/projectcalico/calico/tree/master/calico/_includes/charts/tigera-operator
+        - https://github.com/tigera/operator
+        - https://github.com/projectcalico/calico
+      urls:
+        - tigera-operator-v3.25.0.tgz
+      version: v3.25.0
+generated: "2023-05-18T13:11:16.619208-04:00"

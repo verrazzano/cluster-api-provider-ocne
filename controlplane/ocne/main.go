@@ -217,6 +217,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = ocne.CreateModuleMetadataConfigMap(context.Background(), controllers.ModulesVersionsFile); err != nil {
+		setupLog.Error(err, "problem obtaining module metadata")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager", "version", version.Get().String())
 	if err := mgr.Start(ctx); err != nil {
