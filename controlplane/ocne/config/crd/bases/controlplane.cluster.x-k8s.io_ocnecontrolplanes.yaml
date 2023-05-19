@@ -88,6 +88,20 @@ spec:
                 description: ControlPlaneConfig is a bootstrap OCNEConfigSpec to use
                   for initializing and joining machines to the control plane.
                 properties:
+                  addOnInstall:
+                    description: AddOnInstall installs the module operator as an addon.
+                    items:
+                      properties:
+                        arguments:
+                          items:
+                            type: string
+                          type: array
+                        chartLocation:
+                          type: string
+                        chartName:
+                          type: string
+                      type: object
+                    type: array
                   clusterConfiguration:
                     description: ClusterConfiguration along with InitConfiguration
                       are the configurations necessary for the init command

@@ -70,6 +70,7 @@ type BaseUserData struct {
 	DNSImageTag              string
 	LocalEtcdImageRepository string
 	LocalEtcdImageTag        string
+	AddonInstall             []bootstrapv1.AddonInstall
 }
 
 func (input *BaseUserData) prepare() error {
@@ -80,6 +81,7 @@ func (input *BaseUserData) prepare() error {
 		ServiceSubnet:       input.ServiceSubnet,
 		Proxy:               input.Proxy,
 		SkipInstall:         input.SkipInstall,
+		AddonInstall:        input.AddonInstall,
 	}
 	ocneCommands, err := ocne.GetOCNEOverrides(&ocneData)
 	if err != nil {
@@ -98,6 +100,7 @@ func (input *BaseUserData) prepare() error {
 		input.WriteFiles = append(input.WriteFiles, *joinScriptFile)
 	}
 	input.SentinelFileCommand = sentinelFileCommand
+	input.PostOCNECommands = append(ocne.GetOCNEPostInstallOverrides(&ocneData), input.PostOCNECommands...)
 	return nil
 }
 

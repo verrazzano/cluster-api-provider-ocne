@@ -111,6 +111,10 @@ type OCNEConfigSpec struct {
 	// ImageConfiguration contains configuration required for the base image.
 	// +optional
 	ImageConfiguration *ImageConfigurationSpec `json:"imageConfiguration,omitempty"`
+
+	// AddOnInstall installs the module operator as an addon.
+	// +optional
+	AddOnInstall []AddonInstall `json:"addOnInstall,omitempty"`
 }
 
 type ImageConfigurationSpec struct {
@@ -147,6 +151,20 @@ type ProxySpec struct {
 	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	NoProxy string `json:"noProxy,omitempty"`
+}
+
+type AddonInstall struct {
+	// ChartName denotes the name of the helm chart to be deployed.
+	// +optional
+	ChartName string `json:"chartName,omitempty"`
+
+	// ChartLocation denotes the location from where the helm chart will be deployed.
+	// +optional
+	ChartLocation string `json:"chartLocation,omitempty"`
+
+	// Arguments are the hem command arguments to be passed.
+	// +optional
+	Arguments []string `json:"arguments,omitempty"`
 }
 
 // IgnitionSpec contains Ignition specific configuration.
