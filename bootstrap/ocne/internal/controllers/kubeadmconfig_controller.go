@@ -21,10 +21,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -73,28 +69,12 @@ const (
 
 	// DefaultTokenTTL is the default TTL used for tokens.
 	DefaultTokenTTL = 15 * time.Minute
-
-	configMapName = "ocne-metadata"
-	cmDataKey     = "mapping"
 )
 
 // InitLocker is a lock that is used around ocne init.
 type InitLocker interface {
 	Lock(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) bool
 	Unlock(ctx context.Context, cluster *clusterv1.Cluster) bool
-}
-
-var getCoreV1Func = getCoreV1Client
-
-func getCoreV1Client() (v1.CoreV1Interface, error) {
-	restConfig := ctrl.GetConfigOrDie()
-
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return kubeClient.CoreV1(), nil
 }
 
 // +kubebuilder:rbac:groups=bootstrap.cluster.x-k8s.io,resources=ocneconfigs;ocneconfigs/status;ocneconfigs/finalizers,verbs=get;list;watch;create;update;patch;delete
@@ -537,25 +517,6 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			proxy = scope.Config.Spec.ImageConfiguration.Proxy
 		}
 	}
-
-	client, err := getCoreV1Func()
-	if err != nil {
-		scope.Error(err, "Failed to get k8s client")
-		return ctrl.Result{}, err
-	}
-
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = "default"
-	}
-
-	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
-	if err != nil {
-		scope.Error(err, "Failed to get metadata configmap '%s'", configMapName)
-		return ctrl.Result{}, err
-	}
-
-	spew.Dump(cm.Data[cmDataKey])
 
 	controlPlaneInput := &cloudinit.ControlPlaneInput{
 		BaseUserData: cloudinit.BaseUserData{

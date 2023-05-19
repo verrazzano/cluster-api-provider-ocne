@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
@@ -17,15 +18,28 @@ import (
 )
 
 type OCNEMetadata struct {
-	OCNEImages `json:"container-images"`
-	Release    string `json:release,omitempty`
+	OCNEImages   `json:"container-images"`
+	OCNEPackages `json:"packages"`
+	Release      string `json:release,omitempty`
 }
 
 type OCNEImages struct {
-	ETCD           string `json:"etcd"`
-	CoreDNS        string `json:"coredns"`
-	TigeraOperator string `json:"tigera-operator"`
-	Calico         string `json:"calico"`
+	ETCD                  string `json:"etcd"`
+	CoreDNS               string `json:"coredns"`
+	TigeraOperator        string `json:"tigera-operator"`
+	Calico                string `json:"calico"`
+	Pause                 string `json:"pause"`
+	KubeControllerManager string `json:"kube-controller-manager"`
+	KubeScheduler         string `json:"kube-scheduler"`
+	KubeApiServer         string `json:"kube-apiserver"`
+	KubeProxy             string `json:"kube-proxy"`
+}
+
+type OCNEPackages struct {
+	Kubeadm string `json:"kubeadm"`
+	Kubectl string `json:"kubectl"`
+	Kubelet string `json:"kubelet"`
+	Helm    string `json:"helm"`
 }
 
 const (
@@ -34,6 +48,7 @@ const (
 	minOCNEVersion           = "v1.24.8"
 	configMapName            = "ocne-metadata"
 	cmDataKey                = "mapping"
+	defaultKubeadmVersion    = "v1."
 )
 
 var k8s_ocne_version_maping = map[string]string{
@@ -161,4 +176,34 @@ func isSupported(version string, minVersion *SemVersion) (bool, error) {
 	}
 
 	return v.IsGreaterThanOrEqualTo(minVersion), nil
+}
+
+func GetOCNEMetadata(ctx context.Context) (map[string]OCNEMetadata, error) {
+	client, err := getCoreV1Func()
+	if err != nil {
+		return nil, err
+	}
+
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = "capi-ocne-control-plane-system"
+	}
+
+	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
+	if err != nil {
+		//scope.Error(err, fmt.Sprintf("Failed to get metadata configmap '%s'", configMapName))
+		return nil, err
+	}
+
+	data, err := apiyaml.ToJSON([]byte(cm.Data[cmDataKey]))
+	if err != nil {
+		//scope.Error(err, "yaml conversion error")
+		return nil, err
+	}
+
+	rawMapping := map[string]OCNEMetadata{}
+	if err := yaml.Unmarshal(data, &rawMapping); err != nil {
+		return nil, err
+	}
+	return rawMapping, nil
 }

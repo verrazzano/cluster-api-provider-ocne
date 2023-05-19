@@ -19,9 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
 	"strings"
 
 	"github.com/blang/semver"
@@ -661,15 +663,20 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 		return allErrs
 	}
 
+	ocneMeta, err := ocnemeta.GetOCNEMetadata(context.Background())
+	if err != nil {
+		return allErrs
+	}
+
 	if inClusterConfiguration.DNS.ImageTag != "" {
 		if inClusterConfiguration.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
-			newClusterCoreDNSTag, err := ocne.GetContainerImageVersion(strings.Trim(version, "v"), "coredns")
-			if err != nil {
+			newClusterCoreDNSTag := ocneMeta[version].OCNEImages.CoreDNS
+			if newClusterCoreDNSTag == "" {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("dns", "imageTag"),
 						inClusterConfiguration.DNS.ImageTag,
-						fmt.Sprintf("coreDNS image tag not found : %v", err),
+						fmt.Sprintf("coreDNS image tag not found for kubernetes version '%s' : %v", version, err),
 					),
 				)
 			}
@@ -688,13 +695,13 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 
 	if inClusterConfiguration.Etcd.Local != nil {
 		if inClusterConfiguration.Etcd.Local.ImageRepository == ocne.DefaultOCNEImageRepository {
-			newClusterEtcdTag, err := ocne.GetContainerImageVersion(strings.Trim(version, "v"), "etcd")
-			if err != nil {
+			newClusterEtcdTag := ocneMeta[version].OCNEImages.ETCD
+			if newClusterEtcdTag == "" {
 				allErrs = append(allErrs,
 					field.Invalid(
 						field.NewPath("etcd", "local", "imageTag"),
 						inClusterConfiguration.Etcd.Local.ImageTag,
-						fmt.Sprintf("etcd image tag not found : %v", err),
+						fmt.Sprintf("etcd image tag not found for kubernetes version '%s' : %v", version, err),
 					),
 				)
 			}
