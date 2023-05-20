@@ -677,16 +677,6 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 	if inClusterConfiguration.DNS.ImageTag != "" {
 		if inClusterConfiguration.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
 			newClusterCoreDNSTag := ocneMeta[version].OCNEImages.CoreDNS
-			if newClusterCoreDNSTag == "" {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("dns", "imageTag"),
-						inClusterConfiguration.DNS.ImageTag,
-						fmt.Sprintf("coreDNS image tag not found for kubernetes version '%s' : %v", version, err),
-					),
-				)
-			}
-
 			if inClusterConfiguration.DNS.ImageTag != newClusterCoreDNSTag {
 				allErrs = append(allErrs,
 					field.Invalid(
@@ -702,16 +692,6 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 	if inClusterConfiguration.Etcd.Local != nil {
 		if inClusterConfiguration.Etcd.Local.ImageRepository == ocne.DefaultOCNEImageRepository {
 			newClusterEtcdTag := ocneMeta[version].OCNEImages.ETCD
-			if newClusterEtcdTag == "" {
-				allErrs = append(allErrs,
-					field.Invalid(
-						field.NewPath("etcd", "local", "imageTag"),
-						inClusterConfiguration.Etcd.Local.ImageTag,
-						fmt.Sprintf("etcd image tag not found for kubernetes version '%s' : %v", version, err),
-					),
-				)
-			}
-
 			if inClusterConfiguration.Etcd.Local.ImageTag != newClusterEtcdTag {
 				allErrs = append(allErrs,
 					field.Invalid(
