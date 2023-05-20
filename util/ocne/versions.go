@@ -47,7 +47,6 @@ const (
 	minOCNEVersion           = "v1.24.8"
 	configMapName            = "ocne-metadata"
 	cmDataKey                = "mapping"
-	defaultKubeadmVersion    = "v1."
 )
 
 var k8s_ocne_version_maping = map[string]string{
