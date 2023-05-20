@@ -73,7 +73,7 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 	var ocneCommands []string
 	var err error
 	value, _ := os.LookupEnv("DEV")
-	if value != "truw" {
+	if value != "true" {
 		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
 		if err != nil {
 			return nil, err
