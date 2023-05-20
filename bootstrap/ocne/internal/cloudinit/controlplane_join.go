@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
+	"os"
 )
 
 const (
@@ -69,7 +70,8 @@ func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, error) {
 	}
 	var ocneCommands []string
 	var err error
-	if input.Header != "test" {
+	value, _ := os.LookupEnv("DEV")
+	if value != "truw" {
 		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
 		if err != nil {
 			return nil, err

@@ -383,7 +383,7 @@ KUBEBUILDER_ASSETS  ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUIL
 
 .PHONY: test
 test: $(SETUP_ENVTEST) ## Run unit and integration tests
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+	export DEV=true; KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 .PHONY: test-verbose
 test-verbose: ## Run unit and integration tests with verbose flag

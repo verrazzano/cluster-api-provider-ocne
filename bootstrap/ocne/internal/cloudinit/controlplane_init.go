@@ -21,6 +21,7 @@ package cloudinit
 import (
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
+	"os"
 )
 
 const (
@@ -71,7 +72,8 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 	}
 	var ocneCommands []string
 	var err error
-	if input.Header != "test" {
+	value, _ := os.LookupEnv("DEV")
+	if value != "truw" {
 		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
 		if err != nil {
 			return nil, err
