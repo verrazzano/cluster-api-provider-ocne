@@ -297,6 +297,14 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository = ocne.DefaultOCNEImageRepository
 	}
 
+	if ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket == "" {
+		ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+	}
+
+	if ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket == "" {
+		ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+	}
+
 	return nil
 }
 

@@ -106,7 +106,10 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(spec.ControlPlaneConfig.ClusterConfiguration, nil, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
-	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
+	value, _ := os.LookupEnv("DEV")
+	if value != "true" {
+		allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
+	}
 	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
