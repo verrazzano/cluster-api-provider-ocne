@@ -22,7 +22,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	"os"
 	"time"
 
 	"github.com/blang/semver"
@@ -192,9 +192,12 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 
-		if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
-			log.Error(err, "Failed to set defaults for OCNEControlPlane")
-			reterr = kerrors.NewAggregate([]error{reterr, err})
+		value, _ := os.LookupEnv("DEV")
+		if value != "true" {
+			if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
+				log.Error(err, "Failed to set defaults for OCNEControlPlane")
+				reterr = kerrors.NewAggregate([]error{reterr, err})
+			}
 		}
 
 		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
@@ -267,7 +270,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 }
 
 func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane) error {
-	ocneMeta, err := ocnemeta.GetOCNEMetadata(ctx)
+	ocneMeta, err := ocne.GetOCNEMetadata(ctx)
 	if err != nil {
 		return err
 	}

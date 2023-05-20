@@ -20,6 +20,12 @@ package ocne
 import (
 	"fmt"
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
 	"testing"
 
 	"github.com/blang/semver"
@@ -84,7 +90,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 	}{
 		{
 			testName:          "Valid K8s version and proxy",
-			kubernetesVersion: "1.24.8",
+			kubernetesVersion: "v1.24.8",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -98,7 +104,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Not Supported K8s version",
-			kubernetesVersion: "1.24.7",
+			kubernetesVersion: "v1.24.7",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -112,7 +118,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Not Supported K8s version",
-			kubernetesVersion: "1.25.6",
+			kubernetesVersion: "v1.25.6",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -126,7 +132,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and no proxy",
-			kubernetesVersion: "1.24.8",
+			kubernetesVersion: "v1.24.8",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -135,7 +141,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and proxy with skipinstall true",
-			kubernetesVersion: "1.24.8",
+			kubernetesVersion: "v1.24.8",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -150,7 +156,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and no proxy with skipinstall true",
-			kubernetesVersion: "1.24.8",
+			kubernetesVersion: "v1.24.8",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -171,6 +177,27 @@ func TestGetOCNEOverrides(t *testing.T) {
 				Proxy:               tt.proxy,
 				SkipInstall:         tt.skipInstall,
 			}
+			getCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				ocneMeta, err := ocnemeta.GetMetaDataContents("../../../util/ocne/testdata/kubernetes_versions.yaml")
+				g.Expect(err).To(BeNil())
+				namespace, ok := os.LookupEnv("POD_NAMESPACE")
+				if !ok {
+					namespace = capiDefaultNamespace
+				}
+				configMap := &v1.ConfigMap{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "ConfigMap",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      configMapName,
+						Namespace: namespace,
+					},
+					Data: ocneMeta,
+				}
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { getCoreV1Func = getCoreV1Client }()
 			data, err := GetOCNEOverrides(&ocneData)
 			if tt.expectedError {
 				// if expectedErr is true, then err returned is not nil

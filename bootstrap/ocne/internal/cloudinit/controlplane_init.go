@@ -69,9 +69,13 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 		Proxy:               input.Proxy,
 		SkipInstall:         input.SkipInstall,
 	}
-	ocneCommands, err := ocne.GetOCNEOverrides(&ocneData)
-	if err != nil {
-		return nil, err
+	var ocneCommands []string
+	var err error
+	if input.Header != "test" {
+		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
+		if err != nil {
+			return nil, err
+		}
 	}
 	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
 	input.Header = cloudConfigHeader

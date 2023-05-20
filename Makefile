@@ -387,7 +387,7 @@ test: $(SETUP_ENVTEST) ## Run unit and integration tests
 
 .PHONY: test-verbose
 test-verbose: ## Run unit and integration tests with verbose flag
-	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -v"
+	export DEV=true; $(MAKE) test TEST_ARGS="$(TEST_ARGS) -v"
 
 .PHONY: test-junit
 test-junit: $(SETUP_ENVTEST) $(GOTESTSUM) ## Run unit and integration tests and generate a junit report

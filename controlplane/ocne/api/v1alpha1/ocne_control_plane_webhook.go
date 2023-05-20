@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
 	"strings"
 
 	"github.com/blang/semver"
@@ -663,7 +662,7 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 		return allErrs
 	}
 
-	ocneMeta, err := ocnemeta.GetOCNEMetadata(context.Background())
+	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
 	if err != nil {
 		return allErrs
 	}

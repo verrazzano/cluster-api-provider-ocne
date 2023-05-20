@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
@@ -178,26 +177,13 @@ func isSupported(version string, minVersion *SemVersion) (bool, error) {
 	return v.IsGreaterThanOrEqualTo(minVersion), nil
 }
 
-func GetOCNEMetadata(ctx context.Context) (map[string]OCNEMetadata, error) {
-	client, err := getCoreV1Func()
-	if err != nil {
+func GetMetaDataContents(metadataFile string) (map[string]string, error) {
+	if _, err := os.Stat(metadataFile); err != nil {
 		return nil, err
 	}
 
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = "capi-ocne-control-plane-system"
-	}
-
-	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
+	data, err := os.ReadFile(metadataFile)
 	if err != nil {
-		//scope.Error(err, fmt.Sprintf("Failed to get metadata configmap '%s'", configMapName))
-		return nil, err
-	}
-
-	data, err := apiyaml.ToJSON([]byte(cm.Data[cmDataKey]))
-	if err != nil {
-		//scope.Error(err, "yaml conversion error")
 		return nil, err
 	}
 
@@ -205,5 +191,20 @@ func GetOCNEMetadata(ctx context.Context) (map[string]OCNEMetadata, error) {
 	if err := yaml.Unmarshal(data, &rawMapping); err != nil {
 		return nil, err
 	}
-	return rawMapping, nil
+
+	mapping, err := buildMapping(rawMapping)
+	if err != nil {
+		return nil, err
+	}
+
+	mappingBytes, err := yaml.Marshal(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	cmData := map[string]string{
+		cmDataKey: string(mappingBytes),
+	}
+
+	return cmData, err
 }

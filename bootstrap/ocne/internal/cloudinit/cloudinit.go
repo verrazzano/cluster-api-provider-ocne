@@ -81,9 +81,13 @@ func (input *BaseUserData) prepare() error {
 		Proxy:               input.Proxy,
 		SkipInstall:         input.SkipInstall,
 	}
-	ocneCommands, err := ocne.GetOCNEOverrides(&ocneData)
-	if err != nil {
-		return err
+	var ocneCommands []string
+	var err error
+	if input.Header != "test" {
+		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
+		if err != nil {
+			return err
+		}
 	}
 	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
 	input.Header = cloudConfigHeader

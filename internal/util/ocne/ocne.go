@@ -24,6 +24,13 @@ import (
 	"fmt"
 	"github.com/blang/semver"
 	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -41,7 +48,11 @@ const (
 	// DefaultOCNECSISocket is teh default socket for OCI CSI
 	DefaultOCNECSISocket = "/var/run/shared-tmpfs/csi.sock"
 
-	K8sVersionOneTwoFourEight = "1.24.8"
+	K8sVersionOneTwoFourEight = "v1.24.8"
+
+	configMapName        = "ocne-metadata"
+	cmDataKey            = "mapping"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
 )
 
 var (
@@ -53,6 +64,17 @@ var (
 	// the default image registry in kubeadm changed to registry.k8s.io.
 	NextKubernetesVersionImageRegistryMigration = semver.MustParse("1.25.7")
 )
+
+var getCoreV1Func = getCoreV1Client
+
+func getCoreV1Client() (v1.CoreV1Interface, error) {
+	restConfig := controllerruntime.GetConfigOrDie()
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient.CoreV1(), nil
+}
 
 // GetDefaultRegistry returns the default registry of the given kubeadm version.
 func GetDefaultRegistry(version semver.Version) string {
@@ -117,12 +139,25 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 // GetOCNEOverrides Updates the cloud init with OCNE override instructions
 func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 	var ocneNodeOverrrides, yumOrdnfProxyOverrides, crioProxyOverrides []string
-	ocneMeta, err := ocnemeta.GetOCNEMetadata(context.Background())
-	if err != nil {
-		return nil, err
-	}
+
+	var ocneMeta map[string]ocnemeta.OCNEMetadata
+	var err error
+
 	if userData.KubernetesVersion == "" {
 		userData.KubernetesVersion = K8sVersionOneTwoFourEight
+	}
+
+	ocneMeta, err = GetOCNEMetadata(context.Background())
+	if err != nil {
+		// For UT when this is called from other libraries
+		value, _ := os.LookupEnv("DEV")
+		if value == "true" {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm == "" {
+		return nil, fmt.Errorf("k8s version '%s' not supported with ocne provider.", userData.KubernetesVersion)
 	}
 
 	if userData.Proxy != nil {
@@ -186,4 +221,33 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 		}
 	}
 	return append(ocneNodeOverrrides, ocneServicesStart...), nil
+}
+
+func GetOCNEMetadata(ctx context.Context) (map[string]ocnemeta.OCNEMetadata, error) {
+	client, err := getCoreV1Func()
+	if err != nil {
+		return nil, err
+	}
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+
+	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
+	if err != nil {
+		//scope.Error(err, fmt.Sprintf("Failed to get metadata configmap '%s'", configMapName))
+		return nil, err
+	}
+
+	data, err := apiyaml.ToJSON([]byte(cm.Data[cmDataKey]))
+	if err != nil {
+		//scope.Error(err, "yaml conversion error")
+		return nil, err
+	}
+
+	rawMapping := map[string]ocnemeta.OCNEMetadata{}
+	if err := yaml.Unmarshal(data, &rawMapping); err != nil {
+		return nil, err
+	}
+	return rawMapping, nil
 }
