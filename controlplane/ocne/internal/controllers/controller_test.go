@@ -25,7 +25,12 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
 	"math/big"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -61,6 +66,12 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+)
+
+const (
+	configMapName        = "ocne-metadata"
+	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
 )
 
 func TestClusterToKubeadmControlPlane(t *testing.T) {
@@ -395,6 +406,24 @@ func TestReconcilePaused(t *testing.T) {
 func TestReconcileClusterNoEndpoints(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := newCluster(&types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceDefault})
 	cluster.Status = clusterv1.ClusterStatus{InfrastructureReady: true}
 
@@ -425,7 +454,7 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 	ocnecp.Default()
 	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
 
-	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
+	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy(), configMap.DeepCopy())
 	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
@@ -1130,6 +1159,24 @@ func TestReconcileCertificateExpiries(t *testing.T) {
 func TestReconcileInitializeControlPlane(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := newCluster(&types.NamespacedName{Name: "foo", Namespace: metav1.NamespaceDefault})
 	cluster.Spec = clusterv1.ClusterSpec{
 		ControlPlaneEndpoint: clusterv1.APIEndpoint{
@@ -1238,6 +1285,7 @@ kubernetesVersion: metav1.16.1`,
 		corednsCM.DeepCopy(),
 		kubeadmCM.DeepCopy(),
 		corednsDepl.DeepCopy(),
+		configMap.DeepCopy(),
 	)
 	expectedLabels := map[string]string{clusterv1.ClusterLabelName: "foo"}
 	r := &OCNEControlPlaneReconciler{

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	"os"
 	"strings"
 
 	"github.com/blang/semver"
@@ -106,10 +105,7 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(spec.ControlPlaneConfig.ClusterConfiguration, nil, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
-	value, _ := os.LookupEnv("DEV")
-	if value != "true" {
-		allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
-	}
+	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
 	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
@@ -234,10 +230,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	allErrs = append(allErrs, in.validateVersion(prev.Spec.Version)...)
 	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.ControlPlaneConfig.ClusterConfiguration, prev.Spec.ControlPlaneConfig.ClusterConfiguration, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
-	value, _ := os.LookupEnv("DEV")
-	if value != "true" {
-		allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
-	}
+	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
 	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, in.validateCoreDNSVersion(prev)...)
 	allErrs = append(allErrs, in.Spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)

@@ -32,6 +32,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const kubeadmVersionFile = "../../../util/ocne/testdata/kubernetes_versions.yaml"
+
 func TestGetDefaultRegistry(t *testing.T) {
 	tests := []struct {
 		version          string
@@ -177,18 +179,14 @@ func TestGetOCNEOverrides(t *testing.T) {
 				Proxy:               tt.proxy,
 				SkipInstall:         tt.skipInstall,
 			}
-			getCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
-				ocneMeta, err := ocnemeta.GetMetaDataContents("../../../util/ocne/testdata/kubernetes_versions.yaml")
+			GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				ocneMeta, err := ocnemeta.GetMetaDataContents(kubeadmVersionFile)
 				g.Expect(err).To(BeNil())
 				namespace, ok := os.LookupEnv("POD_NAMESPACE")
 				if !ok {
 					namespace = capiDefaultNamespace
 				}
 				configMap := &v1.ConfigMap{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "ConfigMap",
-						APIVersion: "v1",
-					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      configMapName,
 						Namespace: namespace,
@@ -197,7 +195,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 				}
 				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
 			}
-			defer func() { getCoreV1Func = getCoreV1Client }()
+			defer func() { GetCoreV1Func = GetCoreV1Client }()
 			data, err := GetOCNEOverrides(&ocneData)
 			if tt.expectedError {
 				// if expectedErr is true, then err returned is not nil

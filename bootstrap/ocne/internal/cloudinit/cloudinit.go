@@ -23,7 +23,6 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	"os"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -78,14 +77,9 @@ func (input *BaseUserData) prepare() error {
 		Proxy:               input.Proxy,
 		SkipInstall:         input.SkipInstall,
 	}
-	var ocneCommands []string
-	var err error
-	value, _ := os.LookupEnv("DEV")
-	if value != "true" {
-		ocneCommands, err = ocne.GetOCNEOverrides(&ocneData)
-		if err != nil {
-			return err
-		}
+	ocneCommands, err := ocne.GetOCNEOverrides(&ocneData)
+	if err != nil {
+		return err
 	}
 	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
 	input.Header = cloudConfigHeader

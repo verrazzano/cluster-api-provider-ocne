@@ -65,9 +65,9 @@ var (
 	NextKubernetesVersionImageRegistryMigration = semver.MustParse("1.25.7")
 )
 
-var getCoreV1Func = getCoreV1Client
+var GetCoreV1Func = GetCoreV1Client
 
-func getCoreV1Client() (v1.CoreV1Interface, error) {
+func GetCoreV1Client() (v1.CoreV1Interface, error) {
 	restConfig := controllerruntime.GetConfigOrDie()
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
@@ -224,7 +224,7 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 }
 
 func GetOCNEMetadata(ctx context.Context) (map[string]ocnemeta.OCNEMetadata, error) {
-	client, err := getCoreV1Func()
+	client, err := GetCoreV1Func()
 	if err != nil {
 		return nil, err
 	}

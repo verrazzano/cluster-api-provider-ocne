@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	"os"
 	"time"
 
 	"github.com/blang/semver"
@@ -192,12 +191,17 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 
-		value, _ := os.LookupEnv("DEV")
-		if value != "true" {
-			if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
-				log.Error(err, "Failed to set defaults for OCNEControlPlane")
-				reterr = kerrors.NewAggregate([]error{reterr, err})
-			}
+		//value, _ := os.LookupEnv("DEV")
+		//if value != "true" {
+		//	if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
+		//		log.Error(err, "Failed to set defaults for OCNEControlPlane")
+		//		reterr = kerrors.NewAggregate([]error{reterr, err})
+		//	}
+		//}
+
+		if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
+			log.Error(err, "Failed to set defaults for OCNEControlPlane")
+			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
 		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
@@ -275,34 +279,36 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 		return err
 	}
 
-	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
-		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
-	}
-	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == "" {
-		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
-	}
+	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration != nil {
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
+		}
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == "" {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
+		}
 
-	etcdLocal := bootstrapv1.LocalEtcd{
-		ImageMeta: bootstrapv1.ImageMeta{
-			ImageTag:        ocneMeta[ocnecp.Spec.Version].ETCD,
-			ImageRepository: ocne.DefaultOCNEImageRepository,
-		},
-	}
+		etcdLocal := bootstrapv1.LocalEtcd{
+			ImageMeta: bootstrapv1.ImageMeta{
+				ImageTag:        ocneMeta[ocnecp.Spec.Version].ETCD,
+				ImageRepository: ocne.DefaultOCNEImageRepository,
+			},
+		}
 
-	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local == nil {
-		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
-	}
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local == nil {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
+		}
 
-	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "" {
-		ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository = ocne.DefaultOCNEImageRepository
-	}
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "" {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository = ocne.DefaultOCNEImageRepository
+		}
 
-	if ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket == "" {
-		ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
-	}
+		if ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket == "" {
+			ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+		}
 
-	if ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket == "" {
-		ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+		if ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket == "" {
+			ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+		}
 	}
 
 	return nil
