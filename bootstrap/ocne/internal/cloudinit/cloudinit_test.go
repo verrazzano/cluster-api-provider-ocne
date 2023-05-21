@@ -19,6 +19,13 @@ limitations under the License.
 package cloudinit
 
 import (
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -29,8 +36,32 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/util/secret"
 )
 
+const (
+	configMapName        = "ocne-metadata"
+	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
+)
+
 func TestNewInitControlPlaneAdditionalFileEncodings(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
@@ -93,6 +124,24 @@ func TestNewInitControlPlaneAdditionalFileEncodings(t *testing.T) {
 func TestNewInitControlPlaneCommands(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
@@ -129,6 +178,24 @@ func TestNewInitControlPlaneCommands(t *testing.T) {
 
 func TestNewInitControlPlaneDiskMounts(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cpinput := &ControlPlaneInput{
 		BaseUserData: BaseUserData{
@@ -193,6 +260,24 @@ func TestNewInitControlPlaneDiskMounts(t *testing.T) {
 func TestNewJoinControlPlaneAdditionalFileEncodings(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cpinput := &ControlPlaneJoinInput{
 		BaseUserData: BaseUserData{
 			Header:           "test",
@@ -244,6 +329,24 @@ func TestNewJoinControlPlaneAdditionalFileEncodings(t *testing.T) {
 
 func TestNewJoinControlPlaneExperimentalRetry(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cpinput := &ControlPlaneJoinInput{
 		BaseUserData: BaseUserData{

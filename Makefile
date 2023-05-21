@@ -383,11 +383,11 @@ KUBEBUILDER_ASSETS  ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUIL
 
 .PHONY: test
 test: $(SETUP_ENVTEST) ## Run unit and integration tests
-	export DEV=true; KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 .PHONY: test-verbose
 test-verbose: ## Run unit and integration tests with verbose flag
-	export DEV=true; $(MAKE) test TEST_ARGS="$(TEST_ARGS) -v"
+	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -v"
 
 .PHONY: test-junit
 test-junit: $(SETUP_ENVTEST) $(GOTESTSUM) ## Run unit and integration tests and generate a junit report

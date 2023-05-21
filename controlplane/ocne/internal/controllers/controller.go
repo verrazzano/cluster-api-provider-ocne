@@ -191,14 +191,6 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 
-		//value, _ := os.LookupEnv("DEV")
-		//if value != "true" {
-		//	if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
-		//		log.Error(err, "Failed to set defaults for OCNEControlPlane")
-		//		reterr = kerrors.NewAggregate([]error{reterr, err})
-		//	}
-		//}
-
 		if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
 			log.Error(err, "Failed to set defaults for OCNEControlPlane")
 			reterr = kerrors.NewAggregate([]error{reterr, err})

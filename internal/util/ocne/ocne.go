@@ -149,11 +149,6 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 
 	ocneMeta, err = GetOCNEMetadata(context.Background())
 	if err != nil {
-		// For UT when this is called from other libraries
-		value, _ := os.LookupEnv("DEV")
-		if value == "true" {
-			return nil, nil
-		}
 		return nil, err
 	}
 	if ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm == "" {
