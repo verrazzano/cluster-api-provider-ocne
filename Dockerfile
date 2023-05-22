@@ -84,5 +84,7 @@ RUN groupadd -r ocne \
     && chmod 500 /manager
 RUN mkdir -p /license
 COPY LICENSE README.md THIRD_PARTY_LICENSES.txt /license/
+COPY charts/ /charts/
+COPY index.yaml ./
 USER 1000
 ENTRYPOINT ["/manager"]
