@@ -22,6 +22,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -52,9 +57,34 @@ import (
 	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 )
 
+const (
+	configMapName        = "ocne-metadata"
+	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
+)
+
 // MachineToBootstrapMapFunc return kubeadm bootstrap configref name when configref exists.
 func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := builder.Cluster("my-cluster", metav1.NamespaceDefault).Build()
 	objs := []client.Object{cluster}
 	machineObjs := []client.Object{}
@@ -95,6 +125,24 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 	config.Status.Ready = true
 
@@ -122,6 +170,24 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *tes
 // Reconcile returns early if the kubeadm config is ready because it should never re-generate bootstrap data.
 func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	clusterName := "my-cluster"
 	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
@@ -166,7 +232,7 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 			Name:      "cfg",
 		},
 	}
-	var err error
+
 	key := client.ObjectKeyFromObject(config)
 	actual := &corev1.Secret{}
 
@@ -222,6 +288,24 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		WithVersion("v1.24.8").
@@ -244,7 +328,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 			Name:      "cfg",
 		},
 	}
-	_, err := k.Reconcile(ctx, request)
+	_, err = k.Reconcile(ctx, request)
 	g.Expect(err).To(BeNil())
 }
 
@@ -282,6 +366,23 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t 
 
 func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 	g := NewWithT(t)
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
@@ -325,6 +426,25 @@ func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 // Return early If the owning machine does not have an associated cluster.
 func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.24.8").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
@@ -347,13 +467,32 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *test
 			Name:      "cfg",
 		},
 	}
-	_, err := k.Reconcile(ctx, request)
+	_, err = k.Reconcile(ctx, request)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
 // This does not expect an error, hoping the machine gets updated with a cluster.
 func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedCluster(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithVersion("v1.24.8").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
@@ -376,13 +515,31 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedC
 			Name:      "cfg",
 		},
 	}
-	_, err := k.Reconcile(ctx, request)
+	_, err = k.Reconcile(ctx, request)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
 // This does not expect an error, hoping that the associated cluster will be created.
 func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
@@ -409,7 +566,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t
 			Name:      "cfg",
 		},
 	}
-	_, err := k.Reconcile(ctx, request)
+	_, err = k.Reconcile(ctx, request)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -484,6 +641,24 @@ func TestOCNEConfigReconciler_Reconcile_RequeueJoiningNodesIfControlPlaneNotInit
 func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
 
@@ -532,6 +707,25 @@ func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
 // If a control plane has no JoinConfiguration, then we will create a default and no error will occur.
 func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConfiguration(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	// TODO: extract this kind of code into a setup function that puts the state of objects into an initialized controlplane (implies secrets exist)
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -566,13 +760,31 @@ func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConf
 			Name:      "control-plane-join-cfg",
 		},
 	}
-	_, err := k.Reconcile(ctx, request)
+	_, err = k.Reconcile(ctx, request)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
 // If there is no APIEndpoint but everything is ready then requeue in hopes of a new APIEndpoint showing up eventually.
 func TestOCNEConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoints(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -654,6 +866,24 @@ func TestReconcileIfJoinNodesAndControlPlaneIsReady(t *testing.T) {
 		t.Run(rt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
+			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+			g.Expect(err).To(BeNil())
+			namespace, ok := os.LookupEnv("POD_NAMESPACE")
+			if !ok {
+				namespace = capiDefaultNamespace
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+				Data: ocneMeta,
+			}
+			ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 			config := rt.configBuilder(rt.machine.Namespace, rt.configName)
 			addKubeadmConfigToMachine(config, rt.machine)
 
@@ -730,6 +960,24 @@ func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
 		rt := rt // pin!
 		t.Run(rt.name, func(t *testing.T) {
 			g := NewWithT(t)
+
+			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+			g.Expect(err).To(BeNil())
+			namespace, ok := os.LookupEnv("POD_NAMESPACE")
+			if !ok {
+				namespace = capiDefaultNamespace
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+				Data: ocneMeta,
+			}
+			ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 			config := rt.configBuilder(rt.machinePool.Namespace, rt.configName)
 			addKubeadmConfigToMachinePool(config, rt.machinePool)
@@ -809,6 +1057,24 @@ func TestBootstrapDataFormat(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
+			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+			g.Expect(err).To(BeNil())
+			namespace, ok := os.LookupEnv("POD_NAMESPACE")
+			if !ok {
+				namespace = capiDefaultNamespace
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+				Data: ocneMeta,
+			}
+			ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 			cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 			cluster.Status.InfrastructureReady = true
 			cluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{Host: "100.105.150.1", Port: 6443}
@@ -854,7 +1120,7 @@ func TestBootstrapDataFormat(t *testing.T) {
 			}
 
 			// Reconcile the OCNEConfig resource.
-			_, err := k.Reconcile(ctx, request)
+			_, err = k.Reconcile(ctx, request)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			// Verify the OCNEConfig resource state is correct.
@@ -900,6 +1166,24 @@ func TestBootstrapDataFormat(t *testing.T) {
 // ignore the alreadyexists error and update the status to ready.
 func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -955,7 +1239,7 @@ func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 		Type: clusterv1.ClusterSecretType,
 	}
 
-	err := myclient.Create(ctx, secret)
+	err = myclient.Create(ctx, secret)
 	g.Expect(err).ToNot(HaveOccurred())
 	result, err := k.Reconcile(ctx, request)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -971,6 +1255,24 @@ func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 
 func TestBootstrapTokenTTLExtension(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -1177,6 +1479,24 @@ func TestBootstrapTokenTTLExtension(t *testing.T) {
 func TestBootstrapTokenRotationMachinePool(t *testing.T) {
 	_ = feature.MutableGates.Set("MachinePool=true")
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -1727,6 +2047,24 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 	_ = feature.MutableGates.Set("MachinePool=true")
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := builder.Cluster(metav1.NamespaceDefault, "my-cluster").Build()
 	objs := []client.Object{cluster}
 	expectedNames := []string{}
@@ -1774,6 +2112,24 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *testing.T) {
 	g := NewWithT(t)
 
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	cluster := builder.Cluster(metav1.NamespaceDefault, "my-cluster").Build()
 	cluster.Status.InfrastructureReady = true
 	m := newControlPlaneMachine(cluster, "control-plane-machine")
@@ -1797,13 +2153,31 @@ func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *te
 	req := ctrl.Request{
 		NamespacedName: client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: configName},
 	}
-	_, err := reconciler.Reconcile(ctx, req)
+	_, err = reconciler.Reconcile(ctx, req)
 	g.Expect(err).NotTo(HaveOccurred())
 }
 
 // Exactly one control plane machine initializes if there are multiple control plane machines defined.
 func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -1855,6 +2229,24 @@ func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes
 // Patch should be applied if there is an error in reconcile.
 func TestOCNEConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
 	g := NewWithT(t)
+
+	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	g.Expect(err).To(BeNil())
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	cluster.Status.InfrastructureReady = true
@@ -2198,7 +2590,7 @@ func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool 
 		WithClusterName(cluster.Name).
 		WithLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
-		WithVersion("1.24.8").
+		WithVersion("v1.24.8").
 		Build()
 	return m
 }
@@ -2206,6 +2598,7 @@ func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool 
 // newWorkerMachinePoolForCluster returns a MachinePool with the passed Cluster's information and a pre-configured name.
 func newWorkerMachinePoolForCluster(cluster *clusterv1.Cluster) *expv1.MachinePool {
 	return newMachinePool(cluster, "worker-machinepool")
+
 }
 
 // newKubeadmConfig return a CABPK OCNEConfig object.

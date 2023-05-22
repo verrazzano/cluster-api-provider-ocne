@@ -66,9 +66,7 @@ import (
 const (
 	// OCNEConfigControllerName defines the controller used when creating clients.
 	OCNEConfigControllerName = "ocneconfig-controller"
-)
 
-const (
 	// DefaultTokenTTL is the default TTL used for tokens.
 	DefaultTokenTTL = 15 * time.Minute
 )

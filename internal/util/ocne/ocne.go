@@ -20,8 +20,17 @@ limitations under the License.
 package ocne
 
 import (
+	"context"
 	"fmt"
 	"github.com/blang/semver"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
+	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -39,8 +48,11 @@ const (
 	// DefaultOCNECSISocket is teh default socket for OCI CSI
 	DefaultOCNECSISocket = "/var/run/shared-tmpfs/csi.sock"
 
-	K8sVersionOneTwoFourEight = "1.24.8"
-	K8sVersionOneTwoFiveSeven = "1.25.7"
+	K8sVersionOneTwoFourEight = "v1.24.8"
+
+	configMapName        = "ocne-metadata"
+	cmDataKey            = "mapping"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
 )
 
 var (
@@ -51,117 +63,17 @@ var (
 	// NextKubernetesVersionImageRegistryMigration is the next minor version after
 	// the default image registry in kubeadm changed to registry.k8s.io.
 	NextKubernetesVersionImageRegistryMigration = semver.MustParse("1.25.7")
-
-	OCNEK8sMappingData OCNEVersionMappings
 )
 
-func init() {
-	OCNEK8sMappingData = OCNEVersionMappings{
-		versionData: []OCNEVersionData{
-			{
-				version: K8sVersionOneTwoFourEight,
-				packageData: []packages{
-					{
-						packageName:    "kubeadm",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFourEight),
-					},
-					{
-						packageName:    "kubectl",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFourEight),
-					},
-					{
-						packageName:    "kubelet",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFourEight),
-					},
-					{
-						packageName:    "helm",
-						packageVersion: "3.11.1-1",
-					},
-				},
-				containerImageData: []containerImages{
-					{
-						containerImageName:    "pause",
-						containerImageVersion: "3.7",
-					},
-					{
-						containerImageName:    "etcd",
-						containerImageVersion: "3.5.3",
-					},
-					{
-						containerImageName:    "coredns",
-						containerImageVersion: "1.8.6",
-					},
-					{
-						containerImageName:    "kube-controller-manager",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFourEight),
-					},
-					{
-						containerImageName:    "kube-scheduler",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFourEight),
-					},
-					{
-						containerImageName:    "kube-apiserver",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFourEight),
-					},
-					{
-						containerImageName:    "kube-proxy",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFourEight),
-					},
-				},
-			},
-			{
-				version: K8sVersionOneTwoFiveSeven,
-				packageData: []packages{
-					{
-						packageName:    "kubeadm",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						packageName:    "kubectl",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						packageName:    "kubelet",
-						packageVersion: fmt.Sprintf("%s-1", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						packageName:    "helm",
-						packageVersion: "3.11.1-1",
-					},
-				},
-				containerImageData: []containerImages{
-					{
-						containerImageName:    "pause",
-						containerImageVersion: "3.8",
-					},
-					{
-						containerImageName:    "etcd",
-						containerImageVersion: "3.5.6",
-					},
-					{
-						containerImageName:    "coredns",
-						containerImageVersion: "v1.9.3",
-					},
-					{
-						containerImageName:    "kube-controller-manager",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						containerImageName:    "kube-scheduler",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						containerImageName:    "kube-apiserver",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFiveSeven),
-					},
-					{
-						containerImageName:    "kube-proxy",
-						containerImageVersion: fmt.Sprintf("v%s", K8sVersionOneTwoFiveSeven),
-					},
-				},
-			},
-		},
+var GetCoreV1Func = GetCoreV1Client
+
+func GetCoreV1Client() (v1.CoreV1Interface, error) {
+	restConfig := controllerruntime.GetConfigOrDie()
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
 	}
+	return kubeClient.CoreV1(), nil
 }
 
 // GetDefaultRegistry returns the default registry of the given kubeadm version.
@@ -199,36 +111,6 @@ func GetDefaultRegistry(version semver.Version) string {
 	return DefaultOCNEImageRepository
 }
 
-func getArtifactData(mappingData *OCNEVersionMappings, k8sVersion, dataType, dataName string) (string, error) {
-	for _, data := range mappingData.versionData {
-		if data.version == k8sVersion {
-			switch dataType {
-			case "container-image":
-				for _, image := range data.containerImageData {
-					if image.containerImageName == dataName {
-						return image.containerImageVersion, nil
-					}
-				}
-			case "package":
-				for _, p := range data.packageData {
-					if p.packageName == dataName {
-						return p.packageVersion, nil
-					}
-				}
-			}
-		}
-	}
-	return "", fmt.Errorf("%s %s not found for kubernetes version '%s' in OCNE mapping data", dataType, dataName, k8sVersion)
-}
-
-func GetContainerImageVersion(k8sVersion, containerName string) (string, error) {
-	return getArtifactData(&OCNEK8sMappingData, k8sVersion, "container-image", containerName)
-}
-
-func GetPackageVersion(k8sVersion, packageName string) (string, error) {
-	return getArtifactData(&OCNEK8sMappingData, k8sVersion, "package", packageName)
-}
-
 func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 	localHostPresent := strings.Contains(noProxy, "localhost")
 	socketPresent := strings.Contains(noProxy, DefaultOCNECSISocket)
@@ -256,12 +138,22 @@ func constructNoProxy(noProxy, podSubnet, serviceSubnet string) string {
 
 // GetOCNEOverrides Updates the cloud init with OCNE override instructions
 func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
-	//kubernetesVersion, ocneImageRepo, podSubnet, serviceSubnet string, proxy *bootstrapv1.ProxySpec
 	var ocneNodeOverrrides, yumOrdnfProxyOverrides, crioProxyOverrides []string
+
+	var ocneMeta map[string]ocnemeta.OCNEMetadata
+	var err error
+
 	if userData.KubernetesVersion == "" {
 		userData.KubernetesVersion = K8sVersionOneTwoFourEight
 	}
-	k8sversion := strings.Trim(userData.KubernetesVersion, "v")
+
+	ocneMeta, err = GetOCNEMetadata(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	if ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm == "" {
+		return nil, fmt.Errorf("k8s version '%s' not supported with ocne provider.", userData.KubernetesVersion)
+	}
 
 	if userData.Proxy != nil {
 		yumOrdnfProxyOverrides = []string{
@@ -274,24 +166,6 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 			`mkdir -p /etc/systemd/system/crio.service.d && sudo touch /etc/systemd/system/crio.service.d/proxy.conf`,
 			fmt.Sprintf(`echo -e "[Service]\nEnvironment="HTTP_PROXY=%s"\nEnvironment="HTTPS_PROXY=%s"\nEnvironment="NO_PROXY=%s""| sudo tee /etc/systemd/system/crio.service.d/proxy.conf`, userData.Proxy.HttpProxy, userData.Proxy.HttpsProxy, constructNoProxy(userData.Proxy.NoProxy, userData.PodSubnet, userData.ServiceSubnet)),
 		}
-	}
-
-	kubeletPackage, err := GetPackageVersion(k8sversion, "kubelet")
-	if err != nil {
-		return nil, err
-	}
-	kubeadmPackage, err := GetPackageVersion(k8sversion, "kubeadm")
-	if err != nil {
-		return nil, err
-	}
-	kubectlPackage, err := GetPackageVersion(k8sversion, "kubectl")
-	if err != nil {
-		return nil, err
-	}
-
-	pausePackage, err := GetContainerImageVersion(k8sversion, "pause")
-	if err != nil {
-		return nil, err
 	}
 
 	ocneBasicConfig := []string{
@@ -311,12 +185,12 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 		`sudo dnf install -y oracle-olcne-release-el8`,
 		`sudo dnf config-manager --enable ol8_olcne16 ol8_olcne15 ol8_addons ol8_baseos_latest ol8_appstream ol8_UEKR6`,
 		`sudo dnf config-manager --disable ol8_olcne14 ol8_olcne13 ol8_olcne12 ol8_developer`,
-		fmt.Sprintf("sudo dnf install -y kubelet-%s.el8 kubeadm-%s.el8 kubectl-%s.el8", kubeletPackage, kubeadmPackage, kubectlPackage),
+		fmt.Sprintf("sudo dnf install -y kubelet-%s.el8 kubeadm-%s.el8 kubectl-%s.el8 helm-%s.el8", ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubelet, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubectl, ocneMeta[userData.KubernetesVersion].OCNEPackages.Helm),
 		`sudo dnf install -y oraclelinux-developer-release-el8 python36-oci-cli olcnectl olcne-api-server olcne-utils`,
 	}
 
 	ocneServicesStart := []string{
-		fmt.Sprintf(`sudo sh -c 'echo -e "[ crio ]\n[ crio.api ]\n[ crio.image ]\npause_image = \"%s/pause:%s\"\npause_image_auth_file = \"/run/containers/0/auth.json\"\nregistries = [\"docker.io\", \"%s\"]\n[ crio.metrics ]\n[ crio.network ]\nplugin_dirs = [\"/opt/cni/bin\"]\n[crio.runtime]\ncgroup_manager = \"systemd\"\nconmon = \"/usr/bin/conmon\"\nconmon_cgroup = \"system.slice\"\nmanage_network_ns_lifecycle = true\nmanage_ns_lifecycle = true\nselinux = false\n[ crio.runtime.runtimes ]\n[ crio.runtime.runtimes.kata ]\nruntime_path = \"/usr/bin/kata-runtime\"\nruntime_type = \"oci\"\n[ crio.runtime.runtimes.runc ]\nallowed_annotations = [\"io.containers.trace-syscall\"]\nmonitor_cgroup = \"system.slice\"\nmonitor_env = [\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"]\nmonitor_exec_cgroup = \"\"\nmonitor_path = \"/usr/bin/conmon\"\nprivileged_without_host_devices = false\nruntime_config_path = \"\"\nruntime_path = \"\"\nruntime_root = \"/run/runc\"\nruntime_type = \"oci\"\n[ crio.stats ]\n[ crio.tracing ]\n"| sudo tee /etc/crio/crio.conf'`, userData.OCNEImageRepository, pausePackage, userData.OCNEImageRepository),
+		fmt.Sprintf(`sudo sh -c 'echo -e "[ crio ]\n[ crio.api ]\n[ crio.image ]\npause_image = \"%s/pause:%s\"\npause_image_auth_file = \"/run/containers/0/auth.json\"\nregistries = [\"docker.io\", \"%s\"]\n[ crio.metrics ]\n[ crio.network ]\nplugin_dirs = [\"/opt/cni/bin\"]\n[crio.runtime]\ncgroup_manager = \"systemd\"\nconmon = \"/usr/bin/conmon\"\nconmon_cgroup = \"system.slice\"\nmanage_network_ns_lifecycle = true\nmanage_ns_lifecycle = true\nselinux = false\n[ crio.runtime.runtimes ]\n[ crio.runtime.runtimes.kata ]\nruntime_path = \"/usr/bin/kata-runtime\"\nruntime_type = \"oci\"\n[ crio.runtime.runtimes.runc ]\nallowed_annotations = [\"io.containers.trace-syscall\"]\nmonitor_cgroup = \"system.slice\"\nmonitor_env = [\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"]\nmonitor_exec_cgroup = \"\"\nmonitor_path = \"/usr/bin/conmon\"\nprivileged_without_host_devices = false\nruntime_config_path = \"\"\nruntime_path = \"\"\nruntime_root = \"/run/runc\"\nruntime_type = \"oci\"\n[ crio.stats ]\n[ crio.tracing ]\n"| sudo tee /etc/crio/crio.conf'`, userData.OCNEImageRepository, ocneMeta[userData.KubernetesVersion].OCNEImages.Pause, userData.OCNEImageRepository),
 		`sudo rm -rf /etc/cni/net.d/100-crio-bridge.conf && sudo systemctl enable crio && sudo systemctl restart crio && sudo systemctl enable kubelet`,
 		`sudo systemctl disable firewalld && sudo systemctl stop firewalld`,
 	}
@@ -342,4 +216,33 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 		}
 	}
 	return append(ocneNodeOverrrides, ocneServicesStart...), nil
+}
+
+func GetOCNEMetadata(ctx context.Context) (map[string]ocnemeta.OCNEMetadata, error) {
+	client, err := GetCoreV1Func()
+	if err != nil {
+		return nil, err
+	}
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+
+	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
+	if err != nil {
+		//scope.Error(err, fmt.Sprintf("Failed to get metadata configmap '%s'", configMapName))
+		return nil, err
+	}
+
+	data, err := apiyaml.ToJSON([]byte(cm.Data[cmDataKey]))
+	if err != nil {
+		//scope.Error(err, "yaml conversion error")
+		return nil, err
+	}
+
+	rawMapping := map[string]ocnemeta.OCNEMetadata{}
+	if err := yaml.Unmarshal(data, &rawMapping); err != nil {
+		return nil, err
+	}
+	return rawMapping, nil
 }

@@ -20,6 +20,13 @@ package cloudinit
 
 import (
 	"fmt"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
 	"testing"
 
 	"sigs.k8s.io/yaml"
@@ -28,6 +35,24 @@ import (
 )
 
 func TestNewNode(t *testing.T) {
+
+	ocneMeta, _ := ocnemeta.GetMetaDataContents(k8sversionsFile)
+	namespace, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		namespace = capiDefaultNamespace
+	}
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: ocneMeta,
+	}
+	ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+		return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+	}
+	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
 	tests := []struct {
 		name    string
 		input   *NodeInput

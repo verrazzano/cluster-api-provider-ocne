@@ -78,7 +78,6 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
 	input.SentinelFileCommand = sentinelFileCommand
-
 	userData, err := generate("InitControlplane", controlPlaneCloudInit, input)
 	if err != nil {
 		return nil, err
