@@ -157,6 +157,9 @@ type ModuleAddons struct {
 	// ChartLocation is the URL of the Helm chart repository.
 	RepoURL string `json:"repoURL"`
 
+	// ChartName is the name of the Helm chart in the repository.
+	ChartName string `json:"chartName"`
+
 	// ReleaseName is the release name of the installed Helm chart. If it is not specified, a name will be generated.
 	// +optional
 	ReleaseName string `json:"releaseName,omitempty"`

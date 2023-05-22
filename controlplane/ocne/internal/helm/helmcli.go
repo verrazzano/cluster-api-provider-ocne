@@ -97,15 +97,15 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName string, spec
 
 	if spec.ReleaseName == "" {
 		installClient.GenerateName = true
-		spec.ReleaseName, _, err = installClient.NameAndChart([]string{spec.ReleaseName})
+		spec.ReleaseName, _, err = installClient.NameAndChart([]string{spec.ChartName})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate release name for chart %s on ocne control plane %s", spec.ReleaseName, ocneCPName)
+			return nil, errors.Wrapf(err, "failed to generate release name for chart %s on ocne control plane %s", spec.ChartName, ocneCPName)
 		}
 	}
 	installClient.ReleaseName = spec.ReleaseName
 
 	log.V(2).Info("Locating chart...")
-	cp, err := installClient.ChartPathOptions.LocateChart(spec.ReleaseName, settings)
+	cp, err := installClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bo
 	upgradeClient.Version = spec.Version
 	upgradeClient.Namespace = spec.ReleaseNamespace
 	log.V(2).Info("Locating chart...")
-	cp, err := upgradeClient.ChartPathOptions.LocateChart(spec.ReleaseName, settings)
+	cp, err := upgradeClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bo
 		return nil, err
 	}
 	if chartRequested == nil {
-		return nil, errors.Errorf("failed to load request chart %s", spec.ReleaseName)
+		return nil, errors.Errorf("failed to load request chart %s", spec.ChartName)
 	}
 
 	shouldUpgrade, err := shouldUpgradeHelmRelease(ctx, *existing, chartRequested, vals)
@@ -211,7 +211,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bo
 func writeValuesToFile(ctx context.Context, spec bootstrapv1.ModuleAddons) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(2).Info("Writing values to file")
-	valuesFile, err := os.CreateTemp("", spec.ReleaseName+"-"+spec.ReleaseName+"-*.yaml")
+	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
 	if err != nil {
 		return "", err
 	}

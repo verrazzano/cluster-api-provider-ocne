@@ -91,6 +91,10 @@ spec:
                   addons:
                     items:
                       properties:
+                        chartName:
+                          description: ChartName is the name of the Helm chart in
+                            the repository.
+                          type: string
                         namespace:
                           description: ReleaseNamespace is the namespace the Helm
                             release will be installed on each selected Cluster. If
@@ -116,6 +120,7 @@ spec:
                             to date with the latest version.
                           type: string
                       required:
+                      - chartName
                       - repoURL
                       type: object
                     type: array
