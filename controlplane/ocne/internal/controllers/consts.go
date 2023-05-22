@@ -36,4 +36,7 @@ const (
 	// KubernetesVersionsFile references the metadata file containing the Kubernetes to OCNE
 	// versions mappings as well as the versions of major Kuberenetes components (etcd, kube-proxy, etc)
 	KubernetesVersionsFile = "/kubernetes-versions.yaml"
+
+	// ModulesVersionsFile references the metadata file containing the available module charts
+	ModulesVersionsFile = "/index.yaml"
 )
