@@ -21,6 +21,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"time"
 
@@ -194,6 +196,24 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
 			log.Error(err, "Failed to set defaults for OCNEControlPlane")
 			reterr = kerrors.NewAggregate([]error{reterr, err})
+		}
+
+		if ocnecp.Spec.ControlPlaneConfig.Addons != nil {
+			kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+			if err != nil {
+				log.Error(err, "failed to get kubeconfig for cluster ")
+				reterr = kerrors.NewAggregate([]error{reterr, err})
+			}
+
+			for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
+				release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.GetObjectMeta().GetName(), spec)
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+					reterr = kerrors.NewAggregate([]error{reterr, err})
+				}
+			}
+		} else {
+			log.Info(fmt.Sprintf("No addons installed as none was specified..."))
 		}
 
 		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
