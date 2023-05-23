@@ -198,24 +198,6 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
-		if ocnecp.Spec.ControlPlaneConfig.Addons != nil {
-			kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
-			if err != nil {
-				log.Error(err, "failed to get kubeconfig for cluster ")
-				reterr = kerrors.NewAggregate([]error{reterr, err})
-			}
-
-			for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
-				release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.GetObjectMeta().GetName(), spec)
-				if err != nil {
-					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
-					reterr = kerrors.NewAggregate([]error{reterr, err})
-				}
-			}
-		} else {
-			log.Info(fmt.Sprintf("No addons installed as none was specified..."))
-		}
-
 		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
 		if err := patchOCNEControlPlane(ctx, patchHelper, ocnecp); err != nil {
 			log.Error(err, "Failed to patch OCNEControlPlane")
@@ -508,6 +490,30 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	// Update CoreDNS deployment.
 	if err := workloadCluster.UpdateCoreDNS(ctx, ocnecp, parsedVersion); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to update CoreDNS deployment")
+	}
+
+	if ocnecp.Spec.ControlPlaneConfig.Addons != nil {
+		for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
+			if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+				kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+				if err != nil {
+					log.Error(err, "failed to get kubeconfig for cluster ")
+					reterr = kerrors.NewAggregate([]error{reterr, err})
+				}
+				values, err := helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
+				if err != nil {
+					log.Error(err, "failed to parse values from valuesTemplate ")
+					reterr = kerrors.NewAggregate([]error{reterr, err})
+				}
+				release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), values, spec)
+				if err != nil {
+					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+					reterr = kerrors.NewAggregate([]error{reterr, err})
+				}
+			}
+		}
+	} else {
+		log.Info(fmt.Sprintf("No addons installed as none was specified..."))
 	}
 
 	return ctrl.Result{}, nil

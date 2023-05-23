@@ -174,10 +174,10 @@ type ModuleAddons struct {
 	// +optional
 	Version string `json:"version,omitempty"`
 
-	// Values is an inline YAML representing the values for the Helm chart. This YAML supports Go templating to reference
+	// valuesTemplate is an inline YAML representing the values for the Helm chart. This YAML supports Go templating to reference
 	// fields from each selected workload Cluster and programatically create and set values.
 	// +optional
-	Values string `json:"valuesTemplate,omitempty"`
+	ValuesTemplate string `json:"valuesTemplate,omitempty"`
 }
 
 // IgnitionSpec contains Ignition specific configuration.

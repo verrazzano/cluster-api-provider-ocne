@@ -66,23 +66,23 @@ func HelmInit(ctx context.Context, namespace string, kubeconfig string) (*helmCl
 	return settings, actionConfig, nil
 }
 
-func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
+func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Installing or upgrading Helm release")
 	existingRelease, err := GetHelmRelease(ctx, kubeconfig, spec)
 	if err != nil {
 		if err == helmDriver.ErrReleaseNotFound {
-			return InstallHelmRelease(ctx, kubeconfig, ocneCPName, spec)
+			return InstallHelmRelease(ctx, kubeconfig, ocneCPName, values, spec)
 		}
 
 		return nil, err
 	}
 
-	return UpgradeHelmReleaseIfChanged(ctx, kubeconfig, spec, existingRelease)
+	return UpgradeHelmReleaseIfChanged(ctx, kubeconfig, values, spec, existingRelease)
 }
 
-func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
+func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -112,7 +112,8 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName string, spec
 	log.V(2).Info("Located chart at path", "path", cp)
 
 	log.V(2).Info("Writing values to file")
-	filename, err := writeValuesToFile(ctx, spec)
+
+	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName string, spec
 	return installClient.RunWithContext(ctx, chartRequested, vals) // Can return error and a release
 }
 
-func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bootstrapv1.ModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
+func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string, spec bootstrapv1.ModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -162,7 +163,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bo
 	log.V(2).Info("Located chart at path", "path", cp)
 
 	log.V(2).Info("Writing values to file")
-	filename, err := writeValuesToFile(ctx, spec)
+	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +209,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec bo
 	// Should we force upgrade if it failed previously?
 }
 
-func writeValuesToFile(ctx context.Context, spec bootstrapv1.ModuleAddons) (string, error) {
+func writeValuesToFile(ctx context.Context, values string, spec bootstrapv1.ModuleAddons) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(2).Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
@@ -216,7 +217,7 @@ func writeValuesToFile(ctx context.Context, spec bootstrapv1.ModuleAddons) (stri
 		return "", err
 	}
 
-	if _, err := valuesFile.Write([]byte(spec.Values)); err != nil {
+	if _, err := valuesFile.Write([]byte(values)); err != nil {
 		return "", err
 	}
 

@@ -83,7 +83,7 @@ spec:
                                     chart repository.
                                   type: string
                                 valuesTemplate:
-                                  description: Values is an inline YAML representing
+                                  description: valuesTemplate is an inline YAML representing
                                     the values for the Helm chart. This YAML supports
                                     Go templating to reference fields from each selected
                                     workload Cluster and programatically create and
