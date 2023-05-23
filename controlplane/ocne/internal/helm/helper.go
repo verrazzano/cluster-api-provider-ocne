@@ -14,7 +14,7 @@ import (
 	"text/template"
 )
 
-func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, spec addonsv1alpha1.HelmChartProxySpec, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
+func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	valueLookUp := make(map[string]interface{})
@@ -53,7 +53,7 @@ func ParseValuesTemplate(ctx context.Context, c ctrlClient.Client, spec bootstra
 	}
 	// TODO: would we want to add ControlPlaneMachineTemplate?
 
-	valueLookUp, err := initializeBuiltins(ctx, c, references, spec, cluster)
+	valueLookUp, err := initializeBuiltins(ctx, c, references, cluster)
 	if err != nil {
 		return "", err
 	}

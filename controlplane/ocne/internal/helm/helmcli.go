@@ -3,6 +3,7 @@ package helm
 import (
 	"context"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	helmAction "helm.sh/helm/v3/pkg/action"
@@ -69,7 +70,7 @@ func HelmInit(ctx context.Context, namespace string, kubeconfig string) (*helmCl
 func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	log.V(2).Info("Installing or upgrading Helm release")
+	log.Info("Installing or upgrading Helm release")
 	existingRelease, err := GetHelmRelease(ctx, kubeconfig, spec)
 	if err != nil {
 		if err == helmDriver.ErrReleaseNotFound {
@@ -104,21 +105,23 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	}
 	installClient.ReleaseName = spec.ReleaseName
 
-	log.V(2).Info("Locating chart...")
+	spew.Dump(installClient)
+	log.Info("Locating chart...")
 	cp, err := installClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 	if err != nil {
+		log.Info("+++ ERROR = %v +++", err)
 		return nil, err
 	}
-	log.V(2).Info("Located chart at path", "path", cp)
+	log.Info("Located chart at path", "path", cp)
 
-	log.V(2).Info("Writing values to file")
+	log.Info("Writing values to file")
 
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(filename)
-	log.V(2).Info("Values written to file", "path", filename)
+	log.Info("Values written to file", "path", filename)
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -139,7 +142,7 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	if err != nil {
 		return nil, err
 	}
-	log.V(2).Info("Installing with Helm...")
+	log.Info("Installing with Helm...")
 
 	return installClient.RunWithContext(ctx, chartRequested, vals) // Can return error and a release
 }
@@ -155,20 +158,20 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 	upgradeClient.RepoURL = spec.RepoURL
 	upgradeClient.Version = spec.Version
 	upgradeClient.Namespace = spec.ReleaseNamespace
-	log.V(2).Info("Locating chart...")
+	log.Info("Locating chart...")
 	cp, err := upgradeClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 	if err != nil {
 		return nil, err
 	}
-	log.V(2).Info("Located chart at path", "path", cp)
+	log.Info("Located chart at path", "path", cp)
 
-	log.V(2).Info("Writing values to file")
+	log.Info("Writing values to file")
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(filename)
-	log.V(2).Info("Values written to file", "path", filename)
+	log.Info("Values written to file", "path", filename)
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -197,11 +200,11 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 		return nil, err
 	}
 	if !shouldUpgrade {
-		log.V(2).Info(fmt.Sprintf("Release `%s` is up to date, no upgrade requried, revision = %d", existing.Name, existing.Version))
+		log.Info(fmt.Sprintf("Release `%s` is up to date, no upgrade requried, revision = %d", existing.Name, existing.Version))
 		return existing, nil
 	}
 
-	log.V(2).Info(fmt.Sprintf("Upgrading release `%s` with Helm", spec.ReleaseName))
+	log.Info(fmt.Sprintf("Upgrading release `%s` with Helm", spec.ReleaseName))
 	// upgrader.DryRun = true
 	release, err := upgradeClient.RunWithContext(ctx, spec.ReleaseName, chartRequested, vals)
 
@@ -211,7 +214,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 
 func writeValuesToFile(ctx context.Context, values string, spec bootstrapv1.ModuleAddons) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.V(2).Info("Writing values to file")
+	log.Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
 	if err != nil {
 		return "", err
