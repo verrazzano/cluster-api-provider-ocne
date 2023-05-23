@@ -3,7 +3,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	helmAction "helm.sh/helm/v3/pkg/action"
@@ -76,7 +75,6 @@ func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, v
 		if err == helmDriver.ErrReleaseNotFound {
 			return InstallHelmRelease(ctx, kubeconfig, ocneCPName, values, spec)
 		}
-
 		return nil, err
 	}
 
@@ -105,7 +103,6 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	}
 	installClient.ReleaseName = spec.ReleaseName
 
-	spew.Dump(installClient)
 	log.Info("Locating chart...")
 	cp, err := installClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 	if err != nil {

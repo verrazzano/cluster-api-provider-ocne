@@ -134,6 +134,7 @@ const (
 	ntp                  = "ntp"
 	ignition             = "ignition"
 	diskSetup            = "diskSetup"
+	addons               = "addons"
 )
 
 const minimumCertificatesExpiryDays = 7
@@ -162,6 +163,8 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, controlPlaneConfig, preOCNECommands},
 		{spec, controlPlaneConfig, postOCNECommands},
 		{spec, controlPlaneConfig, files},
+		{spec, controlPlaneConfig, addons},
+		{spec, controlPlaneConfig, addons, "*"},
 		{spec, controlPlaneConfig, "verbosity"},
 		{spec, controlPlaneConfig, users},
 		{spec, controlPlaneConfig, ntp, "*"},

@@ -178,6 +178,10 @@ type ModuleAddons struct {
 	// fields from each selected workload Cluster and programatically create and set values.
 	// +optional
 	ValuesTemplate string `json:"valuesTemplate,omitempty"`
+
+	Deployed bool `json:"deployed,omitempty"`
+
+	Upgraded bool `json:"updated,omitempty"`
 }
 
 // IgnitionSpec contains Ignition specific configuration.

@@ -55,6 +55,8 @@ spec:
                       description: ChartName is the name of the Helm chart in the
                         repository.
                       type: string
+                    deployed:
+                      type: boolean
                     namespace:
                       description: ReleaseNamespace is the namespace the Helm release
                         will be installed on each selected Cluster. If it is not specified,
@@ -67,6 +69,8 @@ spec:
                     repoURL:
                       description: ChartLocation is the URL of the Helm chart repository.
                       type: string
+                    updated:
+                      type: boolean
                     valuesTemplate:
                       description: valuesTemplate is an inline YAML representing the
                         values for the Helm chart. This YAML supports Go templating

@@ -247,6 +247,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.MachinesReadyCondition,
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
+			controlplanev1.Addons,
 		),
 	)
 
@@ -262,6 +263,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.MachinesReadyCondition,
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
+			controlplanev1.Addons,
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -493,29 +495,47 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	if ocnecp.Spec.ControlPlaneConfig.Addons != nil {
-		for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
-			if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		return r.processAddons(ctx, cluster, ocnecp, controlPlane)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *OCNEControlPlaneReconciler) processAddons(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("Reconcile OCNEControlPlane Addons")
+	for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
+		if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+			if !spec.Deployed {
+				log.Info(fmt.Sprintf("++++ Execute Helm chart for addon %s  ++++", spec.ChartName))
 				kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
 				if err != nil {
 					log.Error(err, "failed to get kubeconfig for cluster ")
 					reterr = kerrors.NewAggregate([]error{reterr, err})
 				}
-				values, err := helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
-				if err != nil {
-					log.Error(err, "failed to parse values from valuesTemplate ")
-					reterr = kerrors.NewAggregate([]error{reterr, err})
+				var values string
+				if spec.ValuesTemplate != "" {
+					values, err = helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
+					if err != nil {
+						log.Error(err, "failed to parse values from valuesTemplate ")
+						reterr = kerrors.NewAggregate([]error{reterr, err})
+					}
+				} else {
+					log.Info("++++ DEBUG Values not processed as empty ++++")
 				}
 				release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), values, spec)
 				if err != nil {
 					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
 					reterr = kerrors.NewAggregate([]error{reterr, err})
 				}
+				conditions.MarkTrue(controlPlane.KCP, controlplanev1.Addons)
+				spec.Deployed = true
+				spec.Upgraded = true
+			} else {
+				log.Info(fmt.Sprintf("++++ Helm chart for addon %s  already deployed ++++", spec.ChartName))
 			}
 		}
-	} else {
-		log.Info(fmt.Sprintf("No addons installed as none was specified..."))
 	}
-
 	return ctrl.Result{}, nil
 }
 
