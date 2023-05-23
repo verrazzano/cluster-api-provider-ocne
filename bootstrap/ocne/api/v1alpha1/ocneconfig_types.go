@@ -111,10 +111,6 @@ type OCNEConfigSpec struct {
 	// ImageConfiguration contains configuration required for the base image.
 	// +optional
 	ImageConfiguration *ImageConfigurationSpec `json:"imageConfiguration,omitempty"`
-
-	// ModuleAddons List
-
-	Addons []ModuleAddons `json:"addons,omitempty"`
 }
 
 type ImageConfigurationSpec struct {
@@ -151,37 +147,6 @@ type ProxySpec struct {
 	// The value, if specified is used in conjunction with preOCNECommands to install and configure repositories.
 	// +optional
 	NoProxy string `json:"noProxy,omitempty"`
-}
-
-type ModuleAddons struct {
-	// ChartLocation is the URL of the Helm chart repository.
-	RepoURL string `json:"repoURL"`
-
-	// ChartName is the name of the Helm chart in the repository.
-	ChartName string `json:"chartName"`
-
-	// ReleaseName is the release name of the installed Helm chart. If it is not specified, a name will be generated.
-	// +optional
-	ReleaseName string `json:"releaseName,omitempty"`
-
-	// ReleaseNamespace is the namespace the Helm release will be installed on each selected
-	// Cluster. If it is not specified, it will be set to the default namespace.
-	// +optional
-	ReleaseNamespace string `json:"namespace,omitempty"`
-
-	// Version is the version of the Helm chart. If it is not specified, the chart will use
-	// and be kept up to date with the latest version.
-	// +optional
-	Version string `json:"version,omitempty"`
-
-	// valuesTemplate is an inline YAML representing the values for the Helm chart. This YAML supports Go templating to reference
-	// fields from each selected workload Cluster and programatically create and set values.
-	// +optional
-	ValuesTemplate string `json:"valuesTemplate,omitempty"`
-
-	Deployed bool `json:"deployed,omitempty"`
-
-	Upgraded bool `json:"updated,omitempty"`
 }
 
 // IgnitionSpec contains Ignition specific configuration.

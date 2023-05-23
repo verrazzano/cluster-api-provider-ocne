@@ -48,45 +48,6 @@ spec:
               ClusterConfiguration and InitConfiguration should be defined or the
               JoinConfiguration should be defined.
             properties:
-              addons:
-                items:
-                  properties:
-                    chartName:
-                      description: ChartName is the name of the Helm chart in the
-                        repository.
-                      type: string
-                    deployed:
-                      type: boolean
-                    namespace:
-                      description: ReleaseNamespace is the namespace the Helm release
-                        will be installed on each selected Cluster. If it is not specified,
-                        it will be set to the default namespace.
-                      type: string
-                    releaseName:
-                      description: ReleaseName is the release name of the installed
-                        Helm chart. If it is not specified, a name will be generated.
-                      type: string
-                    repoURL:
-                      description: ChartLocation is the URL of the Helm chart repository.
-                      type: string
-                    updated:
-                      type: boolean
-                    valuesTemplate:
-                      description: valuesTemplate is an inline YAML representing the
-                        values for the Helm chart. This YAML supports Go templating
-                        to reference fields from each selected workload Cluster and
-                        programatically create and set values.
-                      type: string
-                    version:
-                      description: Version is the version of the Helm chart. If it
-                        is not specified, the chart will use and be kept up to date
-                        with the latest version.
-                      type: string
-                  required:
-                  - chartName
-                  - repoURL
-                  type: object
-                type: array
               clusterConfiguration:
                 description: ClusterConfiguration along with InitConfiguration are
                   the configurations necessary for the init command

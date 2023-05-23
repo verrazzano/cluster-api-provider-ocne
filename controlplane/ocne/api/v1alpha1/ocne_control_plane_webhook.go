@@ -163,8 +163,6 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, controlPlaneConfig, preOCNECommands},
 		{spec, controlPlaneConfig, postOCNECommands},
 		{spec, controlPlaneConfig, files},
-		{spec, controlPlaneConfig, addons},
-		{spec, controlPlaneConfig, addons, "*"},
 		{spec, controlPlaneConfig, "verbosity"},
 		{spec, controlPlaneConfig, users},
 		{spec, controlPlaneConfig, ntp, "*"},
@@ -182,6 +180,8 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, "rolloutAfter"},
 		{spec, "rolloutBefore", "*"},
 		{spec, "rolloutStrategy", "*"},
+		{spec, addons},
+		{spec, addons, "*"},
 	}
 
 	allErrs := validateKubeadmControlPlaneSpec(in.Spec, in.Namespace, field.NewPath("spec"))

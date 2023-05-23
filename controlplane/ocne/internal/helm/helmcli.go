@@ -22,7 +22,7 @@ import (
 	helmRelease "helm.sh/helm/v3/pkg/release"
 	helmDriver "helm.sh/helm/v3/pkg/storage/driver"
 
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 )
 
 func GetActionConfig(ctx context.Context, namespace string, config *rest.Config) (*helmAction.Configuration, error) {
@@ -66,7 +66,7 @@ func HelmInit(ctx context.Context, namespace string, kubeconfig string) (*helmCl
 	return settings, actionConfig, nil
 }
 
-func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
+func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Installing or upgrading Helm release")
@@ -81,7 +81,7 @@ func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, v
 	return UpgradeHelmReleaseIfChanged(ctx, kubeconfig, values, spec, existingRelease)
 }
 
-func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
+func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -144,7 +144,7 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	return installClient.RunWithContext(ctx, chartRequested, vals) // Can return error and a release
 }
 
-func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string, spec bootstrapv1.ModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
+func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string, spec controlplanev1.ModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -209,7 +209,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 	// Should we force upgrade if it failed previously?
 }
 
-func writeValuesToFile(ctx context.Context, values string, spec bootstrapv1.ModuleAddons) (string, error) {
+func writeValuesToFile(ctx context.Context, values string, spec controlplanev1.ModuleAddons) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
@@ -256,7 +256,7 @@ func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release,
 	return !cmp.Equal(oldValues, newValues), nil
 }
 
-func GetHelmRelease(ctx context.Context, kubeconfig string, spec bootstrapv1.ModuleAddons) (*helmRelease.Release, error) {
+func GetHelmRelease(ctx context.Context, kubeconfig string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
 	if spec.ReleaseName == "" {
 		return nil, helmDriver.ErrReleaseNotFound
 	}
@@ -274,7 +274,7 @@ func GetHelmRelease(ctx context.Context, kubeconfig string, spec bootstrapv1.Mod
 	return release, nil
 }
 
-func UninstallHelmRelease(ctx context.Context, kubeconfig string, spec bootstrapv1.ModuleAddons) (*helmRelease.UninstallReleaseResponse, error) {
+func UninstallHelmRelease(ctx context.Context, kubeconfig string, spec controlplanev1.ModuleAddons) (*helmRelease.UninstallReleaseResponse, error) {
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
 	if err != nil {
 		return nil, err

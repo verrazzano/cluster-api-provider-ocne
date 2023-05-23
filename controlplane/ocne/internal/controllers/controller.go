@@ -21,6 +21,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -227,6 +228,8 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Handle normal reconciliation loop.
+	log.Info("+++++++ RECONCILE WILL BE CALLED ++++++")
+	spew.Dump(ocnecp)
 	res, err = r.reconcile(ctx, cluster, ocnecp)
 	// Requeue if the reconcile failed because the ClusterCacheTracker was locked for
 	// the current cluster because of concurrent access.
@@ -306,7 +309,6 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 			ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
 		}
 	}
-
 	return nil
 }
 
@@ -494,7 +496,7 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return ctrl.Result{}, errors.Wrap(err, "failed to update CoreDNS deployment")
 	}
 
-	if ocnecp.Spec.ControlPlaneConfig.Addons != nil {
+	if ocnecp.Spec.Addons != nil {
 		return r.processAddons(ctx, cluster, ocnecp, controlPlane)
 	}
 
@@ -503,10 +505,11 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 
 func (r *OCNEControlPlaneReconciler) processAddons(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.Info("Reconcile OCNEControlPlane Addons")
-	for _, spec := range ocnecp.Spec.ControlPlaneConfig.Addons {
-		if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
-			if !spec.Deployed {
+	if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		log.Info("Reconcile OCNEControlPlane Addons")
+		for _, spec := range ocnecp.Spec.Addons {
+			log.Info(fmt.Sprintf("+++ Is this FALSE = %v +++", conditions.IsTrue(controlPlane.KCP, controlplanev1.Addons)))
+			if !conditions.IsTrue(controlPlane.KCP, controlplanev1.Addons) {
 				log.Info(fmt.Sprintf("++++ Execute Helm chart for addon %s  ++++", spec.ChartName))
 				kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
 				if err != nil {
@@ -528,13 +531,11 @@ func (r *OCNEControlPlaneReconciler) processAddons(ctx context.Context, cluster 
 					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
 					reterr = kerrors.NewAggregate([]error{reterr, err})
 				}
-				conditions.MarkTrue(controlPlane.KCP, controlplanev1.Addons)
-				spec.Deployed = true
-				spec.Upgraded = true
 			} else {
-				log.Info(fmt.Sprintf("++++ Helm chart for addon %s  already deployed ++++", spec.ChartName))
+				log.Info(fmt.Sprintf("++++ Helm chart for addon '%s'  already deployed ++++", spec.ChartName))
 			}
 		}
+		conditions.MarkTrue(controlPlane.KCP, controlplanev1.Addons)
 	}
 	return ctrl.Result{}, nil
 }

@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
-	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -32,7 +32,7 @@ func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap m
 }
 
 // ParseValues parses the values template and returns the expanded template. It attempts to populate a map of supported templating objects.
-func ParseValuesTemplate(ctx context.Context, c ctrlClient.Client, spec bootstrapv1.ModuleAddons, cluster *clusterv1.Cluster) (string, error) {
+func ParseValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlplanev1.ModuleAddons, cluster *clusterv1.Cluster) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Rendering templating in values:", "values", spec.ValuesTemplate)
