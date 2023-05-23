@@ -364,7 +364,7 @@ docker-build-%:
 ALL_DOCKER_BUILD = ocne-bootstrap ocne-control-plane
 
 .PHONY: docker-build
-docker-build: generate-modules-repo-artifacts docker-pull-prerequisites ## Run docker-build-* targets for all the images
+docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all the images
 	$(MAKE) ARCH=$(ARCH) $(addprefix docker-build-,$(ALL_DOCKER_BUILD))
 
 ALL_DOCKER_BUILD_E2E = ocne-bootstrap ocne-control-plane
