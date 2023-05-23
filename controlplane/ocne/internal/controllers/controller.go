@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -229,7 +228,6 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Handle normal reconciliation loop.
 	log.Info("+++++++ RECONCILE WILL BE CALLED ++++++")
-	spew.Dump(ocnecp)
 	res, err = r.reconcile(ctx, cluster, ocnecp)
 	// Requeue if the reconcile failed because the ClusterCacheTracker was locked for
 	// the current cluster because of concurrent access.
@@ -497,39 +495,52 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	if ocnecp.Spec.Addons != nil {
-		return r.processAddons(ctx, cluster, ocnecp, controlPlane)
+		return r.reconcileAddons(ctx, cluster, ocnecp, controlPlane)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *OCNEControlPlaneReconciler) processAddons(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
+func (r *OCNEControlPlaneReconciler) reconcileAddons(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	if conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
 		log.Info("Reconcile OCNEControlPlane Addons")
-		for _, spec := range ocnecp.Spec.Addons {
+		for i, spec := range ocnecp.Spec.Addons {
 			log.Info(fmt.Sprintf("+++ Is this FALSE = %v +++", conditions.IsTrue(controlPlane.KCP, controlplanev1.Addons)))
 			if !conditions.IsTrue(controlPlane.KCP, controlplanev1.Addons) {
-				log.Info(fmt.Sprintf("++++ Execute Helm chart for addon %s  ++++", spec.ChartName))
 				kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
 				if err != nil {
 					log.Error(err, "failed to get kubeconfig for cluster ")
 					reterr = kerrors.NewAggregate([]error{reterr, err})
 				}
-				var values string
-				if spec.ValuesTemplate != "" {
-					values, err = helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
+				if !spec.Uninstall {
+					log.Info(fmt.Sprintf("++++ Install Helm chart for addon %s  ++++", spec.ChartName))
+					var values string
+					if spec.ValuesTemplate != "" {
+						values, err = helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
+						if err != nil {
+							log.Error(err, "failed to parse values from valuesTemplate ")
+							reterr = kerrors.NewAggregate([]error{reterr, err})
+						}
+					} else {
+						log.Info("++++ DEBUG Values not processed as empty ++++")
+					}
+					release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), values, spec)
 					if err != nil {
-						log.Error(err, "failed to parse values from valuesTemplate ")
+						log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
 						reterr = kerrors.NewAggregate([]error{reterr, err})
 					}
+					ocnecp.Spec.Addons[i].Deployed = true
+					ocnecp.Spec.Addons[i].Uninstall = false
 				} else {
-					log.Info("++++ DEBUG Values not processed as empty ++++")
-				}
-				release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), values, spec)
-				if err != nil {
-					log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
-					reterr = kerrors.NewAggregate([]error{reterr, err})
+					log.Info(fmt.Sprintf("++++ Uninstall Helm chart for addon %s  ++++", spec.ChartName))
+					release, err := helm.UninstallHelmRelease(ctx, kubeconfig, spec)
+					if err != nil {
+						log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Info, ocnecp.GetObjectMeta().GetName()))
+						reterr = kerrors.NewAggregate([]error{reterr, err})
+					}
+					ocnecp.Spec.Addons[i].Deployed = true
+					ocnecp.Spec.Addons[i].Uninstall = true
 				}
 			} else {
 				log.Info(fmt.Sprintf("++++ Helm chart for addon '%s'  already deployed ++++", spec.ChartName))

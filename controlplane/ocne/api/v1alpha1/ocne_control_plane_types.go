@@ -127,7 +127,7 @@ type ModuleAddons struct {
 
 	Deployed bool `json:"deployed,omitempty"`
 
-	Upgraded bool `json:"updated,omitempty"`
+	Uninstall bool `json:"uninstall,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

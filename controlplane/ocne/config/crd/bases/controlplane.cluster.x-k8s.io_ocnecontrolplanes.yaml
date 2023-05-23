@@ -105,7 +105,7 @@ spec:
                     repoURL:
                       description: ChartLocation is the URL of the Helm chart repository.
                       type: string
-                    updated:
+                    uninstall:
                       type: boolean
                     valuesTemplate:
                       description: valuesTemplate is an inline YAML representing the
