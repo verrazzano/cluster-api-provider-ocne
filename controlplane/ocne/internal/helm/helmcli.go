@@ -41,7 +41,6 @@ func GetActionConfig(ctx context.Context, namespace string, config *rest.Config)
 	}
 	cliConfig.WithWrapConfigFn(wrapper)
 	// cliConfig.Insecure = &insecure
-	// Note: can change this to klog.V(4) or use a debug level
 	if err := actionConfig.Init(cliConfig, namespace, "secret", klog.V(4).Infof); err != nil {
 		return nil, err
 	}

@@ -91,8 +91,6 @@ spec:
                       description: ChartName is the name of the Helm chart in the
                         repository.
                       type: string
-                    deployed:
-                      type: boolean
                     namespace:
                       description: ReleaseNamespace is the namespace the Helm release
                         will be installed on each selected Cluster. If it is not specified,
@@ -106,6 +104,8 @@ spec:
                       description: ChartLocation is the URL of the Helm chart repository.
                       type: string
                     uninstall:
+                      description: Uninstall indicates whether chart needs to be cleaned
+                        up from the workload cluster By default it is set to false
                       type: boolean
                     valuesTemplate:
                       description: valuesTemplate is an inline YAML representing the

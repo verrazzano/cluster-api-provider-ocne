@@ -125,8 +125,9 @@ type ModuleAddons struct {
 	// +optional
 	ValuesTemplate string `json:"valuesTemplate,omitempty"`
 
-	Deployed bool `json:"deployed,omitempty"`
-
+	// Uninstall indicates whether chart needs to be cleaned up from the workload cluster
+	// By default it is set to false
+	// +optional
 	Uninstall bool `json:"uninstall,omitempty"`
 }
 
