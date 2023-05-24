@@ -53,9 +53,6 @@ RUN git clone https://github.com/verrazzano/verrazzano-modules.git && \
     cd verrazzano-modules/module-operator/manifests/charts/modules && \
     find . -type d -exec helm package -u '{}' \; && helm repo index .
 
-RUN helm repo add jetstack https://charts.jetstack.io && \
-    helm pull jetstack/cert-manager --untar --untardir .
-
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
