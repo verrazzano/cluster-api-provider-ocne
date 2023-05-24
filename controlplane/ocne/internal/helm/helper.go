@@ -1,3 +1,21 @@
+/*
+Copyright 2022 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+// This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+
 package helm
 
 import (
@@ -31,8 +49,7 @@ func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap m
 	return valueLookUp, nil
 }
 
-// ParseValues parses the values template and returns the expanded template. It attempts to populate a map of supported templating objects.
-func ParseValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlplanev1.ModuleAddons, cluster *clusterv1.Cluster) (string, error) {
+func ScanValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlplanev1.ModuleAddons, cluster *clusterv1.Cluster) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Rendering templating in values:", "values", spec.ValuesTemplate)
@@ -51,7 +68,6 @@ func ParseValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlp
 	if cluster.Spec.InfrastructureRef != nil {
 		references["InfraCluster"] = *cluster.Spec.InfrastructureRef
 	}
-	// TODO: would we want to add ControlPlaneMachineTemplate?
 
 	valueLookUp, err := initializeBuiltins(ctx, c, references, cluster)
 	if err != nil {

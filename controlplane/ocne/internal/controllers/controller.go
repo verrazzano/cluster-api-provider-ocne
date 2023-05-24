@@ -513,7 +513,7 @@ func (r *OCNEControlPlaneReconciler) reconcileAddons(ctx context.Context, cluste
 		if !spec.Uninstall {
 			var values string
 			if spec.ValuesTemplate != "" {
-				values, err = helm.ParseValuesTemplate(ctx, r.Client, spec, cluster)
+				values, err = helm.ScanValuesTemplate(ctx, r.Client, spec, cluster)
 				if err != nil {
 					log.Error(err, "failed to parse values from valuesTemplate ")
 					reterr = kerrors.NewAggregate([]error{reterr, err})
