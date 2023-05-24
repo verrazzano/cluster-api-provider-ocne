@@ -122,12 +122,12 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 		log.Info("Locating chart...")
 		cp, err = installClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 		if err != nil {
-			log.Info(fmt.Sprintf("+++ ERROR = %v +++", err))
+			log.Info(fmt.Sprintf("Unable to find chart = %v ", err))
 			return nil, err
 		}
 	}
 
-	log.Info("Located chart at path", "path", cp)
+	log.Info(fmt.Sprintf("Located chart at path '%s'", cp))
 	log.Info("Writing values to file")
 
 	filename, err := writeValuesToFile(ctx, values, spec)
@@ -141,7 +141,7 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 		return nil, err
 	}
 
-	klog.V(2).Infof("Values written to file %s are:\n%s\n", filename, string(content))
+	log.Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
 
 	p := helmGetter.All(settings)
 	valueOpts := &helmVals.Options{
@@ -175,17 +175,18 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 
 	var cp string
 	if spec.Local {
+		log.Info("Local path...")
 		cp = spec.RepoURL
 	} else {
 		log.Info("Locating chart...")
 		cp, err = upgradeClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 		if err != nil {
-			log.Info(fmt.Sprintf("+++ ERROR = %v +++", err))
+			log.Info(fmt.Sprintf("Unable to find chart = %v ", err))
 			return nil, err
 		}
 	}
 
-	log.Info("Located chart at path", "path", cp)
+	log.Info(fmt.Sprintf("Located chart at path '%s'", cp))
 	log.Info("Writing values to file")
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
@@ -198,7 +199,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 		return nil, err
 	}
 
-	klog.V(2).Infof("Values written to file %s are:\n%s\n", filename, string(content))
+	log.Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
 
 	p := helmGetter.All(settings)
 	valueOpts := &helmVals.Options{

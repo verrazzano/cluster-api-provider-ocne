@@ -130,6 +130,10 @@ type ModuleAddons struct {
 	// +optional
 	Uninstall bool `json:"uninstall,omitempty"`
 
+	// Local indicates whether chart is local or needs to be pulled in from the internet.
+	// When Local is set to true the RepoURL would be the local path to the chart directory in the container.
+	// By default, Local is set to false.
+	// +optional
 	Local bool `json:"local,omitempty"`
 }
 
