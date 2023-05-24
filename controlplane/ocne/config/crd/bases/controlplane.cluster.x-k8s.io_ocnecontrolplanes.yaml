@@ -91,6 +91,8 @@ spec:
                       description: ChartName is the name of the Helm chart in the
                         repository.
                       type: string
+                    local:
+                      type: boolean
                     namespace:
                       description: ReleaseNamespace is the namespace the Helm release
                         will be installed on each selected Cluster. If it is not specified,

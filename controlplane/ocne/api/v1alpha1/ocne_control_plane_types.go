@@ -129,6 +129,8 @@ type ModuleAddons struct {
 	// By default it is set to false
 	// +optional
 	Uninstall bool `json:"uninstall,omitempty"`
+
+	Local bool `json:"local,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines
