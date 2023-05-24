@@ -84,7 +84,6 @@ RUN microdnf update \
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/kubernetes-versions.yaml .
-COPY --from=builder /workspace/cert-manager /cert-manager/
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml .
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts /charts/
 RUN groupadd -r ocne \
