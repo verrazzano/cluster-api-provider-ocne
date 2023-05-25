@@ -209,6 +209,9 @@ endif
 # Set build time variables including version details
 LDFLAGS := $(shell hack/version.sh)
 
+# Branch for obtaining module charts
+BRANCH := main
+
 all: test managers
 
 help:  # Display this help
@@ -349,6 +352,7 @@ docker-pull-prerequisites:
 generate-modules-repo-artifacts:
 	git clone https://github.com/verrazzano/verrazzano-modules.git
 	cd $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules; \
+    git checkout $(BRANCH); \
  	find . -type d -exec helm package -u '{}' \; && helm repo index . ; \
  	mv $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml $(ROOT_DIR); \
  	cp -R $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts $(ROOT_DIR); \
