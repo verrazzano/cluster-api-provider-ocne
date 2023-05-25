@@ -50,9 +50,10 @@ const (
 
 	K8sVersionOneTwoFourEight = "v1.24.8"
 
-	configMapName        = "ocne-metadata"
-	cmDataKey            = "mapping"
-	capiDefaultNamespace = "capi-ocne-control-plane-system"
+	configMapName                        = "ocne-metadata"
+	cmDataKey                            = "mapping"
+	CapiOCNEControlPlaneDefaultNamespace = "capi-ocne-control-plane-system"
+	CapiOCNEDefaultBootstrapNamespace    = "capi-ocne-bootstrap-system"
 )
 
 var (
@@ -223,12 +224,8 @@ func GetOCNEMetadata(ctx context.Context) (map[string]ocnemeta.OCNEMetadata, err
 	if err != nil {
 		return nil, err
 	}
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 
-	cm, err := client.ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
+	cm, err := client.ConfigMaps(GetOCNEMetaNamespace()).Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
 		//scope.Error(err, fmt.Sprintf("Failed to get metadata configmap '%s'", configMapName))
 		return nil, err
@@ -245,4 +242,12 @@ func GetOCNEMetadata(ctx context.Context) (map[string]ocnemeta.OCNEMetadata, err
 		return nil, err
 	}
 	return rawMapping, nil
+}
+
+func GetOCNEMetaNamespace() string {
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace == CapiOCNEDefaultBootstrapNamespace {
+		return CapiOCNEControlPlaneDefaultNamespace
+	}
+	return namespace
 }
