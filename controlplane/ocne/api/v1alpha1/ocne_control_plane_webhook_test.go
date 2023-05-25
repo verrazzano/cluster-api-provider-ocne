@@ -19,6 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
+	k8sfake "k8s.io/client-go/kubernetes/fake"
+	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
 	"testing"
 	"time"
 
@@ -32,6 +37,12 @@ import (
 	bootstrapv1 "github.com/verrazzano/cluster-api-provider-ocne/bootstrap/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 	utildefaulting "github.com/verrazzano/cluster-api-provider-ocne/util/defaulting"
+)
+
+const (
+	configMapName        = "ocne-metadata"
+	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
+	capiDefaultNamespace = "capi-ocne-control-plane-system"
 )
 
 func TestOCNEControlPlaneDefault(t *testing.T) {
@@ -249,6 +260,23 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 			}
 
 			g := NewWithT(t)
+			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+			g.Expect(err).To(BeNil())
+			namespace, ok := os.LookupEnv("POD_NAMESPACE")
+			if !ok {
+				namespace = capiDefaultNamespace
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+				Data: ocneMeta,
+			}
+			ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 			if tt.expectErr {
 				g.Expect(tt.ocnecp.ValidateCreate()).NotTo(Succeed())
@@ -998,7 +1026,25 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 
 			g := NewWithT(t)
 
-			err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
+			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
+			g.Expect(err).To(BeNil())
+			namespace, ok := os.LookupEnv("POD_NAMESPACE")
+			if !ok {
+				namespace = capiDefaultNamespace
+			}
+			configMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+				Data: ocneMeta,
+			}
+			ocne.GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
+				return k8sfake.NewSimpleClientset(configMap).CoreV1(), nil
+			}
+			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
+
+			err = tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

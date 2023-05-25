@@ -353,7 +353,7 @@ generate-modules-repo-artifacts:
 	git clone https://github.com/verrazzano/verrazzano-modules.git
 	cd $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules; \
     git checkout $(BRANCH); \
- 	find . -type d -depth 1 -exec helm package -u '{}' \; && helm repo index . ; \
+ 	find . -type d -exec helm package -u '{}' \; && helm repo index . ; \
  	mv $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml $(ROOT_DIR); \
  	cp -R $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts $(ROOT_DIR); \
  	rm -rf $(ROOT_DIR)/charts/modules/*.tgz

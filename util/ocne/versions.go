@@ -17,15 +17,28 @@ import (
 )
 
 type OCNEMetadata struct {
-	OCNEImages `json:"container-images"`
-	Release    string `json:release,omitempty`
+	OCNEImages   `json:"container-images"`
+	OCNEPackages `json:"packages"`
+	Release      string `json:release,omitempty`
 }
 
 type OCNEImages struct {
-	ETCD           string `json:"etcd"`
-	CoreDNS        string `json:"coredns"`
-	TigeraOperator string `json:"tigera-operator"`
-	Calico         string `json:"calico"`
+	ETCD                  string `json:"etcd"`
+	CoreDNS               string `json:"coredns"`
+	TigeraOperator        string `json:"tigera-operator"`
+	Calico                string `json:"calico"`
+	Pause                 string `json:"pause"`
+	KubeControllerManager string `json:"kube-controller-manager"`
+	KubeScheduler         string `json:"kube-scheduler"`
+	KubeApiServer         string `json:"kube-apiserver"`
+	KubeProxy             string `json:"kube-proxy"`
+}
+
+type OCNEPackages struct {
+	Kubeadm string `json:"kubeadm"`
+	Kubectl string `json:"kubectl"`
+	Kubelet string `json:"kubelet"`
+	Helm    string `json:"helm"`
 }
 
 const (
@@ -161,4 +174,36 @@ func isSupported(version string, minVersion *SemVersion) (bool, error) {
 	}
 
 	return v.IsGreaterThanOrEqualTo(minVersion), nil
+}
+
+func GetMetaDataContents(metadataFile string) (map[string]string, error) {
+	if _, err := os.Stat(metadataFile); err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(metadataFile)
+	if err != nil {
+		return nil, err
+	}
+
+	rawMapping := map[string]OCNEMetadata{}
+	if err := yaml.Unmarshal(data, &rawMapping); err != nil {
+		return nil, err
+	}
+
+	mapping, err := buildMapping(rawMapping)
+	if err != nil {
+		return nil, err
+	}
+
+	mappingBytes, err := yaml.Marshal(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	cmData := map[string]string{
+		cmDataKey: string(mappingBytes),
+	}
+
+	return cmData, err
 }
