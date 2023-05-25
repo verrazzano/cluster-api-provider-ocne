@@ -35,12 +35,23 @@ ENV GOPROXY=$goproxy
 
 ENV GOURL=https://yum.oracle.com/repo/OracleLinux/OL8/developer/x86_64/getPackage
 
-RUN dnf install openssl-devel delve gcc -y && \
+RUN dnf install -y oracle-olcne-release-el8 && \
+    dnf config-manager --enable ol8_olcne16 && \
+    dnf install -y openssl-devel delve gcc cpio yq helm-3.11.1-1.el8 tar git && \
     rpm -ivh ${GOURL}/go-toolset-1.19.4-1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
     ${GOURL}/golang-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
     ${GOURL}/golang-src-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.noarch.rpm \
     ${GOURL}/golang-bin-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm && \
-    go version
+    go version && \
+    curl https://yum.oracle.com/repo/OracleLinux/OL8/olcne16/x86_64/getPackage/olcne-api-server-1.6.0-4.el8.x86_64.rpm |\
+      rpm2cpio |\
+      cpio -idmv \
+    && sed -n '/---/q;p' ./etc/olcne/modules/kubernetes/1.0.0/kubernetes.yaml|\
+      yq r - 'data.versions' >./kubernetes-versions.yaml
+
+RUN git clone https://github.com/verrazzano/verrazzano-modules.git && \
+    cd verrazzano-modules/module-operator/manifests/charts/modules && \
+    find . -type d -exec helm package -u '{}' \; && helm repo index .
 
 # Copy the Go Modules manifests
 COPY go.mod go.mod
@@ -63,20 +74,18 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
     go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
     -o manager ${package}
 
+
 # Production image
 FROM ghcr.io/oracle/oraclelinux:8-slim
 RUN microdnf update \
-    && microdnf install -y oracle-olcne-release-el8 cpio \
-    && microdnf install -y --enablerepo=ol8_olcne16 yq \
-    && microdnf clean all \
-    && curl https://yum.oracle.com/repo/OracleLinux/OL8/olcne16/x86_64/getPackage/olcne-api-server-1.6.0-4.el8.x86_64.rpm |\
-      rpm2cpio |\
-      cpio -idmv \
-    && sed -n '/---/q;p' ./etc/olcne/modules/kubernetes/1.0.0/kubernetes.yaml|\
-      yq r - 'data.versions' >./kubernetes-versions.yaml
+    && microdnf clean all
+
 
 WORKDIR /
 COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/kubernetes-versions.yaml .
+COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml .
+COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts /charts/
 RUN groupadd -r ocne \
     && useradd --no-log-init -r -m -d /ocne -g ocne -u 1000 ocne \
     && mkdir -p /home/ocne \
@@ -84,7 +93,5 @@ RUN groupadd -r ocne \
     && chmod 500 /manager
 RUN mkdir -p /license
 COPY LICENSE README.md THIRD_PARTY_LICENSES.txt /license/
-COPY charts/ /charts/
-COPY index.yaml ./
 USER 1000
 ENTRYPOINT ["/manager"]
