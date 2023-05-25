@@ -233,7 +233,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	allErrs = append(allErrs, in.validateVersion(prev.Spec.Version)...)
 	allErrs = append(allErrs, validateClusterConfiguration(in.Spec.ControlPlaneConfig.ClusterConfiguration, prev.Spec.ControlPlaneConfig.ClusterConfiguration, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
-	allErrs = append(allErrs, in.validateOCNEData(in.Spec.ControlPlaneConfig.ClusterConfiguration, in.Spec.Version)...)
+	allErrs = append(allErrs, in.validateOCNEVersionOnUpgrade()...)
 	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, in.validateCoreDNSVersion(prev)...)
 	allErrs = append(allErrs, in.Spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
@@ -698,6 +698,25 @@ func (in *OCNEControlPlane) validateOCNEData(inClusterConfiguration *bootstrapv1
 				)
 			}
 		}
+	}
+	return allErrs
+}
+
+func (in *OCNEControlPlane) validateOCNEVersionOnUpgrade() (allErrs field.ErrorList) {
+
+	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
+	if err != nil {
+		return allErrs
+	}
+
+	if ocneMeta[in.Spec.Version].OCNEPackages.Kubeadm == "" {
+		allErrs = append(allErrs,
+			field.Invalid(
+				field.NewPath("spec", "version"),
+				in.Spec.Version,
+				fmt.Sprintf("upgrade not supported to kubernetes version %v.", in.Spec.Version),
+			),
+		)
 	}
 	return allErrs
 }

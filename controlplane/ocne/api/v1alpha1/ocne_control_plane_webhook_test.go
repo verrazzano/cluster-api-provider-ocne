@@ -367,7 +367,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 					Enabled: pointer.Bool(true),
 				},
 			},
-			Version: "v1.16.6",
+			Version: "v1.25.7",
 		},
 	}
 
@@ -410,7 +410,7 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 			Path: "abc",
 		},
 	}
-	validUpdate.Spec.Version = "v1.17.1"
+	validUpdate.Spec.Version = "v1.25.7"
 	validUpdate.Spec.ControlPlaneConfig.Users = []bootstrapv1.User{
 		{
 			Name: "bar",
