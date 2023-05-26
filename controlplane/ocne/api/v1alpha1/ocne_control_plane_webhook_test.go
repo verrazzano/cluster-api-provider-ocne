@@ -23,7 +23,6 @@ import (
 	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
-	"os"
 	"testing"
 	"time"
 
@@ -40,9 +39,8 @@ import (
 )
 
 const (
-	configMapName        = "ocne-metadata"
-	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
-	capiDefaultNamespace = "capi-ocne-control-plane-system"
+	configMapName   = "ocne-metadata"
+	k8sversionsFile = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
 )
 
 func TestOCNEControlPlaneDefault(t *testing.T) {
@@ -262,14 +260,10 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 			g := NewWithT(t)
 			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 			g.Expect(err).To(BeNil())
-			namespace, ok := os.LookupEnv("POD_NAMESPACE")
-			if !ok {
-				namespace = capiDefaultNamespace
-			}
 			configMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
-					Namespace: namespace,
+					Namespace: ocne.GetOCNEMetaNamespace(),
 				},
 				Data: ocneMeta,
 			}
@@ -1028,14 +1022,10 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 
 			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 			g.Expect(err).To(BeNil())
-			namespace, ok := os.LookupEnv("POD_NAMESPACE")
-			if !ok {
-				namespace = capiDefaultNamespace
-			}
 			configMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
-					Namespace: namespace,
+					Namespace: ocne.GetOCNEMetaNamespace(),
 				},
 				Data: ocneMeta,
 			}

@@ -26,7 +26,6 @@ import (
 	ocnemeta "github.com/verrazzano/cluster-api-provider-ocne/util/ocne"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -58,9 +57,8 @@ import (
 )
 
 const (
-	configMapName        = "ocne-metadata"
-	k8sversionsFile      = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
-	capiDefaultNamespace = "capi-ocne-control-plane-system"
+	configMapName   = "ocne-metadata"
+	k8sversionsFile = "../../../../util/ocne/testdata/kubernetes_versions.yaml"
 )
 
 // MachineToBootstrapMapFunc return kubeadm bootstrap configref name when configref exists.
@@ -69,14 +67,10 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -127,14 +121,10 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfKubeadmConfigIsReady(t *tes
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -173,14 +163,10 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -290,14 +276,10 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -368,14 +350,10 @@ func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 	g := NewWithT(t)
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -429,14 +407,10 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *test
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -477,14 +451,10 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedC
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -525,14 +495,10 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -643,14 +609,10 @@ func TestOCNEConfigReconciler_Reconcile_GenerateCloudConfigData(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -710,14 +672,10 @@ func TestOCNEConfigReconciler_Reconcile_ErrorIfJoiningControlPlaneHasInvalidConf
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -770,14 +728,10 @@ func TestOCNEConfigReconciler_Reconcile_RequeueIfControlPlaneIsMissingAPIEndpoin
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -868,14 +822,10 @@ func TestReconcileIfJoinNodesAndControlPlaneIsReady(t *testing.T) {
 
 			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 			g.Expect(err).To(BeNil())
-			namespace, ok := os.LookupEnv("POD_NAMESPACE")
-			if !ok {
-				namespace = capiDefaultNamespace
-			}
 			configMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
-					Namespace: namespace,
+					Namespace: ocne.GetOCNEMetaNamespace(),
 				},
 				Data: ocneMeta,
 			}
@@ -963,14 +913,10 @@ func TestReconcileIfJoinNodePoolsAndControlPlaneIsReady(t *testing.T) {
 
 			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 			g.Expect(err).To(BeNil())
-			namespace, ok := os.LookupEnv("POD_NAMESPACE")
-			if !ok {
-				namespace = capiDefaultNamespace
-			}
 			configMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
-					Namespace: namespace,
+					Namespace: ocne.GetOCNEMetaNamespace(),
 				},
 				Data: ocneMeta,
 			}
@@ -1059,14 +1005,10 @@ func TestBootstrapDataFormat(t *testing.T) {
 
 			ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 			g.Expect(err).To(BeNil())
-			namespace, ok := os.LookupEnv("POD_NAMESPACE")
-			if !ok {
-				namespace = capiDefaultNamespace
-			}
 			configMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
-					Namespace: namespace,
+					Namespace: ocne.GetOCNEMetaNamespace(),
 				},
 				Data: ocneMeta,
 			}
@@ -1169,14 +1111,10 @@ func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -1258,14 +1196,10 @@ func TestBootstrapTokenTTLExtension(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -1482,14 +1416,10 @@ func TestBootstrapTokenRotationMachinePool(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -2049,14 +1979,10 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -2114,14 +2040,10 @@ func TestOCNEConfigReconciler_Reconcile_DoesNotFailIfCASecretsAlreadyExist(t *te
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -2163,14 +2085,10 @@ func TestOCNEConfigReconciler_Reconcile_ExactlyOneControlPlaneMachineInitializes
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}
@@ -2232,14 +2150,10 @@ func TestOCNEConfigReconciler_Reconcile_PatchWhenErrorOccurred(t *testing.T) {
 
 	ocneMeta, err := ocnemeta.GetMetaDataContents(k8sversionsFile)
 	g.Expect(err).To(BeNil())
-	namespace, ok := os.LookupEnv("POD_NAMESPACE")
-	if !ok {
-		namespace = capiDefaultNamespace
-	}
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
-			Namespace: namespace,
+			Namespace: ocne.GetOCNEMetaNamespace(),
 		},
 		Data: ocneMeta,
 	}

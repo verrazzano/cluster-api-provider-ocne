@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	corev1Cli "k8s.io/client-go/kubernetes/typed/core/v1"
-	"os"
 	"testing"
 
 	"github.com/blang/semver"
@@ -182,14 +181,10 @@ func TestGetOCNEOverrides(t *testing.T) {
 			GetCoreV1Func = func() (corev1Cli.CoreV1Interface, error) {
 				ocneMeta, err := ocnemeta.GetMetaDataContents(kubeadmVersionFile)
 				g.Expect(err).To(BeNil())
-				namespace, ok := os.LookupEnv("POD_NAMESPACE")
-				if !ok {
-					namespace = capiDefaultNamespace
-				}
 				configMap := &v1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      configMapName,
-						Namespace: namespace,
+						Namespace: GetOCNEMetaNamespace(),
 					},
 					Data: ocneMeta,
 				}
