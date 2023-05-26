@@ -277,14 +277,6 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 
 	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration != nil {
 
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion == "" {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion = ocnecp.Spec.Version
-		} else {
-			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion != ocnecp.Spec.Version {
-				ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion = ocnecp.Spec.Version
-			}
-		}
-
 		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == "" {
 			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
 		}
@@ -308,13 +300,12 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 		}
 
 		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local == nil {
-			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageTag == "" {
-				ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
-			} else {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
+		} else {
+			// Verify and update user supplied values, helps in an upgrade case as well
+			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageRepository == ocne.DefaultOCNEImageRepository {
 				if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageTag != ocneMeta[ocnecp.Spec.Version].ETCD {
-					if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageRepository != ocne.DefaultOCNEImageRepository {
-						ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
-					}
+					ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
 				}
 			}
 		}
