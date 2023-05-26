@@ -41,7 +41,6 @@ func (r *OCNEControlPlaneReconciler) upgradeControlPlane(
 	machinesRequireUpgrade collections.Machines,
 ) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
-	logger.Info("++++ upgradeControlPlane hit ++++++")
 
 	if ocnecp.Spec.RolloutStrategy == nil || ocnecp.Spec.RolloutStrategy.RollingUpdate == nil {
 		return ctrl.Result{}, errors.New("rolloutStrategy is not set")
