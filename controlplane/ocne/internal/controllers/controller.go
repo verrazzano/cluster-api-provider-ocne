@@ -276,11 +276,28 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 	}
 
 	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration != nil {
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
+
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion == "" {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion = ocnecp.Spec.Version
+		} else {
+			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion != ocnecp.Spec.Version {
+				ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.KubernetesVersion = ocnecp.Spec.Version
+			}
 		}
+
 		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == "" {
 			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
+		}
+
+		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
+			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
+		} else {
+			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag != ocneMeta[ocnecp.Spec.Version].CoreDNS {
+				// Set to OCNE tag only if user overrride uses containerregistry
+				if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
+					ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
+				}
+			}
 		}
 
 		etcdLocal := bootstrapv1.LocalEtcd{
@@ -291,7 +308,15 @@ func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCN
 		}
 
 		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local == nil {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
+			if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageTag == "" {
+				ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
+			} else {
+				if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageTag != ocneMeta[ocnecp.Spec.Version].ETCD {
+					if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local.ImageMeta.ImageRepository != ocne.DefaultOCNEImageRepository {
+						ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
+					}
+				}
+			}
 		}
 
 		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "" {
