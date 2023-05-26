@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
-	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"k8s.io/klog/v2"
 	"time"
 
@@ -193,11 +192,6 @@ func (r *OCNEControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 		}
 
-		if err := setOCNEControlPlaneDefaults(ctx, ocnecp); err != nil {
-			log.Error(err, "Failed to set defaults for OCNEControlPlane")
-			reterr = kerrors.NewAggregate([]error{reterr, err})
-		}
-
 		// Always attempt to Patch the OCNEControlPlane object and status after each reconciliation.
 		if err := patchOCNEControlPlane(ctx, patchHelper, ocnecp); err != nil {
 			log.Error(err, "Failed to patch OCNEControlPlane")
@@ -267,46 +261,6 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
-}
-
-func setOCNEControlPlaneDefaults(ctx context.Context, ocnecp *controlplanev1.OCNEControlPlane) error {
-	ocneMeta, err := ocne.GetOCNEMetadata(ctx)
-	if err != nil {
-		return err
-	}
-
-	if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration != nil {
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag == "" {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageTag = ocneMeta[ocnecp.Spec.Version].CoreDNS
-		}
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository == "" {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
-		}
-
-		etcdLocal := bootstrapv1.LocalEtcd{
-			ImageMeta: bootstrapv1.ImageMeta{
-				ImageTag:        ocneMeta[ocnecp.Spec.Version].ETCD,
-				ImageRepository: ocne.DefaultOCNEImageRepository,
-			},
-		}
-
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local == nil {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.Etcd.Local = &etcdLocal
-		}
-
-		if ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository == "" {
-			ocnecp.Spec.ControlPlaneConfig.ClusterConfiguration.ImageRepository = ocne.DefaultOCNEImageRepository
-		}
-
-		if ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket == "" {
-			ocnecp.Spec.ControlPlaneConfig.JoinConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
-		}
-
-		if ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket == "" {
-			ocnecp.Spec.ControlPlaneConfig.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
-		}
-	}
-	return nil
 }
 
 // reconcile handles OCNEControlPlane reconciliation.
