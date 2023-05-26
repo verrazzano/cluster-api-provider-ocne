@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"strconv"
 	"strings"
 	"time"
@@ -438,19 +437,11 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	// injects into config.ClusterConfiguration values from top level object
 	r.reconcileTopLevelObjectSettings(ctx, scope.Cluster, machine, scope.Config)
 
-	ocneClusterConfig, err := setOCNEControlPlaneDefaults(ctx, scope)
-	if err != nil {
-		scope.Error(err, "Failed to set OCNE defaults")
-		return ctrl.Result{}, err
-	}
-
-	clusterdata, err := ocnetypes.MarshalClusterConfigurationForVersion(ocneClusterConfig, parsedVersion)
+	clusterdata, err := ocnetypes.MarshalClusterConfigurationForVersion(scope.Config.Spec.ClusterConfiguration, parsedVersion)
 	if err != nil {
 		scope.Error(err, "Failed to marshal cluster configuration")
 		return ctrl.Result{}, err
 	}
-
-	scope.Info(fmt.Sprintf("++++ ClusterData string = %s +++", clusterdata))
 
 	certificates := secret.NewCertificatesForInitialControlPlane(scope.Config.Spec.ClusterConfiguration)
 
@@ -548,8 +539,6 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		ClusterConfiguration: clusterdata,
 		Certificates:         certificates,
 	}
-
-	spew.Dump(controlPlaneInput)
 
 	var bootstrapInitData []byte
 	switch scope.Config.Spec.Format {
@@ -1119,93 +1108,6 @@ func (r *OCNEConfigReconciler) reconcileTopLevelObjectSettings(ctx context.Conte
 		config.Spec.ClusterConfiguration.KubernetesVersion = *machine.Spec.Version
 		log.V(3).Info("Altering ClusterConfiguration.KubernetesVersion", "KubernetesVersion", config.Spec.ClusterConfiguration.KubernetesVersion)
 	}
-
-}
-
-func setOCNEControlPlaneDefaults(ctx context.Context, scope *Scope) (*bootstrapv1.ClusterConfiguration, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	clusterConfig := scope.Config.Spec.ClusterConfiguration.DeepCopy()
-	ocneMeta, err := ocne.GetOCNEMetadata(ctx)
-	if err != nil {
-		log.Error(err, "Unable to fetch OCNE metadata !")
-		return nil, err
-
-	}
-	k8sVersion := scope.ConfigOwner.KubernetesVersion()
-	log.Info(fmt.Sprintf("+++ aamitra: K8s Version = %s +++++", k8sVersion))
-	log.Info(fmt.Sprintf("+++ aamitra: Value of scope.Config.Spec.ClusterConfiguration Deepcopy = %+v", clusterConfig))
-
-	// Update OCNE Control Plane values for the following
-	// 1. On New cluster create if user has not specified the values, populate them from the OCNE metadata.
-	// 2. On New cluster create if user has specified the values, they values are verified via webhook
-	// 3. In an upgrade scenario, the values are autopopulated from the OCNE metadata
-	if clusterConfig != nil {
-		log.Info("+++ aamitra: Hit as part of Reconcile +++++")
-		// When user supplied values are nil
-
-		setDnsImageTag := clusterConfig.DNS.ImageTag
-		if setDnsImageTag == "" {
-			log.Info("+++ aamitra: Empty DNS values +++++")
-			clusterConfig.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
-		} else {
-			log.Info("+++ aamitra: Non Empty DNS values +++++")
-			// Verify and update user supplied values, helps in an upgrade case as well
-			if setDnsImageTag != ocneMeta[k8sVersion].CoreDNS {
-				log.Info("+++ aamitra: Mismatch of non Empty DNS values, value updated !!! +++++")
-				clusterConfig.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
-			} else {
-				clusterConfig.DNS.ImageTag = setDnsImageTag
-			}
-		}
-
-		etcdLocal := bootstrapv1.LocalEtcd{
-			ImageMeta: bootstrapv1.ImageMeta{
-				ImageTag:        ocneMeta[k8sVersion].ETCD,
-				ImageRepository: ocne.DefaultOCNEImageRepository,
-			},
-		}
-
-		// When user supplied values are nil
-		if clusterConfig.Etcd.Local == nil {
-			log.Info("+++ aamitra: Empty ETCD values +++++")
-			clusterConfig.Etcd.Local = &etcdLocal
-		} else {
-			log.Info("+++ aamitra: Non Empty ETCD values +++++")
-			// Verify and update user supplied values, helps in an upgrade case as well
-			if clusterConfig.Etcd.Local.ImageMeta.ImageTag != ocneMeta[k8sVersion].ETCD {
-				log.Info("+++ aamitra: Mismatch of non Empty ETCD values ,value updated !!! +++++")
-				updatedEtcdLocal := bootstrapv1.LocalEtcd{
-					ImageMeta: bootstrapv1.ImageMeta{
-						ImageTag:        ocneMeta[k8sVersion].ETCD,
-						ImageRepository: ocne.DefaultOCNEImageRepository,
-					},
-				}
-				clusterConfig.Etcd.Local = &updatedEtcdLocal
-			} else {
-				clusterConfig.Etcd.Local = clusterConfig.Etcd.Local
-			}
-
-		}
-
-		ocneDnsImageRepo := clusterConfig.DNS.ImageRepository
-		if clusterConfig.DNS.ImageRepository == "" {
-			log.Info("+++ aamitra: Empty DNS Image Repo values +++++")
-			clusterConfig.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
-		} else {
-			clusterConfig.DNS.ImageRepository = ocneDnsImageRepo
-		}
-
-		ocneImageRepo := clusterConfig.ImageRepository
-		if clusterConfig.ImageRepository == "" {
-			log.Info("+++ aamitra: Empty ClusterConfiguration image repo values +++++")
-			clusterConfig.ImageRepository = ocne.DefaultOCNEImageRepository
-		} else {
-			clusterConfig.ImageRepository = ocneImageRepo
-		}
-	}
-
-	return clusterConfig, nil
 }
 
 // storeBootstrapData creates a new secret with the data passed in as input,
