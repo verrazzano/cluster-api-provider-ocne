@@ -37,6 +37,7 @@ const (
     permissions: '0640'
     content: "This placeholder file is used to create the /run/cluster-api sub directory in a way that is compatible with both Linux and Windows (mkdir -p /run/cluster-api does not work with Windows)"
 runcmd:
+{{- template "commands" .OCNEOverrides }}
 {{- template "commands" .PreOCNECommands }}
   - {{ .OCNECommand }} && {{ .SentinelFileCommand }}
 {{- template "commands" .PostOCNECommands }}
@@ -71,7 +72,7 @@ func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
+	input.OCNEOverrides = ocneCommands
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.ControlPlane = true
 	if err := input.prepare(); err != nil {
