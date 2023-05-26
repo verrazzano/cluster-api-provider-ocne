@@ -39,6 +39,7 @@ const (
     permissions: '0640'
     content: "This placeholder file is used to create the /run/cluster-api sub directory in a way that is compatible with both Linux and Windows (mkdir -p /run/cluster-api does not work with Windows)"
 runcmd:
+{{- template "commands" .OCNEOverrides }}
 {{- template "commands" .PreOCNECommands }}
   - 'kubeadm init --config /run/kubeadm/kubeadm.yaml {{.OCNEVerbosity}} && {{ .SentinelFileCommand }}'
 {{- template "commands" .PostOCNECommands }}
@@ -73,7 +74,7 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
+	input.OCNEOverrides = ocneCommands
 	input.Header = cloudConfigHeader
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)

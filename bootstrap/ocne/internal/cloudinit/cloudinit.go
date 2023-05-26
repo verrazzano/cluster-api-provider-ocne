@@ -48,6 +48,7 @@ type BaseUserData struct {
 	Header               string
 	PreOCNECommands      []string
 	PostOCNECommands     []string
+	OCNEOverrides        []string
 	AdditionalFiles      []bootstrapv1.File
 	WriteFiles           []bootstrapv1.File
 	Users                []bootstrapv1.User
@@ -81,7 +82,7 @@ func (input *BaseUserData) prepare() error {
 	if err != nil {
 		return err
 	}
-	input.PreOCNECommands = append(ocneCommands, input.PreOCNECommands...)
+	input.OCNEOverrides = ocneCommands
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
 	input.OCNECommand = fmt.Sprintf(standardJoinCommand, input.OCNEVerbosity)
