@@ -250,7 +250,6 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.Addons,
 			controlplanev1.OCNEModuleOperatorDeploy,
-			controlplanev1.OCNEModuleOperatorUpgrade,
 		),
 	)
 
@@ -268,7 +267,6 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.Addons,
 			controlplanev1.OCNEModuleOperatorDeploy,
-			controlplanev1.OCNEModuleOperatorUpgrade,
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -529,21 +527,21 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Reconcile OCNEControlPlane Module Operator")
+	kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+	if err != nil {
+		log.Error(err, "failed to get kubeconfig for cluster ")
+		reterr = kerrors.NewAggregate([]error{reterr, err})
+	}
+
+	addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return ctrl.Result{}, err
+	}
+
+	spew.Dump(addonsSpec)
+
 	if ocnecp.Spec.OCNEModuleOperator.Enabled {
-		kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
-		if err != nil {
-			log.Error(err, "failed to get kubeconfig for cluster ")
-			reterr = kerrors.NewAggregate([]error{reterr, err})
-		}
-
-		addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
-		if err != nil {
-			log.Error(err, "failed to generate data")
-			return ctrl.Result{}, err
-		}
-
-		spew.Dump(addonsSpec)
-		
 		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
 		if err != nil {
 			log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
@@ -551,11 +549,22 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 		}
 
 		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
-			// Do not mark is as true for subsequent reconciles, if already set to true
-			if conditions.IsFalse(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
-				conditions.MarkTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy)
+			conditions.MarkTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy)
+		}
+	} else {
+		_, err := helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
+		if err == nil {
+			// If helm chart is found, remove it
+			_, err := helm.UninstallHelmRelease(ctx, kubeconfig, addonsSpec)
+			if err != nil {
+				log.Error(err, fmt.Sprintf("Failed to uninstall release '%s' on OCNE controlplane  %s", addonsSpec.ReleaseName, ocnecp.GetObjectMeta().GetName()))
+				reterr = kerrors.NewAggregate([]error{reterr, err})
 			}
 		}
+		if conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
+			conditions.MarkFalse(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy, controlplanev1.OCNEModuleOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
+		}
+
 	}
 
 	return ctrl.Result{}, nil
