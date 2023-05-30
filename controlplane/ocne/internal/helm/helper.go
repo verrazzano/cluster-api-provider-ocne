@@ -68,7 +68,7 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func getImageRepo() string {
+func getDefaultOCNEModuleOperatorImageRepo() string {
 	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
 }
 
@@ -85,7 +85,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
-			spec.Image.Repository = getImageRepo()
+			spec.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		}
 		if spec.Image.Tag == "" {
 			spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
@@ -96,7 +96,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 		}
 	} else {
 		// If nothing has been specified in API
-		spec.Image.Repository = getImageRepo()
+		spec.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
 		spec.Image.PullPolicy = defaultImagePullPolicy
 	}
