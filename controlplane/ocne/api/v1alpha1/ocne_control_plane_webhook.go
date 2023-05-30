@@ -134,7 +134,6 @@ const (
 	ntp                  = "ntp"
 	ignition             = "ignition"
 	diskSetup            = "diskSetup"
-	addons               = "addons"
 	ocneModuleOperator   = "ocneModuleOperator"
 )
 
@@ -181,8 +180,6 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, "rolloutAfter"},
 		{spec, "rolloutBefore", "*"},
 		{spec, "rolloutStrategy", "*"},
-		{spec, addons},
-		{spec, addons, "*"},
 		{spec, ocneModuleOperator},
 		{spec, ocneModuleOperator, "*"},
 	}
