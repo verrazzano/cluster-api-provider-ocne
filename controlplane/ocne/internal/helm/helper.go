@@ -73,6 +73,10 @@ func getDefaultOCNEModuleOperatorImageRepo() string {
 	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
 }
 
+func generateRepoName(inputRepo string) string {
+	return fmt.Sprintf("%s/%s", inputRepo, ocneModuleOperatorImageName)
+}
+
 func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
 	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
@@ -93,6 +97,9 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
 			spec.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
+		} else {
+			// Image name cannot be overridden.  it has to be `module-operator`
+			spec.Image.Repository = generateRepoName(spec.Image.Repository)
 		}
 		if spec.Image.Tag == "" {
 			spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
