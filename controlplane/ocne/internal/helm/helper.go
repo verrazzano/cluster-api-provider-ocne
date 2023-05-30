@@ -81,6 +81,12 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 
 	}
 
+	defaultImageMeta := controlplanev1.OCNEImageMeta{
+		Repository: getDefaultOCNEModuleOperatorImageRepo(),
+		Tag:        ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator,
+		PullPolicy: defaultImagePullPolicy,
+	}
+
 	// Setting default values for image
 	if spec.Image != nil {
 		// Set defaults or honour overrides
@@ -96,9 +102,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 		}
 	} else {
 		// If nothing has been specified in API
-		spec.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
-		spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
-		spec.Image.PullPolicy = defaultImagePullPolicy
+		spec.Image = &defaultImageMeta
 	}
 
 	return generate("HelmValues", valuesTemplate, spec.Image)
