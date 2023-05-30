@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -249,6 +248,8 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.Addons,
+			controlplanev1.OCNEModuleOperatorDeploy,
+			controlplanev1.OCNEModuleOperatorUpgrade,
 		),
 	)
 
@@ -265,6 +266,8 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.Addons,
+			controlplanev1.OCNEModuleOperatorDeploy,
+			controlplanev1.OCNEModuleOperatorUpgrade,
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -510,9 +513,13 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return ctrl.Result{}, errors.Wrap(err, "failed to update CoreDNS deployment")
 	}
 
-	// If addons are specified and OCNE control plane is Available, then addons reconciliation needs to take effect
-	if ocnecp.Spec.Addons != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
-		return r.reconcileAddons(ctx, cluster, ocnecp, controlPlane)
+	//// If addons are specified and OCNE control plane is Available, then addons reconciliation needs to take effect
+	//if ocnecp.Spec.Addons != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+	//	return r.reconcileAddons(ctx, cluster, ocnecp, controlPlane)
+	//}
+
+	if ocnecp.Spec.OCNEModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		return r.reconcileOCNEModuleOperator(ctx, cluster, ocnecp, controlPlane)
 	}
 
 	return ctrl.Result{}, nil
@@ -521,37 +528,49 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Reconcile OCNEControlPlane Module Operator")
-	if ocnecp.Spec.OCNEModuleOperator != nil {
-		if ocnecp.Spec.OCNEModuleOperator.Enabled {
-			//kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
-			//if err != nil {
-			//	log.Error(err, "failed to get kubeconfig for cluster ")
-			//	reterr = kerrors.NewAggregate([]error{reterr, err})
-			//}
+	if ocnecp.Spec.OCNEModuleOperator.Enabled {
+		kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+		if err != nil {
+			log.Error(err, "failed to get kubeconfig for cluster ")
+			reterr = kerrors.NewAggregate([]error{reterr, err})
+		}
 
-			ocnecp.Spec.OCNEModuleOperator.Image.Repository = "ghcr.io/verrazzano/verrazzano-module-operator"
-			ocnecp.Spec.OCNEModuleOperator.Image.Tag = "v0.1.0-20230524143118-e7e9f187"
-			ocnecp.Spec.OCNEModuleOperator.Image.PullPolicy = "IfNotPresent"
+		out, err := helm.GenerateDataValues(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+		if err != nil {
+			log.Error(err, "failed to generate data")
+			return ctrl.Result{}, err
+		}
 
-			//addons := helm.HelmModuleAddons{
-			//	ChartName:        "verrazzano-module-operator",
-			//	ReleaseName:      "verrazzano-module-operator",
-			//	ReleaseNamespace: "verrazzano-module-operator",
-			//	RepoURL:          "charts/operators/verrazzano-module-operator/",
-			//	Local:            true,
-			//}
-
-			out, err := helm.Generate("Node", helm.ValuesTemplate, ocnecp.Spec.OCNEModuleOperator.Image)
+		addonsSpec := helm.HelmModuleAddons{
+			ChartName:        "verrazzano-module-operator",
+			ReleaseName:      "verrazzano-module-operator",
+			ReleaseNamespace: "verrazzano-module-operator",
+			RepoURL:          "charts/operators/verrazzano-module-operator/",
+			Local:            true,
+			ValuesTemplate:   string(out),
+		}
+		_, err = helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
+		if err != nil {
+			// If helm chart is not found, install it
+			release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), string(out), addonsSpec)
 			if err != nil {
-				log.Error(err, "failed to generate data")
-				return ctrl.Result{}, err
+				log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+				reterr = kerrors.NewAggregate([]error{reterr, err})
 			}
-			spew.Dump(string(out))
+		}
+
+		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
+			// Do not mark is as true for subsequent reconciles, if already set to true
+			if conditions.IsFalse(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
+				conditions.MarkTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy)
+			}
 		}
 	}
 
 	return ctrl.Result{}, nil
 }
+
+/*
 
 func (r *OCNEControlPlaneReconciler) reconcileAddons(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -597,6 +616,8 @@ func (r *OCNEControlPlaneReconciler) reconcileAddons(ctx context.Context, cluste
 	}
 	return ctrl.Result{}, nil
 }
+
+*/
 
 // reconcileDelete handles OCNEControlPlane deletion.
 // The implementation does not take non-control plane workloads into consideration. This may or may not change in the future.

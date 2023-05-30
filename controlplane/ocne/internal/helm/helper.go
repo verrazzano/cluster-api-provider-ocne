@@ -22,9 +22,11 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"fmt"
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/external"
@@ -32,6 +34,22 @@ import (
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"text/template"
+)
+
+const (
+	ocneModuleOperatorRepo      = "ghcr.io"
+	ocneModuleOperatorNamespace = "verrazzano"
+	ocneModuleOperatorImageName = "verrazzano-module-operator"
+	defaultImagePullPolicy      = "IfNotPresent"
+)
+
+var (
+	//go:embed imageMeta.tmpl
+	valuesTemplate string
+
+	defaultTemplateFuncMap = template.FuncMap{
+		"Indent": templateYAMLIndent,
+	}
 )
 
 func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
@@ -93,22 +111,13 @@ func ScanValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlpl
 	return expandedTemplate, nil
 }
 
-var (
-	//go:embed imageMeta.tmpl
-	ValuesTemplate string
-
-	defaultTemplateFuncMap = template.FuncMap{
-		"Indent": templateYAMLIndent,
-	}
-)
-
 func templateYAMLIndent(i int, input string) string {
 	split := strings.Split(input, "\n")
 	ident := "\n" + strings.Repeat(" ", i)
 	return strings.Repeat(" ", i) + strings.Join(split, ident)
 }
 
-func Generate(kind string, tpl string, data interface{}) ([]byte, error) {
+func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	tm := template.New(kind).Funcs(defaultTemplateFuncMap)
 	t, err := tm.Parse(tpl)
 	if err != nil {
@@ -120,4 +129,24 @@ func Generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	}
 
 	return out.Bytes(), nil
+}
+
+func getImageRepo() string {
+	return fmt.Sprint("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
+}
+
+func GenerateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
+	log := ctrl.LoggerFrom(ctx)
+	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
+	if err != nil {
+		log.Error(err, "failed to get retrieve OCNE metadata")
+		return nil, err
+
+	}
+
+	spec.Image.Repository = getImageRepo()
+	spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+	spec.Image.PullPolicy = defaultImagePullPolicy
+
+	return generate("HelmValues", valuesTemplate, spec.Image)
 }

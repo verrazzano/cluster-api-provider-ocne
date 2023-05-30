@@ -70,7 +70,9 @@ const (
 )
 
 const (
-	Addons clusterv1.ConditionType = "AddonsDeployed"
+	Addons                    clusterv1.ConditionType = "AddonsDeployed"
+	OCNEModuleOperatorDeploy  clusterv1.ConditionType = "OCNEModuleOperatorDeployed"
+	OCNEModuleOperatorUpgrade clusterv1.ConditionType = "OCNEModuleOperatorUpdated"
 )
 
 const (
