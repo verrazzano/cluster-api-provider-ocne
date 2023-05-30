@@ -21,6 +21,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -535,28 +536,18 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
-		out, err := helm.GenerateDataValues(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+		addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
 		if err != nil {
 			log.Error(err, "failed to generate data")
 			return ctrl.Result{}, err
 		}
 
-		addonsSpec := helm.HelmModuleAddons{
-			ChartName:        "verrazzano-module-operator",
-			ReleaseName:      "verrazzano-module-operator",
-			ReleaseNamespace: "verrazzano-module-operator",
-			RepoURL:          "charts/operators/verrazzano-module-operator/",
-			Local:            true,
-			ValuesTemplate:   string(out),
-		}
-		_, err = helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
+		spew.Dump(addonsSpec)
+		
+		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
 		if err != nil {
-			// If helm chart is not found, install it
-			release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), string(out), addonsSpec)
-			if err != nil {
-				log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
-				reterr = kerrors.NewAggregate([]error{reterr, err})
-			}
+			log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
 		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {

@@ -24,6 +24,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/Masterminds/sprig/v3"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -132,10 +133,10 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 }
 
 func getImageRepo() string {
-	return fmt.Sprint("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
+	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
 }
 
-func GenerateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
+func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
 	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
 	if err != nil {
@@ -144,9 +145,39 @@ func GenerateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 
 	}
 
-	spec.Image.Repository = getImageRepo()
-	spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
-	spec.Image.PullPolicy = defaultImagePullPolicy
+	// Setting default values for image
+	if spec.Image.Repository == "" {
+		spec.Image.Repository = getImageRepo()
+	}
+
+	if spec.Image.Tag == "" {
+		spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+	}
+
+	if spec.Image.PullPolicy == "" {
+		spec.Image.PullPolicy = defaultImagePullPolicy
+	}
+
+	spew.Dump(spec.Image)
 
 	return generate("HelmValues", valuesTemplate, spec.Image)
+}
+
+func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+	log := ctrl.LoggerFrom(ctx)
+	out, err := generateDataValues(ctx, spec, k8sVersion)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return nil, err
+	}
+
+	return &HelmModuleAddons{
+		ChartName:        "verrazzano-module-operator",
+		ReleaseName:      "verrazzano-module-operator",
+		ReleaseNamespace: "verrazzano-module-operator",
+		RepoURL:          "charts/operators/verrazzano-module-operator/",
+		Local:            true,
+		ValuesTemplate:   string(out),
+	}, nil
+
 }
