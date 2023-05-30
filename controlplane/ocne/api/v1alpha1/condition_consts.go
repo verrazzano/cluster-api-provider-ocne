@@ -70,9 +70,11 @@ const (
 )
 
 const (
-	Addons                        clusterv1.ConditionType = "AddonsDeployed"
-	OCNEModuleOperatorDeploy      clusterv1.ConditionType = "OCNEModuleOperatorDeployed"
-	OCNEModuleOperatorUninstalled string                  = "OCNEModuleOperatorUninstalled"
+	// OCNEModuleOperatorDeploy reports that OCNEModuleOperator is deployed
+	OCNEModuleOperatorDeploy clusterv1.ConditionType = "OCNEModuleOperatorDeployed"
+
+	// OCNEModuleOperatorUninstalled (Severity=Info) documents a OCNEControlPlane that OCNEModule operator is uninstalled.
+	OCNEModuleOperatorUninstalled string = "OCNEModuleOperatorUninstalled"
 )
 
 const (

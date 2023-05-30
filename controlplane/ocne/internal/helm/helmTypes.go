@@ -26,11 +26,6 @@ type HelmModuleAddons struct {
 	// +optional
 	ValuesTemplate string `json:"valuesTemplate,omitempty"`
 
-	// Uninstall indicates whether chart needs to be cleaned up from the workload cluster
-	// By default it is set to false
-	// +optional
-	Uninstall bool `json:"uninstall,omitempty"`
-
 	// Local indicates whether chart is local or needs to be pulled in from the internet.
 	// When Local is set to true the RepoURL would be the local path to the chart directory in the container.
 	// By default, Local is set to false.

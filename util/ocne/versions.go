@@ -48,7 +48,7 @@ const (
 	minOCNEVersion               = "v1.24.8"
 	configMapName                = "ocne-metadata"
 	cmDataKey                    = "mapping"
-	defaultOCNEModuleOperatorTag = "v0.1.0-20230524143118-e7e9f187"
+	defaultOCNEModuleOperatorTag = "v0.1.0-20230530200216-dba4f4d7"
 )
 
 var k8s_ocne_version_maping = map[string]string{
