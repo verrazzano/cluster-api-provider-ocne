@@ -82,15 +82,22 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 	}
 
 	// Setting default values for image
-	if spec.Image.Repository == "" {
+	if spec.Image != nil {
+		// Set defaults or honour overrides
+		if spec.Image.Repository == "" {
+			spec.Image.Repository = getImageRepo()
+		}
+		if spec.Image.Tag == "" {
+			spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+		}
+
+		if spec.Image.PullPolicy == "" {
+			spec.Image.PullPolicy = defaultImagePullPolicy
+		}
+	} else {
+		// If nothing has been specified in API
 		spec.Image.Repository = getImageRepo()
-	}
-
-	if spec.Image.Tag == "" {
 		spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
-	}
-
-	if spec.Image.PullPolicy == "" {
 		spec.Image.PullPolicy = defaultImagePullPolicy
 	}
 
