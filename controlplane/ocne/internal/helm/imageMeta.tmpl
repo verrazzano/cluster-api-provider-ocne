@@ -2,3 +2,7 @@ image:
   repository: {{.Repository}}
   pullPolicy: {{.PullPolicy}}
   tag: {{.Tag}}
+{{- if .ImagePullSecrets }}
+imagePullSecrets:
+  - {{.ImagePullSecrets}}
+{{- end }}
