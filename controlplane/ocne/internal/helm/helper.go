@@ -34,7 +34,8 @@ import (
 const (
 	ocneModuleOperatorRepo      = "ghcr.io"
 	ocneModuleOperatorNamespace = "verrazzano"
-	ocneModuleOperatorImageName = "verrazzano-module-operator"
+	ocneModuleOperatorChartName = "verrazzano-module-operator"
+	ocneModuleOperatorImageName = "module-operator"
 	defaultImagePullPolicy      = "IfNotPresent"
 	ocneModuleOperatorPath      = "charts/operators/verrazzano-module-operator/"
 )
@@ -117,9 +118,9 @@ func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.Modul
 	}
 
 	return &HelmModuleAddons{
-		ChartName:        ocneModuleOperatorImageName,
-		ReleaseName:      ocneModuleOperatorImageName,
-		ReleaseNamespace: ocneModuleOperatorImageName,
+		ChartName:        ocneModuleOperatorChartName,
+		ReleaseName:      ocneModuleOperatorChartName,
+		ReleaseNamespace: ocneModuleOperatorChartName,
 		RepoURL:          ocneModuleOperatorPath,
 		Local:            true,
 		ValuesTemplate:   string(out),
