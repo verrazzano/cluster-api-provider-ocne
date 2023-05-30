@@ -21,6 +21,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -512,6 +513,41 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	// If addons are specified and OCNE control plane is Available, then addons reconciliation needs to take effect
 	if ocnecp.Spec.Addons != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
 		return r.reconcileAddons(ctx, cluster, ocnecp, controlPlane)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("Reconcile OCNEControlPlane Module Operator")
+	if ocnecp.Spec.OCNEModuleOperator != nil {
+		if ocnecp.Spec.OCNEModuleOperator.Enabled {
+			//kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+			//if err != nil {
+			//	log.Error(err, "failed to get kubeconfig for cluster ")
+			//	reterr = kerrors.NewAggregate([]error{reterr, err})
+			//}
+
+			ocnecp.Spec.OCNEModuleOperator.Image.Repository = "ghcr.io/verrazzano/verrazzano-module-operator"
+			ocnecp.Spec.OCNEModuleOperator.Image.Tag = "v0.1.0-20230524143118-e7e9f187"
+			ocnecp.Spec.OCNEModuleOperator.Image.PullPolicy = "IfNotPresent"
+
+			//addons := helm.HelmModuleAddons{
+			//	ChartName:        "verrazzano-module-operator",
+			//	ReleaseName:      "verrazzano-module-operator",
+			//	ReleaseNamespace: "verrazzano-module-operator",
+			//	RepoURL:          "charts/operators/verrazzano-module-operator/",
+			//	Local:            true,
+			//}
+
+			out, err := helm.Generate("Node", helm.ValuesTemplate, ocnecp.Spec.OCNEModuleOperator.Image)
+			if err != nil {
+				log.Error(err, "failed to generate data")
+				return ctrl.Result{}, err
+			}
+			spew.Dump(string(out))
+		}
 	}
 
 	return ctrl.Result{}, nil

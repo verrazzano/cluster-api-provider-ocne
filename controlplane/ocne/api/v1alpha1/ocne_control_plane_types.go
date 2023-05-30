@@ -95,8 +95,15 @@ type OCNEControlPlaneSpec struct {
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 
 	// ModuleAddons List
-
 	Addons []ModuleAddons `json:"addons,omitempty"`
+
+	// OCNEModuleOperator deploys the OCNE module operator to the worker cluster post installation.
+	// +optional
+	OCNEModuleOperator *ModuleOperator `json:"ocneModuleOperator,omitempty"`
+
+	// VerrazzanoModuleOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
+	// +optional
+	VerrazzanoModuleOperator *ModuleOperator `json:"verrazzanoModuleOperator,omitempty"`
 }
 
 type ModuleAddons struct {
@@ -135,6 +142,40 @@ type ModuleAddons struct {
 	// By default, Local is set to false.
 	// +optional
 	Local bool `json:"local,omitempty"`
+}
+
+type ModuleOperator struct {
+	// Enabled sets the operational mode for a specific module.
+	// if not set, the Enabled is set to false.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// Image is used to set various attributes regarding a specific module.
+	// If not set, they are set as per the OCNEImageMeta definitions.
+	// +optional
+	Image *OCNEImageMeta `json:"image,omitempty"`
+}
+
+type OCNEImageMeta struct {
+	// Repository sets the container registry to pull images from.
+	// if not set, the Repository defined in OCNEMeta will be used instead.
+	// +optional
+	Repository string `json:"repository,omitempty"`
+
+	// Tag allows to specify a tag for the image.
+	// if not set, the Tag defined in OCNEMeta will be used instead.
+	// +optional
+	Tag string `json:"tag,omitempty"`
+
+	// PullPolicy allows to specify an image pull policy for the container images.
+	// if not set, the PullPolicy is IfNotPresent.
+	// +optional
+	PullPolicy string `json:"pullPolicy,omitempty"`
+
+	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
+	// if not set, it will be assumed the images are public.
+	// +optional
+	ImagePullSecrets string `json:"imagePullSecrets,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

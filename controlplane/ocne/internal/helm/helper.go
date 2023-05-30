@@ -21,6 +21,7 @@ package helm
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"text/template"
 )
 
@@ -89,4 +91,33 @@ func ScanValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlpl
 	log.V(2).Info("Expanded values to", "result", expandedTemplate)
 
 	return expandedTemplate, nil
+}
+
+var (
+	//go:embed imageMeta.tmpl
+	ValuesTemplate string
+
+	defaultTemplateFuncMap = template.FuncMap{
+		"Indent": templateYAMLIndent,
+	}
+)
+
+func templateYAMLIndent(i int, input string) string {
+	split := strings.Split(input, "\n")
+	ident := "\n" + strings.Repeat(" ", i)
+	return strings.Repeat(" ", i) + strings.Join(split, ident)
+}
+
+func Generate(kind string, tpl string, data interface{}) ([]byte, error) {
+	tm := template.New(kind).Funcs(defaultTemplateFuncMap)
+	t, err := tm.Parse(tpl)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %s template", kind)
+	}
+	var out bytes.Buffer
+	if err := t.Execute(&out, data); err != nil {
+		return nil, errors.Wrapf(err, "failed to generate %s template", kind)
+	}
+
+	return out.Bytes(), nil
 }
