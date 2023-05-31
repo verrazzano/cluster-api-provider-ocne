@@ -77,7 +77,7 @@ RUN microdnf update \
 
 
 WORKDIR /
-COPY kubernetes-versions.yaml .
+COPY --from=builder /workspace/kubernetes-versions.yaml .
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml .
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts /charts/
