@@ -561,6 +561,50 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 	return ctrl.Result{}, nil
 }
 
+func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("Reconcile OCNEControlPlane Verrazzano Module Operator")
+	//kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+	//if err != nil {
+	//	log.Error(err, "failed to get kubeconfig for cluster ")
+	//	reterr = kerrors.NewAggregate([]error{reterr, err})
+	//}
+
+	_, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return ctrl.Result{}, err
+	}
+
+	//if ocnecp.Spec.OCNEModuleOperator.Enabled {
+	//	release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
+	//	if err != nil {
+	//		log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+	//		reterr = kerrors.NewAggregate([]error{reterr, err})
+	//	}
+	//
+	//	if !conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
+	//		conditions.MarkTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy)
+	//	}
+	//} else {
+	//	_, err := helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
+	//	if err == nil {
+	//		// If helm chart is found, remove it
+	//		_, err := helm.UninstallHelmRelease(ctx, kubeconfig, addonsSpec)
+	//		if err != nil {
+	//			log.Error(err, fmt.Sprintf("Failed to uninstall release '%s' on OCNE controlplane  %s", addonsSpec.ReleaseName, ocnecp.GetObjectMeta().GetName()))
+	//			reterr = kerrors.NewAggregate([]error{reterr, err})
+	//		}
+	//	}
+	//	if conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
+	//		conditions.MarkFalse(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy, controlplanev1.OCNEModuleOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
+	//	}
+	//
+	//}
+
+	return ctrl.Result{}, nil
+}
+
 // reconcileDelete handles OCNEControlPlane deletion.
 // The implementation does not take non-control plane workloads into consideration. This may or may not change in the future.
 // Please see https://github.com/kubernetes-sigs/cluster-api/issues/2064.
