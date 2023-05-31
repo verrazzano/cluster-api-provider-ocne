@@ -1251,9 +1251,9 @@ spec:
                 required:
                 - infrastructureRef
                 type: object
-              ocneModuleOperator:
-                description: OCNEModuleOperator deploys the OCNE module operator to
-                  the worker cluster post installation.
+              moduleOperator:
+                description: ModuleOperator deploys the OCNE module operator to the
+                  worker cluster post installation.
                 properties:
                   enabled:
                     description: Enabled sets the operational mode for a specific
@@ -1264,12 +1264,6 @@ spec:
                       a specific module. If not set, they are set as per the OCNEImageMeta
                       definitions.
                     properties:
-                      imagePullSecrets:
-                        description: ImagePullSecrets allows to specify secrets if
-                          the image is being pulled from an authenticated private
-                          registry. if not set, it will be assumed the images are
-                          public.
-                        type: string
                       pullPolicy:
                         description: PullPolicy allows to specify an image pull policy
                           for the container images. if not set, the PullPolicy is
@@ -1285,6 +1279,18 @@ spec:
                           not set, the Tag defined in OCNEMeta will be used instead.
                         type: string
                     type: object
+                  imagePullSecrets:
+                    description: ImagePullSecrets allows to specify secrets if the
+                      image is being pulled from an authenticated private registry.
+                      if not set, it will be assumed the images are public.
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
                 type: object
               replicas:
                 description: Number of desired machines. Defaults to 1. When stacked
@@ -1350,12 +1356,6 @@ spec:
                       a specific module. If not set, they are set as per the OCNEImageMeta
                       definitions.
                     properties:
-                      imagePullSecrets:
-                        description: ImagePullSecrets allows to specify secrets if
-                          the image is being pulled from an authenticated private
-                          registry. if not set, it will be assumed the images are
-                          public.
-                        type: string
                       pullPolicy:
                         description: PullPolicy allows to specify an image pull policy
                           for the container images. if not set, the PullPolicy is
@@ -1371,6 +1371,18 @@ spec:
                           not set, the Tag defined in OCNEMeta will be used instead.
                         type: string
                     type: object
+                  imagePullSecrets:
+                    description: ImagePullSecrets allows to specify secrets if the
+                      image is being pulled from an authenticated private registry.
+                      if not set, it will be assumed the images are public.
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
                 type: object
               version:
                 description: 'Version defines the desired Kubernetes version. Please

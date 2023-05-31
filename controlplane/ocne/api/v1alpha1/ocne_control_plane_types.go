@@ -94,9 +94,9 @@ type OCNEControlPlaneSpec struct {
 	// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1}}
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 
-	// OCNEModuleOperator deploys the OCNE module operator to the worker cluster post installation.
+	// ModuleOperator deploys the OCNE module operator to the worker cluster post installation.
 	// +optional
-	OCNEModuleOperator *ModuleOperator `json:"ocneModuleOperator,omitempty"`
+	ModuleOperator *ModuleOperator `json:"moduleOperator,omitempty"`
 
 	// VerrazzanoModuleOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
 	// +optional
@@ -113,6 +113,11 @@ type ModuleOperator struct {
 	// If not set, they are set as per the OCNEImageMeta definitions.
 	// +optional
 	Image *OCNEImageMeta `json:"image,omitempty"`
+
+	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
+	// if not set, it will be assumed the images are public.
+	// +optional
+	ImagePullSecrets []OCNENameValue `json:"imagePullSecrets,omitempty"`
 }
 
 type OCNEImageMeta struct {
@@ -130,11 +135,11 @@ type OCNEImageMeta struct {
 	// if not set, the PullPolicy is IfNotPresent.
 	// +optional
 	PullPolicy string `json:"pullPolicy,omitempty"`
+}
 
-	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
-	// if not set, it will be assumed the images are public.
-	// +optional
-	ImagePullSecrets string `json:"imagePullSecrets,omitempty"`
+type OCNENameValue struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

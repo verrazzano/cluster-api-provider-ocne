@@ -23,6 +23,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -65,7 +66,7 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	if err := t.Execute(&out, data); err != nil {
 		return nil, errors.Wrapf(err, "failed to generate %s template", kind)
 	}
-
+	spew.Dump(string(out.Bytes()))
 	return out.Bytes(), nil
 }
 
@@ -82,48 +83,51 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 
 	}
 
-	var ocneImageMeta controlplanev1.OCNEImageMeta
+	var moduleOperatorMeta controlplanev1.ModuleOperator
 
 	// Setting default values for image
 	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
-			ocneImageMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
+			moduleOperatorMeta.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == OCNEModuleOperatorImageName {
-				ocneImageMeta.Repository = spec.Image.Repository
+				moduleOperatorMeta.Image.Repository = spec.Image.Repository
 			} else {
-				ocneImageMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), OCNEModuleOperatorImageName)
+				moduleOperatorMeta.Image.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), OCNEModuleOperatorImageName)
 			}
 		}
 
 		if spec.Image.Tag == "" {
-			ocneImageMeta.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+			moduleOperatorMeta.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
 		} else {
-			ocneImageMeta.Tag = strings.TrimSpace(spec.Image.Tag)
+			moduleOperatorMeta.Image.Tag = strings.TrimSpace(spec.Image.Tag)
 		}
 
 		if spec.Image.PullPolicy == "" {
-			ocneImageMeta.PullPolicy = defaultImagePullPolicy
+			moduleOperatorMeta.Image.PullPolicy = defaultImagePullPolicy
 		} else {
-			ocneImageMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
+			moduleOperatorMeta.Image.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
 		}
 
-		if spec.Image.ImagePullSecrets != "" {
-			ocneImageMeta.ImagePullSecrets = strings.TrimSpace(spec.Image.ImagePullSecrets)
+		if spec.ImagePullSecrets != nil {
+			moduleOperatorMeta.ImagePullSecrets = spec.ImagePullSecrets
 		}
 
 	} else {
 		// If nothing has been specified in API
-		ocneImageMeta = controlplanev1.OCNEImageMeta{
-			Repository: getDefaultOCNEModuleOperatorImageRepo(),
-			Tag:        ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator,
-			PullPolicy: defaultImagePullPolicy,
+		moduleOperatorMeta = controlplanev1.ModuleOperator{
+			Image: &controlplanev1.OCNEImageMeta{
+				Repository: getDefaultOCNEModuleOperatorImageRepo(),
+				Tag:        ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator,
+				PullPolicy: defaultImagePullPolicy,
+			},
+			ImagePullSecrets: []controlplanev1.OCNENameValue{},
 		}
 	}
 
-	return generate("HelmValues", valuesTemplate, ocneImageMeta)
+	return generate("HelmValues", valuesTemplate, moduleOperatorMeta)
 }
 
 func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {

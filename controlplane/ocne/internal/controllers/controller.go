@@ -248,7 +248,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
 
-			controlplanev1.OCNEModuleOperatorDeploy,
+			controlplanev1.ModuleOperatorDeploy,
 		),
 	)
 
@@ -264,7 +264,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.MachinesReadyCondition,
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
-			controlplanev1.OCNEModuleOperatorDeploy,
+			controlplanev1.ModuleOperatorDeploy,
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -510,7 +510,7 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return ctrl.Result{}, errors.Wrap(err, "failed to update CoreDNS deployment")
 	}
 
-	if ocnecp.Spec.OCNEModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+	if ocnecp.Spec.ModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
 		return r.reconcileOCNEModuleOperator(ctx, cluster, ocnecp, controlPlane)
 	}
 
@@ -526,21 +526,21 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 		reterr = kerrors.NewAggregate([]error{reterr, err})
 	}
 
-	addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+	addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.ModuleOperator, ocnecp.Spec.Version)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return ctrl.Result{}, err
 	}
 
-	if ocnecp.Spec.OCNEModuleOperator.Enabled {
+	if ocnecp.Spec.ModuleOperator.Enabled {
 		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
 		if err != nil {
 			log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
 			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 
-		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
-			conditions.MarkTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy)
+		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy) {
+			conditions.MarkTrue(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy)
 		}
 	} else {
 		_, err := helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
@@ -552,8 +552,8 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 				reterr = kerrors.NewAggregate([]error{reterr, err})
 			}
 		}
-		if conditions.IsTrue(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy) {
-			conditions.MarkFalse(controlPlane.KCP, controlplanev1.OCNEModuleOperatorDeploy, controlplanev1.OCNEModuleOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
+		if conditions.IsTrue(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy) {
+			conditions.MarkFalse(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy, controlplanev1.ModuleOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
 		}
 
 	}
