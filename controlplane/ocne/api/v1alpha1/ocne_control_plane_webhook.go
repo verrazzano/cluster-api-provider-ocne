@@ -115,26 +115,27 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 }
 
 const (
-	spec                 = "spec"
-	controlPlaneConfig   = "controlPlaneConfig"
-	clusterConfiguration = "clusterConfiguration"
-	initConfiguration    = "initConfiguration"
-	joinConfiguration    = "joinConfiguration"
-	nodeRegistration     = "nodeRegistration"
-	skipPhases           = "skipPhases"
-	patches              = "patches"
-	directory            = "directory"
-	preOCNECommands      = "preOCNECommands"
-	postOCNECommands     = "postOCNECommands"
-	files                = "files"
-	users                = "users"
-	apiServer            = "apiServer"
-	controllerManager    = "controllerManager"
-	scheduler            = "scheduler"
-	ntp                  = "ntp"
-	ignition             = "ignition"
-	diskSetup            = "diskSetup"
-	ocneModuleOperator   = "ocneModuleOperator"
+	spec                     = "spec"
+	controlPlaneConfig       = "controlPlaneConfig"
+	clusterConfiguration     = "clusterConfiguration"
+	initConfiguration        = "initConfiguration"
+	joinConfiguration        = "joinConfiguration"
+	nodeRegistration         = "nodeRegistration"
+	skipPhases               = "skipPhases"
+	patches                  = "patches"
+	directory                = "directory"
+	preOCNECommands          = "preOCNECommands"
+	postOCNECommands         = "postOCNECommands"
+	files                    = "files"
+	users                    = "users"
+	apiServer                = "apiServer"
+	controllerManager        = "controllerManager"
+	scheduler                = "scheduler"
+	ntp                      = "ntp"
+	ignition                 = "ignition"
+	diskSetup                = "diskSetup"
+	ocneModuleOperator       = "ocneModuleOperator"
+	verrazzanoModuleOperator = "verrazzanoModuleOperator"
 )
 
 const minimumCertificatesExpiryDays = 7
@@ -182,6 +183,8 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, "rolloutStrategy", "*"},
 		{spec, ocneModuleOperator},
 		{spec, ocneModuleOperator, "*"},
+		{spec, verrazzanoModuleOperator},
+		{spec, verrazzanoModuleOperator, "*"},
 	}
 
 	allErrs := validateKubeadmControlPlaneSpec(in.Spec, in.Namespace, field.NewPath("spec"))
