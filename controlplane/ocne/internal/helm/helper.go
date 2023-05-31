@@ -23,6 +23,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -35,7 +36,7 @@ const (
 	ocneModuleOperatorRepo      = "ghcr.io"
 	ocneModuleOperatorNamespace = "verrazzano"
 	ocneModuleOperatorChartName = "verrazzano-module-operator"
-	ocneModuleOperatorImageName = "module-operator"
+	OCNEModuleOperatorImageName = "module-operator"
 	defaultImagePullPolicy      = "IfNotPresent"
 	ocneModuleOperatorPath      = "charts/operators/verrazzano-module-operator/"
 )
@@ -70,11 +71,7 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 }
 
 func getDefaultOCNEModuleOperatorImageRepo() string {
-	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, ocneModuleOperatorImageName)
-}
-
-func generateRepoName(inputRepo string) string {
-	return fmt.Sprintf("%s/%s", inputRepo, ocneModuleOperatorImageName)
+	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, OCNEModuleOperatorImageName)
 }
 
 func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
@@ -86,34 +83,50 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 
 	}
 
-	defaultImageMeta := controlplanev1.OCNEImageMeta{
-		Repository: getDefaultOCNEModuleOperatorImageRepo(),
-		Tag:        ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator,
-		PullPolicy: defaultImagePullPolicy,
-	}
+	var ocneImageMeta controlplanev1.OCNEImageMeta
 
 	// Setting default values for image
 	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
-			spec.Image.Repository = getDefaultOCNEModuleOperatorImageRepo()
+			ocneImageMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		} else {
-			// Image name cannot be overridden.  it has to be `module-operator`
-			spec.Image.Repository = generateRepoName(spec.Image.Repository)
+			imageList := strings.Split(strings.Trim(spec.Image.Repository, "/"), "/")
+			if imageList[len(imageList)-1] == OCNEModuleOperatorImageName {
+				ocneImageMeta.Repository = spec.Image.Repository
+			} else {
+				ocneImageMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), OCNEModuleOperatorImageName)
+			}
 		}
+
 		if spec.Image.Tag == "" {
-			spec.Image.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+			ocneImageMeta.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
+		} else {
+			ocneImageMeta.Tag = spec.Image.Tag
 		}
 
 		if spec.Image.PullPolicy == "" {
-			spec.Image.PullPolicy = defaultImagePullPolicy
+			ocneImageMeta.PullPolicy = defaultImagePullPolicy
+		} else {
+			ocneImageMeta.PullPolicy = spec.Image.PullPolicy
 		}
+
+		if spec.Image.ImagePullSecrets != "" {
+			ocneImageMeta.ImagePullSecrets = spec.Image.ImagePullSecrets
+		}
+
 	} else {
 		// If nothing has been specified in API
-		spec.Image = &defaultImageMeta
+		ocneImageMeta = controlplanev1.OCNEImageMeta{
+			Repository: getDefaultOCNEModuleOperatorImageRepo(),
+			Tag:        ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator,
+			PullPolicy: defaultImagePullPolicy,
+		}
 	}
 
-	return generate("HelmValues", valuesTemplate, spec.Image)
+	spew.Dump(ocneImageMeta)
+
+	return generate("HelmValues", valuesTemplate, ocneImageMeta)
 }
 
 func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {

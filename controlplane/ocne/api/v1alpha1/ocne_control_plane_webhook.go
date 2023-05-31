@@ -721,6 +721,27 @@ func (in *OCNEControlPlane) validateOCNEVersionOnUpgrade() (allErrs field.ErrorL
 	return allErrs
 }
 
+func (in *OCNEControlPlane) validateOCNEModuleOperatorImage() (allErrs field.ErrorList) {
+
+	if in.Spec.OCNEModuleOperator.Image != nil {
+		if in.Spec.OCNEModuleOperator.Image.Repository != "" {
+			repo := in.Spec.OCNEModuleOperator.Image.Repository
+			items := strings.Split(strings.Trim(repo, "/"), "/")
+			if items[len(items)-1] != "module-operator" {
+				allErrs = append(allErrs,
+					field.Invalid(
+						field.NewPath("spec", "ocneModuleOperator", "image", "repository"),
+						in.Spec.OCNEModuleOperator.Image.Repository,
+						fmt.Sprintf("the repository name must include  %v.", in.Spec.Version),
+					),
+				)
+			}
+		}
+	}
+
+	return allErrs
+}
+
 func (in *OCNEControlPlane) validateOCNESocket(controlPlaneConfigSpec *bootstrapv1.OCNEConfigSpec) (allErrs field.ErrorList) {
 
 	if controlPlaneConfigSpec == nil || controlPlaneConfigSpec.InitConfiguration == nil || controlPlaneConfigSpec.JoinConfiguration == nil {
