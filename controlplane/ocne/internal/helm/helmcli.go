@@ -223,11 +223,8 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 	}
 
 	log.Info(fmt.Sprintf("Upgrading release `%s` with Helm", spec.ReleaseName))
-	// upgrader.DryRun = true
-	release, err := upgradeClient.RunWithContext(ctx, spec.ReleaseName, chartRequested, vals)
-
-	return release, err
-	// Should we force upgrade if it failed previously?
+	//upgradeClient.DryRun = true
+	return upgradeClient.RunWithContext(ctx, spec.ReleaseName, chartRequested, vals)
 }
 
 func writeValuesToFile(ctx context.Context, values string, spec *HelmModuleAddons) (string, error) {

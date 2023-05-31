@@ -1286,7 +1286,9 @@ spec:
                     items:
                       properties:
                         name:
-                          type: string
+                          additionalProperties:
+                            type: string
+                          type: object
                       type: object
                     type: array
                 type: object
@@ -1376,7 +1378,9 @@ spec:
                     items:
                       properties:
                         name:
-                          type: string
+                          additionalProperties:
+                            type: string
+                          type: object
                       type: object
                     type: array
                 type: object

@@ -138,7 +138,7 @@ type ImageMeta struct {
 }
 
 type SecretName struct {
-	Name string `json:"name,omitempty"`
+	Name map[string]string `json:"name,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines
