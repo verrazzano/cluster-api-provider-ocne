@@ -32,6 +32,7 @@ type OCNEImages struct {
 	KubeScheduler         string `json:"kube-scheduler"`
 	KubeApiServer         string `json:"kube-apiserver"`
 	KubeProxy             string `json:"kube-proxy"`
+	ModuleOperator        string `json:"module-operator"`
 }
 
 type OCNEPackages struct {
@@ -47,6 +48,7 @@ const (
 	minOCNEVersion           = "v1.24.8"
 	configMapName            = "ocne-metadata"
 	cmDataKey                = "mapping"
+	defaultModuleOperatorTag = "v0.1.0-20230530200216-dba4f4d7"
 )
 
 var k8s_ocne_version_maping = map[string]string{
@@ -154,6 +156,12 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 			if meta.OCNEImages.Calico == "" {
 				meta.OCNEImages.Calico = defaultCalicoTag
 			}
+
+			// Add ModuleOperator Defaults Tag if missing
+			if meta.OCNEImages.ModuleOperator == "" {
+				meta.OCNEImages.ModuleOperator = defaultModuleOperatorTag
+			}
+
 			// Add release if missing
 			if meta.Release == "" {
 				ocneVersion, ok := k8s_ocne_version_maping[version]
@@ -161,6 +169,7 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 					meta.Release = ocneVersion
 				}
 			}
+
 			result[version] = meta
 		}
 	}

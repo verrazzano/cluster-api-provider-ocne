@@ -134,7 +134,7 @@ const (
 	ntp                  = "ntp"
 	ignition             = "ignition"
 	diskSetup            = "diskSetup"
-	addons               = "addons"
+	moduleOperator       = "moduleOperator"
 )
 
 const minimumCertificatesExpiryDays = 7
@@ -180,8 +180,8 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 		{spec, "rolloutAfter"},
 		{spec, "rolloutBefore", "*"},
 		{spec, "rolloutStrategy", "*"},
-		{spec, addons},
-		{spec, addons, "*"},
+		{spec, moduleOperator},
+		{spec, moduleOperator, "*"},
 	}
 
 	allErrs := validateKubeadmControlPlaneSpec(in.Spec, in.Namespace, field.NewPath("spec"))

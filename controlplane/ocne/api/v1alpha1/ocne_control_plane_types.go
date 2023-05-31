@@ -94,47 +94,53 @@ type OCNEControlPlaneSpec struct {
 	// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1}}
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
 
-	// ModuleAddons List
+	// ModuleOperator deploys the OCNE module operator to the worker cluster post installation.
+	// +optional
+	ModuleOperator *ModuleOperator `json:"moduleOperator,omitempty"`
 
-	Addons []ModuleAddons `json:"addons,omitempty"`
+	// VerrazzanoPlatformOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
+	// +optional
+	VerrazzanoPlatformOperator *ModuleOperator `json:"verrazzanoPlatformOperator,omitempty"`
 }
 
-type ModuleAddons struct {
-	// ChartLocation is the URL of the Helm chart repository.
-	RepoURL string `json:"repoURL"`
-
-	// ChartName is the name of the Helm chart in the repository.
-	ChartName string `json:"chartName"`
-
-	// ReleaseName is the release name of the installed Helm chart. If it is not specified, a name will be generated.
+type ModuleOperator struct {
+	// Enabled sets the operational mode for a specific module.
+	// if not set, the Enabled is set to false.
 	// +optional
-	ReleaseName string `json:"releaseName,omitempty"`
+	Enabled bool `json:"enabled,omitempty"`
 
-	// ReleaseNamespace is the namespace the Helm release will be installed on each selected
-	// Cluster. If it is not specified, it will be set to the default namespace.
+	// Image is used to set various attributes regarding a specific module.
+	// If not set, they are set as per the ImageMeta definitions.
 	// +optional
-	ReleaseNamespace string `json:"namespace,omitempty"`
+	Image *ImageMeta `json:"image,omitempty"`
 
-	// Version is the version of the Helm chart. If it is not specified, the chart will use
-	// and be kept up to date with the latest version.
+	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
+	// if not set, it will be assumed the images are public.
 	// +optional
-	Version string `json:"version,omitempty"`
+	ImagePullSecrets []SecretName `json:"imagePullSecrets,omitempty"`
+}
 
-	// valuesTemplate is an inline YAML representing the values for the Helm chart. This YAML supports Go templating to reference
-	// fields from each selected workload Cluster and programatically create and set values.
+type ImageMeta struct {
+	// Repository sets the container registry to pull images from.
+	// if not set, the Repository defined in OCNEMeta will be used instead.
 	// +optional
-	ValuesTemplate string `json:"valuesTemplate,omitempty"`
+	Repository string `json:"repository,omitempty"`
 
-	// Uninstall indicates whether chart needs to be cleaned up from the workload cluster
-	// By default it is set to false
+	// Tag allows to specify a tag for the image.
+	// if not set, the Tag defined in OCNEMeta will be used instead.
 	// +optional
-	Uninstall bool `json:"uninstall,omitempty"`
+	Tag string `json:"tag,omitempty"`
 
-	// Local indicates whether chart is local or needs to be pulled in from the internet.
-	// When Local is set to true the RepoURL would be the local path to the chart directory in the container.
-	// By default, Local is set to false.
+	// PullPolicy allows to specify an image pull policy for the container images.
+	// if not set, the PullPolicy is IfNotPresent.
 	// +optional
-	Local bool `json:"local,omitempty"`
+	PullPolicy string `json:"pullPolicy,omitempty"`
+}
+
+type SecretName struct {
+	// Name is name of the secret to be used as image pull secret
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

@@ -21,72 +21,126 @@ package helm
 import (
 	"bytes"
 	"context"
-	"github.com/Masterminds/sprig/v3"
+	_ "embed"
+	"fmt"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/controllers/external"
+	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	ctrl "sigs.k8s.io/controller-runtime"
-	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 	"text/template"
 )
 
-func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
-	log := ctrl.LoggerFrom(ctx)
+const (
+	moduleOperatorRepo      = "ghcr.io"
+	moduleOperatorNamespace = "verrazzano"
+	moduleOperatorChartName = "verrazzano-module-operator"
+	moduleOperatorImageName = "module-operator"
+	defaultImagePullPolicy  = "IfNotPresent"
+	moduleOperatorPath      = "charts/operators/verrazzano-module-operator/"
+)
 
-	valueLookUp := make(map[string]interface{})
+var (
+	//go:embed imageMeta.tmpl
+	valuesTemplate string
 
-	for name, ref := range referenceMap {
-		log.V(2).Info("Getting object for reference", "ref", ref)
-		obj, err := external.Get(ctx, c, &ref, cluster.Namespace)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get object %s", ref.Name)
-		}
-		valueLookUp[name] = obj.Object
+	defaultTemplateFuncMap = template.FuncMap{
+		"Indent": templateYAMLIndent,
 	}
+)
 
-	return valueLookUp, nil
+func templateYAMLIndent(i int, input string) string {
+	split := strings.Split(input, "\n")
+	ident := "\n" + strings.Repeat(" ", i)
+	return strings.Repeat(" ", i) + strings.Join(split, ident)
 }
 
-func ScanValuesTemplate(ctx context.Context, c ctrlClient.Client, spec controlplanev1.ModuleAddons, cluster *clusterv1.Cluster) (string, error) {
+func generate(kind string, tpl string, data interface{}) ([]byte, error) {
+	tm := template.New(kind).Funcs(defaultTemplateFuncMap)
+	t, err := tm.Parse(tpl)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %s template", kind)
+	}
+	var out bytes.Buffer
+	if err := t.Execute(&out, data); err != nil {
+		return nil, errors.Wrapf(err, "failed to generate %s template", kind)
+	}
+	return out.Bytes(), nil
+}
+
+func getDefaultOCNEModuleOperatorImageRepo() string {
+	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, moduleOperatorImageName)
+}
+
+func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
-
-	log.V(2).Info("Rendering templating in values:", "values", spec.ValuesTemplate)
-	references := map[string]corev1.ObjectReference{
-		"Cluster": {
-			APIVersion: cluster.APIVersion,
-			Kind:       cluster.Kind,
-			Namespace:  cluster.Namespace,
-			Name:       cluster.Name,
-		},
-	}
-
-	if cluster.Spec.ControlPlaneRef != nil {
-		references["ControlPlane"] = *cluster.Spec.ControlPlaneRef
-	}
-	if cluster.Spec.InfrastructureRef != nil {
-		references["InfraCluster"] = *cluster.Spec.InfrastructureRef
-	}
-
-	valueLookUp, err := initializeBuiltins(ctx, c, references, cluster)
+	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
 	if err != nil {
-		return "", err
+		log.Error(err, "failed to get retrieve OCNE metadata")
+		return nil, err
+
 	}
 
-	tmpl, err := template.New(spec.ChartName + "-" + cluster.GetName()).
-		Funcs(sprig.TxtFuncMap()).
-		Parse(spec.ValuesTemplate)
+	var helmMeta HelmValuesTemplate
+
+	// Setting default values for image
+	if spec.Image != nil {
+		// Set defaults or honour overrides
+		if spec.Image.Repository == "" {
+			helmMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
+		} else {
+			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
+			if imageList[len(imageList)-1] == moduleOperatorImageName {
+				helmMeta.Repository = spec.Image.Repository
+			} else {
+				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), moduleOperatorImageName)
+			}
+		}
+
+		if spec.Image.Tag == "" {
+			helmMeta.Tag = ocneMeta[k8sVersion].OCNEImages.ModuleOperator
+		} else {
+			helmMeta.Tag = strings.TrimSpace(spec.Image.Tag)
+		}
+
+		if spec.Image.PullPolicy == "" {
+			helmMeta.PullPolicy = defaultImagePullPolicy
+		} else {
+			helmMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
+		}
+
+		if spec.ImagePullSecrets != nil {
+			helmMeta.ImagePullSecrets = spec.ImagePullSecrets
+		}
+
+	} else {
+		// If nothing has been specified in API
+		helmMeta = HelmValuesTemplate{
+			Repository:       getDefaultOCNEModuleOperatorImageRepo(),
+			Tag:              ocneMeta[k8sVersion].OCNEImages.ModuleOperator,
+			PullPolicy:       defaultImagePullPolicy,
+			ImagePullSecrets: []controlplanev1.SecretName{},
+		}
+	}
+
+	return generate("HelmValues", valuesTemplate, helmMeta)
+}
+
+func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+	log := ctrl.LoggerFrom(ctx)
+	out, err := generateDataValues(ctx, spec, k8sVersion)
 	if err != nil {
-		return "", err
+		log.Error(err, "failed to generate data")
+		return nil, err
 	}
-	var buffer bytes.Buffer
 
-	if err := tmpl.Execute(&buffer, valueLookUp); err != nil {
-		return "", errors.Wrapf(err, "error executing template string '%s' on cluster '%s'", spec.ValuesTemplate, cluster.GetName())
-	}
-	expandedTemplate := buffer.String()
-	log.V(2).Info("Expanded values to", "result", expandedTemplate)
+	return &HelmModuleAddons{
+		ChartName:        moduleOperatorChartName,
+		ReleaseName:      moduleOperatorChartName,
+		ReleaseNamespace: moduleOperatorChartName,
+		RepoURL:          moduleOperatorPath,
+		Local:            true,
+		ValuesTemplate:   string(out),
+	}, nil
 
-	return expandedTemplate, nil
 }

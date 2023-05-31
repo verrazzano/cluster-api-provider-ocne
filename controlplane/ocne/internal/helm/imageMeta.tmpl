@@ -1,0 +1,8 @@
+image:
+  repository: {{.Repository}}
+  pullPolicy: {{.PullPolicy}}
+  tag: {{.Tag}}
+{{- range .ImagePullSecrets }}
+imagePullSecrets:
+  - name: {{.Name}}
+{{- end }}

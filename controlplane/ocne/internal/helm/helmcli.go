@@ -39,8 +39,6 @@ import (
 	helmGetter "helm.sh/helm/v3/pkg/getter"
 	helmRelease "helm.sh/helm/v3/pkg/release"
 	helmDriver "helm.sh/helm/v3/pkg/storage/driver"
-
-	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 )
 
 func GetActionConfig(ctx context.Context, namespace string, config *rest.Config) (*helmAction.Configuration, error) {
@@ -78,10 +76,8 @@ func HelmInit(ctx context.Context, namespace string, kubeconfig string) (*helmCl
 	return settings, actionConfig, nil
 }
 
-func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	log.Info("Installing or upgrading Helm release")
+func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, values string, spec *HelmModuleAddons) (*helmRelease.Release, error) {
+	klog.V(2).Info("Installing or upgrading Helm release")
 	existingRelease, err := GetHelmRelease(ctx, kubeconfig, spec)
 	if err != nil {
 		if err == helmDriver.ErrReleaseNotFound {
@@ -93,7 +89,7 @@ func InstallOrUpgradeHelmReleases(ctx context.Context, kubeconfig, ocneCPName, v
 	return UpgradeHelmReleaseIfChanged(ctx, kubeconfig, values, spec, existingRelease)
 }
 
-func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
+func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values string, spec *HelmModuleAddons) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -119,29 +115,29 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	if spec.Local {
 		cp = spec.RepoURL
 	} else {
-		log.Info("Locating chart...")
+		klog.V(2).Info("Locating chart...")
 		cp, err = installClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 		if err != nil {
-			log.Info(fmt.Sprintf("Unable to find chart = %v ", err))
+			log.Error(err, "Unable to find chart")
 			return nil, err
 		}
 	}
 
-	log.Info(fmt.Sprintf("Located chart at path '%s'", cp))
-	log.Info("Writing values to file")
+	klog.V(2).Info(fmt.Sprintf("Located chart at path '%s'", cp))
+	klog.V(2).Info("Writing values to file")
 
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(filename)
-	log.Info("Values written to file", "path", filename)
+	klog.V(2).Info("Values written to file", "path", filename)
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
+	klog.V(2).Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
 
 	p := helmGetter.All(settings)
 	valueOpts := &helmVals.Options{
@@ -156,12 +152,12 @@ func InstallHelmRelease(ctx context.Context, kubeconfig, ocneCPName, values stri
 	if err != nil {
 		return nil, err
 	}
-	log.Info("Installing with Helm...")
+	klog.V(2).Info("Installing with Helm...")
 
-	return installClient.RunWithContext(ctx, chartRequested, vals) // Can return error and a release
+	return installClient.RunWithContext(ctx, chartRequested, vals)
 }
 
-func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string, spec controlplanev1.ModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
+func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string, spec *HelmModuleAddons, existing *helmRelease.Release) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -175,31 +171,31 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 
 	var cp string
 	if spec.Local {
-		log.Info("Local path...")
+		klog.V(2).Info("Local path...")
 		cp = spec.RepoURL
 	} else {
-		log.Info("Locating chart...")
+		klog.V(2).Info("Locating chart...")
 		cp, err = upgradeClient.ChartPathOptions.LocateChart(spec.ChartName, settings)
 		if err != nil {
-			log.Info(fmt.Sprintf("Unable to find chart = %v ", err))
+			klog.Error(err, "Unable to find chart")
 			return nil, err
 		}
 	}
 
-	log.Info(fmt.Sprintf("Located chart at path '%s'", cp))
-	log.Info("Writing values to file")
+	klog.V(2).Info(fmt.Sprintf("Located chart at path '%s'", cp))
+	klog.V(2).Info("Writing values to file")
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(filename)
-	log.Info("Values written to file", "path", filename)
+	klog.V(2).Info("Values written to file", "path", filename)
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
+	klog.V(2).Info(fmt.Sprintf("Values written to file %s are:\n%s\n", filename, string(content)))
 
 	p := helmGetter.All(settings)
 	valueOpts := &helmVals.Options{
@@ -227,16 +223,12 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 	}
 
 	log.Info(fmt.Sprintf("Upgrading release `%s` with Helm", spec.ReleaseName))
-	// upgrader.DryRun = true
-	release, err := upgradeClient.RunWithContext(ctx, spec.ReleaseName, chartRequested, vals)
-
-	return release, err
-	// Should we force upgrade if it failed previously?
+	//upgradeClient.DryRun = true
+	return upgradeClient.RunWithContext(ctx, spec.ReleaseName, chartRequested, vals)
 }
 
-func writeValuesToFile(ctx context.Context, values string, spec controlplanev1.ModuleAddons) (string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	log.Info("Writing values to file")
+func writeValuesToFile(ctx context.Context, values string, spec *HelmModuleAddons) (string, error) {
+	klog.V(2).Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
 	if err != nil {
 		return "", err
@@ -281,7 +273,7 @@ func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release,
 	return !cmp.Equal(oldValues, newValues), nil
 }
 
-func GetHelmRelease(ctx context.Context, kubeconfig string, spec controlplanev1.ModuleAddons) (*helmRelease.Release, error) {
+func GetHelmRelease(ctx context.Context, kubeconfig string, spec *HelmModuleAddons) (*helmRelease.Release, error) {
 	if spec.ReleaseName == "" {
 		return nil, helmDriver.ErrReleaseNotFound
 	}
@@ -299,12 +291,13 @@ func GetHelmRelease(ctx context.Context, kubeconfig string, spec controlplanev1.
 	return release, nil
 }
 
-func UninstallHelmRelease(ctx context.Context, kubeconfig string, spec controlplanev1.ModuleAddons) (*helmRelease.UninstallReleaseResponse, error) {
+func UninstallHelmRelease(ctx context.Context, kubeconfig string, spec *HelmModuleAddons) (*helmRelease.UninstallReleaseResponse, error) {
+	log := ctrl.LoggerFrom(ctx)
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
 	if err != nil {
 		return nil, err
 	}
-
+	log.Info(fmt.Sprintf("Uninstalling helm chart '%s' ...", spec.ReleaseName))
 	uninstallClient := helmAction.NewUninstall(actionConfig)
 	response, err := uninstallClient.Run(spec.ReleaseName)
 	if err != nil {
