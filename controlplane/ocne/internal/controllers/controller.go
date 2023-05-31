@@ -515,6 +515,7 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	if ocnecp.Spec.VerrazzanoModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		log.Info("Detected Verrazzano Module Operator!!!")
 		return r.reconcileVerrazzanoPlatformOperator(ctx, cluster, ocnecp, controlPlane)
 	}
 
@@ -574,7 +575,7 @@ func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx con
 	//	reterr = kerrors.NewAggregate([]error{reterr, err})
 	//}
 
-	_, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.OCNEModuleOperator, ocnecp.Spec.Version)
+	_, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.VerrazzanoModuleOperator, ocnecp.Spec.Version)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return ctrl.Result{}, err
