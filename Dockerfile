@@ -37,17 +37,12 @@ ENV GOURL=https://yum.oracle.com/repo/OracleLinux/OL8/developer/x86_64/getPackag
 
 RUN dnf install -y oracle-olcne-release-el8 && \
     dnf config-manager --enable ol8_olcne16 && \
-    dnf install -y openssl-devel delve gcc cpio yq helm-3.11.1-1.el8 tar git && \
+    dnf install -y openssl-devel delve gcc yq helm-3.11.1-1.el8 tar git && \
     rpm -ivh ${GOURL}/go-toolset-1.19.4-1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
     ${GOURL}/golang-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
     ${GOURL}/golang-src-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.noarch.rpm \
     ${GOURL}/golang-bin-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm && \
-    go version && \
-    curl https://yum.oracle.com/repo/OracleLinux/OL8/olcne16/x86_64/getPackage/olcne-api-server-1.6.0-4.el8.x86_64.rpm |\
-      rpm2cpio |\
-      cpio -idmv \
-    && sed -n '/---/q;p' ./etc/olcne/modules/kubernetes/1.0.0/kubernetes.yaml|\
-      yq r - 'data.versions' >./kubernetes-versions.yaml
+    go version
 
 RUN git clone https://github.com/verrazzano/verrazzano-modules.git && \
     cd verrazzano-modules/module-operator/manifests/charts/modules && \
@@ -82,8 +77,8 @@ RUN microdnf update \
 
 
 WORKDIR /
-COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/kubernetes-versions.yaml .
+COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml .
 COPY --from=builder /workspace/verrazzano-modules/module-operator/manifests/charts /charts/
 RUN groupadd -r ocne \
