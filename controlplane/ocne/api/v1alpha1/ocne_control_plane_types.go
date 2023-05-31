@@ -98,9 +98,9 @@ type OCNEControlPlaneSpec struct {
 	// +optional
 	ModuleOperator *ModuleOperator `json:"moduleOperator,omitempty"`
 
-	// VerrazzanoModuleOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
+	// VerrazzanoPlatformOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
 	// +optional
-	VerrazzanoModuleOperator *ModuleOperator `json:"verrazzanoModuleOperator,omitempty"`
+	VerrazzanoPlatformOperator *ModuleOperator `json:"verrazzanoPlatformOperator,omitempty"`
 }
 
 type ModuleOperator struct {

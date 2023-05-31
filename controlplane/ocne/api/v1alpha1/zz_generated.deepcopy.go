@@ -190,8 +190,8 @@ func (in *OCNEControlPlaneSpec) DeepCopyInto(out *OCNEControlPlaneSpec) {
 		*out = new(ModuleOperator)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.VerrazzanoModuleOperator != nil {
-		in, out := &in.VerrazzanoModuleOperator, &out.VerrazzanoModuleOperator
+	if in.VerrazzanoPlatformOperator != nil {
+		in, out := &in.VerrazzanoPlatformOperator, &out.VerrazzanoPlatformOperator
 		*out = new(ModuleOperator)
 		(*in).DeepCopyInto(*out)
 	}
