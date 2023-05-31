@@ -182,7 +182,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 		}
 	}
 
-	log.Info(fmt.Sprintf("Located chart at path '%s'", cp))
+	klog.V(2).Info(fmt.Sprintf("Located chart at path '%s'", cp))
 	klog.V(2).Info("Writing values to file")
 	filename, err := writeValuesToFile(ctx, values, spec)
 	if err != nil {
@@ -231,8 +231,7 @@ func UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig, values string,
 }
 
 func writeValuesToFile(ctx context.Context, values string, spec *HelmModuleAddons) (string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	log.Info("Writing values to file")
+	klog.V(2).Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
 	if err != nil {
 		return "", err
