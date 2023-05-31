@@ -4,5 +4,5 @@ image:
   tag: {{.Tag}}
 {{- range .ImagePullSecrets }}
 imagePullSecrets:
-  - {{.Name}}
+  - name: {{.Name}}
 {{- end }}

@@ -23,7 +23,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -33,12 +32,12 @@ import (
 )
 
 const (
-	ocneModuleOperatorRepo      = "ghcr.io"
-	ocneModuleOperatorNamespace = "verrazzano"
-	ocneModuleOperatorChartName = "verrazzano-module-operator"
-	OCNEModuleOperatorImageName = "module-operator"
-	defaultImagePullPolicy      = "IfNotPresent"
-	ocneModuleOperatorPath      = "charts/operators/verrazzano-module-operator/"
+	moduleOperatorRepo      = "ghcr.io"
+	moduleOperatorNamespace = "verrazzano"
+	moduleOperatorChartName = "verrazzano-module-operator"
+	moduleOperatorImageName = "module-operator"
+	defaultImagePullPolicy  = "IfNotPresent"
+	moduleOperatorPath      = "charts/operators/verrazzano-module-operator/"
 )
 
 var (
@@ -57,7 +56,6 @@ func templateYAMLIndent(i int, input string) string {
 }
 
 func generate(kind string, tpl string, data interface{}) ([]byte, error) {
-	spew.Dump(data)
 	tm := template.New(kind).Funcs(defaultTemplateFuncMap)
 	t, err := tm.Parse(tpl)
 	if err != nil {
@@ -67,12 +65,11 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	if err := t.Execute(&out, data); err != nil {
 		return nil, errors.Wrapf(err, "failed to generate %s template", kind)
 	}
-	spew.Dump(string(out.Bytes()))
 	return out.Bytes(), nil
 }
 
 func getDefaultOCNEModuleOperatorImageRepo() string {
-	return fmt.Sprintf("%s/%s/%s", ocneModuleOperatorRepo, ocneModuleOperatorNamespace, OCNEModuleOperatorImageName)
+	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, moduleOperatorImageName)
 }
 
 func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
@@ -93,10 +90,10 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 			helmMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
-			if imageList[len(imageList)-1] == OCNEModuleOperatorImageName {
+			if imageList[len(imageList)-1] == moduleOperatorImageName {
 				helmMeta.Repository = spec.Image.Repository
 			} else {
-				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), OCNEModuleOperatorImageName)
+				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), moduleOperatorImageName)
 			}
 		}
 
@@ -138,10 +135,10 @@ func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.Modul
 	}
 
 	return &HelmModuleAddons{
-		ChartName:        ocneModuleOperatorChartName,
-		ReleaseName:      ocneModuleOperatorChartName,
-		ReleaseNamespace: ocneModuleOperatorChartName,
-		RepoURL:          ocneModuleOperatorPath,
+		ChartName:        moduleOperatorChartName,
+		ReleaseName:      moduleOperatorChartName,
+		ReleaseNamespace: moduleOperatorChartName,
+		RepoURL:          moduleOperatorPath,
 		Local:            true,
 		ValuesTemplate:   string(out),
 	}, nil

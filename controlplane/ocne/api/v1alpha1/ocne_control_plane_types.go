@@ -138,7 +138,9 @@ type ImageMeta struct {
 }
 
 type SecretName struct {
-	Name map[string]string `json:"name,omitempty"`
+	// Name is name of the secret to be used as image pull secret
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

@@ -1286,9 +1286,9 @@ spec:
                     items:
                       properties:
                         name:
-                          additionalProperties:
-                            type: string
-                          type: object
+                          description: Name is name of the secret to be used as image
+                            pull secret
+                          type: string
                       type: object
                     type: array
                 type: object
@@ -1378,9 +1378,9 @@ spec:
                     items:
                       properties:
                         name:
-                          additionalProperties:
-                            type: string
-                          type: object
+                          description: Name is name of the secret to be used as image
+                            pull secret
+                          type: string
                       type: object
                     type: array
                 type: object

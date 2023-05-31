@@ -71,7 +71,7 @@ const (
 
 const (
 	// ModuleOperatorDeploy reports that ModuleOperator is deployed
-	ModuleOperatorDeploy clusterv1.ConditionType = "OCNEModuleOperatorDeployed"
+	ModuleOperatorDeploy clusterv1.ConditionType = "ModuleOperatorDeployed"
 
 	// ModuleOperatorUninstalled (Severity=Info) documents a OCNEControlPlane that OCNEModule operator is uninstalled.
 	ModuleOperatorUninstalled string = "ModuleOperatorUninstalled"
