@@ -514,6 +514,10 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 		return r.reconcileOCNEModuleOperator(ctx, cluster, ocnecp, controlPlane)
 	}
 
+	if ocnecp.Spec.VerrazzanoModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		return r.reconcileVerrazzanoPlatformOperator(ctx, cluster, ocnecp, controlPlane)
+	}
+
 	return ctrl.Result{}, nil
 }
 
