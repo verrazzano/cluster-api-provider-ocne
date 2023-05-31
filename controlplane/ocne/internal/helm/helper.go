@@ -23,7 +23,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
@@ -123,8 +122,6 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 			PullPolicy: defaultImagePullPolicy,
 		}
 	}
-
-	spew.Dump(ocneImageMeta)
 
 	return generate("HelmValues", valuesTemplate, ocneImageMeta)
 }
