@@ -90,7 +90,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 		if spec.Image.Repository == "" {
 			ocneImageMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
 		} else {
-			imageList := strings.Split(strings.Trim(spec.Image.Repository, "/"), "/")
+			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == OCNEModuleOperatorImageName {
 				ocneImageMeta.Repository = spec.Image.Repository
 			} else {
@@ -101,17 +101,17 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 		if spec.Image.Tag == "" {
 			ocneImageMeta.Tag = ocneMeta[k8sVersion].OCNEImages.OCNEModuleOperator
 		} else {
-			ocneImageMeta.Tag = spec.Image.Tag
+			ocneImageMeta.Tag = strings.TrimSpace(spec.Image.Tag)
 		}
 
 		if spec.Image.PullPolicy == "" {
 			ocneImageMeta.PullPolicy = defaultImagePullPolicy
 		} else {
-			ocneImageMeta.PullPolicy = spec.Image.PullPolicy
+			ocneImageMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
 		}
 
 		if spec.Image.ImagePullSecrets != "" {
-			ocneImageMeta.ImagePullSecrets = spec.Image.ImagePullSecrets
+			ocneImageMeta.ImagePullSecrets = strings.TrimSpace(spec.Image.ImagePullSecrets)
 		}
 
 	} else {
