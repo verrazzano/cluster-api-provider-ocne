@@ -247,7 +247,6 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.MachinesReadyCondition,
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
-
 			controlplanev1.ModuleOperatorDeploy,
 		),
 	)
