@@ -3,6 +3,7 @@
 .vscode
 bin/
 **/*.yaml
+!kubernetes-versions.yaml
 hack/
 docs/
 logos/

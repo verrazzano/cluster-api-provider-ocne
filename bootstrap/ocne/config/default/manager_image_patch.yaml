@@ -8,5 +8,5 @@ spec:
   template:
     spec:
       containers:
-        - image: ghcr.io/verrazzano/cluster-api-ocne-bootstrap-controller
+        - image: ghcr.io/verrazzano/cluster-api-ocne-bootstrap-controller:v0.1.0-1674361
           name: manager
