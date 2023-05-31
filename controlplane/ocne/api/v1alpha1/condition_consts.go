@@ -70,7 +70,7 @@ const (
 )
 
 const (
-	// ModuleOperatorDeploy reports that OCNEModuleOperator is deployed
+	// ModuleOperatorDeploy reports that ModuleOperator is deployed
 	ModuleOperatorDeploy clusterv1.ConditionType = "OCNEModuleOperatorDeployed"
 
 	// ModuleOperatorUninstalled (Severity=Info) documents a OCNEControlPlane that OCNEModule operator is uninstalled.

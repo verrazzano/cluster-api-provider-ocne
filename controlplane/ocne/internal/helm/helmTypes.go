@@ -1,5 +1,9 @@
 package helm
 
+import (
+	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
+)
+
 type HelmModuleAddons struct {
 	// ChartLocation is the URL of the Helm chart repository.
 	RepoURL string `json:"repoURL"`
@@ -34,8 +38,8 @@ type HelmModuleAddons struct {
 }
 
 type HelmValuesTemplate struct {
-	Repository       string `json:"repository,omitempty"`
-	Tag              string `json:"tag,omitempty"`
-	PullPolicy       string `json:"pullPolicy,omitempty"`
-	ImagePullSecrets string `json:"imagePullSecrets,omitempty"`
+	Repository       string                      `json:"repository,omitempty"`
+	Tag              string                      `json:"tag,omitempty"`
+	PullPolicy       string                      `json:"pullPolicy,omitempty"`
+	ImagePullSecrets []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
 }

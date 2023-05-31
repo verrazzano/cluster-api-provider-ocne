@@ -110,17 +110,17 @@ type ModuleOperator struct {
 	Enabled bool `json:"enabled,omitempty"`
 
 	// Image is used to set various attributes regarding a specific module.
-	// If not set, they are set as per the OCNEImageMeta definitions.
+	// If not set, they are set as per the ImageMeta definitions.
 	// +optional
-	Image *OCNEImageMeta `json:"image,omitempty"`
+	Image *ImageMeta `json:"image,omitempty"`
 
 	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
 	// if not set, it will be assumed the images are public.
 	// +optional
-	ImagePullSecrets []OCNENameValue `json:"imagePullSecrets,omitempty"`
+	ImagePullSecrets []SecretName `json:"imagePullSecrets,omitempty"`
 }
 
-type OCNEImageMeta struct {
+type ImageMeta struct {
 	// Repository sets the container registry to pull images from.
 	// if not set, the Repository defined in OCNEMeta will be used instead.
 	// +optional
@@ -137,9 +137,8 @@ type OCNEImageMeta struct {
 	PullPolicy string `json:"pullPolicy,omitempty"`
 }
 
-type OCNENameValue struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
+type SecretName struct {
+	Name string `json:"name,omitempty"`
 }
 
 // OCNEControlPlaneMachineTemplate defines the template for Machines

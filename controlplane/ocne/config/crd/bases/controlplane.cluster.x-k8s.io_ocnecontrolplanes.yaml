@@ -1261,7 +1261,7 @@ spec:
                     type: boolean
                   image:
                     description: Image is used to set various attributes regarding
-                      a specific module. If not set, they are set as per the OCNEImageMeta
+                      a specific module. If not set, they are set as per the ImageMeta
                       definitions.
                     properties:
                       pullPolicy:
@@ -1286,8 +1286,6 @@ spec:
                     items:
                       properties:
                         name:
-                          type: string
-                        value:
                           type: string
                       type: object
                     type: array
@@ -1353,7 +1351,7 @@ spec:
                     type: boolean
                   image:
                     description: Image is used to set various attributes regarding
-                      a specific module. If not set, they are set as per the OCNEImageMeta
+                      a specific module. If not set, they are set as per the ImageMeta
                       definitions.
                     properties:
                       pullPolicy:
@@ -1378,8 +1376,6 @@ spec:
                     items:
                       properties:
                         name:
-                          type: string
-                        value:
                           type: string
                       type: object
                     type: array

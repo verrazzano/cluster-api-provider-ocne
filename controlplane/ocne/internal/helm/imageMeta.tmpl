@@ -2,7 +2,7 @@ image:
   repository: {{.Repository}}
   pullPolicy: {{.PullPolicy}}
   tag: {{.Tag}}
-{{- range .ImagePullSecrets }}
+{{- range .ImagePullSecrets.OCNENameValue }}
 imagePullSecrets:
-  - {{$.Name}}:{{$.Value}}
+  - name:{{$.Value}}
 {{- end }}
