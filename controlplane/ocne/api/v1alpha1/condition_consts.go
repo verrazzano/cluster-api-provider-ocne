@@ -73,8 +73,14 @@ const (
 	// ModuleOperatorDeploy reports that ModuleOperator is deployed
 	ModuleOperatorDeploy clusterv1.ConditionType = "ModuleOperatorDeployed"
 
+	// VerrazzanoPlatformOperatorDeploy reports that VerrazzanoPlatformOperator is deployed
+	VerrazzanoPlatformOperatorDeploy clusterv1.ConditionType = "VerrazzanoPlatformOperatorDeployDeployed"
+
 	// ModuleOperatorUninstalled (Severity=Info) documents a OCNEControlPlane that OCNEModule operator is uninstalled.
 	ModuleOperatorUninstalled string = "ModuleOperatorUninstalled"
+
+	// VerrazzanoPlatformOperatorUninstalled (Severity=Info) documents a OCNEControlPlane that Verrazzano Platform Operator is uninstalled.
+	VerrazzanoPlatformOperatorUninstalled string = "VerrazzanoPlatformOperatorUninstalled"
 )
 
 const (

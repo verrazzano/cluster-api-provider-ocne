@@ -23,9 +23,14 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"text/template"
@@ -47,7 +52,18 @@ var (
 	defaultTemplateFuncMap = template.FuncMap{
 		"Indent": templateYAMLIndent,
 	}
+
+	GetCoreV1Func = GetCoreV1Client
 )
+
+func GetCoreV1Client() (v1.CoreV1Interface, error) {
+	restConfig := controllerruntime.GetConfigOrDie()
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient.CoreV1(), nil
+}
 
 func templateYAMLIndent(i int, input string) string {
 	split := strings.Split(input, "\n")
@@ -128,6 +144,49 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 
 func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
 	log := ctrl.LoggerFrom(ctx)
+	out, err := generateDataValues(ctx, spec, k8sVersion)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return nil, err
+	}
+
+	return &HelmModuleAddons{
+		ChartName:        moduleOperatorChartName,
+		ReleaseName:      moduleOperatorChartName,
+		ReleaseNamespace: moduleOperatorChartName,
+		RepoURL:          moduleOperatorPath,
+		Local:            true,
+		ValuesTemplate:   string(out),
+	}, nil
+
+}
+
+func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	client, err := GetCoreV1Func()
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := client.Namespaces().Get(ctx, "verrazzano-install", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	log.Info(fmt.Sprintf("Namespace name = %s", ns.Name))
+
+	ns1, err := client.Namespaces().Get(ctx, "alpha", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	log.Info(fmt.Sprintf("Namespace alpha name = %s", ns1.Name))
+
+	cm, err := client.ConfigMaps("verrazzano-install").Get(ctx, "vpo-helm-chart", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	spew.Dump(cm)
+
 	out, err := generateDataValues(ctx, spec, k8sVersion)
 	if err != nil {
 		log.Error(err, "failed to generate data")
