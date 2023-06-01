@@ -578,7 +578,7 @@ func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx con
 		reterr = kerrors.NewAggregate([]error{reterr, err})
 	}
 
-	addonsSpec, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.ModuleOperator, ocnecp.Spec.Version)
+	addonsSpec, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.VerrazzanoPlatformOperator, ocnecp.Spec.Version)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return ctrl.Result{}, err

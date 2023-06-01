@@ -112,7 +112,7 @@ func generateDataValuesForModuleOperator(ctx context.Context, spec *controlplane
 	var helmMeta HelmValuesTemplate
 
 	// Setting default values for image
-	if spec.Image != nil {
+	if spec != nil && spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Repository = getDefaultModuleOperatorImageRepo()
@@ -166,7 +166,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	var helmMeta HelmValuesTemplate
 
 	// Setting default values for image
-	if spec.Image != nil {
+	if spec != nil && spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Repository = getDefaultVPOImageRepo()
@@ -205,6 +205,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		}
 	}
 
+	log.Info("HelmValues: %v", helmMeta)
 	return generate("HelmValues", valuesTemplate, helmMeta)
 }
 
@@ -260,12 +261,12 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 
 	for k, v := range cm.Data {
 		fileName := strings.ReplaceAll(k, "...", "/")
-		log.Info(fmt.Sprintf("+++ FILE TO CREATE = %s +++", fileName))
 		fp, fileErr := os.Create(path.Join(verrazzanoPlatformOperatorChartPath, fileName))
 		if fileErr != nil {
 			log.Error(fileErr, "Unable to create file")
 			return nil, fileErr
 		}
+		defer fp.Close()
 		if _, fileErr = fp.Write([]byte(v)); err != nil {
 			log.Error(fileErr, "Unable to write to file")
 			return nil, fileErr

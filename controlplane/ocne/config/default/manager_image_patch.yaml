@@ -1,0 +1,12 @@
+# This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+        - image: iad.ocir.io/odsbuilddev/sandboxes/verrazzano/cluster-api-ocne-control-plane-controller:v0.1.0-6b251d9
+          name: manager
