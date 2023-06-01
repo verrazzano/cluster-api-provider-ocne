@@ -35,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -238,13 +239,13 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	err = os.Remove(verrazzanoPlatformOperatorChartPath)
+	err = os.RemoveAll(verrazzanoPlatformOperatorChartPath)
 	if err != nil {
 		log.Error(err, "Unable to cleanup chart directory for verrazzano platform operator")
 		return nil, err
 	}
 
-	err = os.MkdirAll(verrazzanoPlatformOperatorChartPath, os.ModePerm)
+	err = os.MkdirAll(verrazzanoPlatformOperatorChartPath, 0755)
 	if err != nil {
 		log.Error(err, "Unable to create chart directory for verrazzano platform operator")
 		return nil, err
@@ -270,6 +271,7 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		}
 	}
 
+	time.Sleep(1000 * time.Second)
 	out, err := generateDataValuesForVerrazzanoPlatformOperator(ctx, spec, k8sVersion)
 	if err != nil {
 		log.Error(err, "failed to generate data")
