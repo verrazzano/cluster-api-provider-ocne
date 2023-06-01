@@ -171,6 +171,8 @@ metadata:
 spec:
   template:
     spec:
+      clusterConfiguration:
+        imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
