@@ -1,0 +1,7 @@
+image: {{.Repository}}/{{.Tag}}
+imagePullPolicy: {{.PullPolicy}}
+global:
+  imagePullSecrets:
+{{- range .ImagePullSecrets }}
+    - {{ . }}
+{{- end }}

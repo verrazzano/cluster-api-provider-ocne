@@ -56,6 +56,9 @@ var (
 	//go:embed imageMeta.tmpl
 	valuesTemplate string
 
+	//go: embed vpoImageMeta.tmpl
+	vpoValuesTemplate string
+
 	defaultTemplateFuncMap = template.FuncMap{
 		"Indent": templateYAMLIndent,
 	}
@@ -205,7 +208,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	}
 
 	log.Info(fmt.Sprintf("HelmValues: %v", helmMeta))
-	return generate("HelmValues", valuesTemplate, helmMeta)
+	return generate("HelmValues", vpoValuesTemplate, helmMeta)
 }
 
 func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
