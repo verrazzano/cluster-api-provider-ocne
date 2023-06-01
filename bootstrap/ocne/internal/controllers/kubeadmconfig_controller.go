@@ -625,8 +625,9 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 
 	// Setting the image repository to ocne container repository rather than k8s.io
 	ocneRepository := ocne.DefaultOCNEImageRepository
-	if scope.Config.Spec.ClusterConfiguration != nil {
+	if scope.Config.Spec.ClusterConfiguration != nil && scope.Config.Spec.ClusterConfiguration.ImageRepository != "" {
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
+		scope.Info(fmt.Sprintf("Worker join configuration image repository from input configuration: %s", ocneRepository))
 	}
 
 	var podSubnet, serviceSubnet string
@@ -765,7 +766,7 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 
 	// Setting the image repository to ocne container repository rather than k8s.io
 	ocneRepository := ocne.DefaultOCNEImageRepository
-	if scope.Config.Spec.ClusterConfiguration != nil {
+	if scope.Config.Spec.ClusterConfiguration != nil && scope.Config.Spec.ClusterConfiguration.ImageRepository != "" {
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
 	}
 
