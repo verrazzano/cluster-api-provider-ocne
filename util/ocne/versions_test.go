@@ -34,11 +34,10 @@ func TestMetadataContent(t *testing.T) {
 
 	mapping, err := buildMapping(rawMapping)
 	assert.NoError(t, err)
-	assert.Equal(t, len(mapping), 2)
+	assert.Equal(t, len(mapping), 1)
 
-	assert.NotEmpty(t, mapping["v1.24.8"])
+	assert.Empty(t, mapping["v1.24.8"])
 	assert.NotEmpty(t, mapping["v1.25.7"])
 
-	assert.Equal(t, mapping["v1.24.8"].Release, "1.5")
 	assert.Equal(t, mapping["v1.25.7"].Release, "1.6")
 }
