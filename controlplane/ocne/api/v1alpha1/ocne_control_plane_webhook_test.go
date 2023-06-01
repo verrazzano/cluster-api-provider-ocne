@@ -1143,7 +1143,7 @@ func TestValidateVersion(t *testing.T) {
 		},
 		{
 			name:       "pass when new version is using new registry (>= v1.25.0)",
-			oldVersion: "v1.24.8",
+			oldVersion: "v1.25.7",
 			newVersion: "v1.25.0", // uses new registry
 			expectErr:  false,
 		},
