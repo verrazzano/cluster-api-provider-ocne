@@ -204,7 +204,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		}
 	}
 
-	log.Info("HelmValues: %v", helmMeta)
+	log.Info(fmt.Sprintf("HelmValues: %v", helmMeta))
 	return generate("HelmValues", valuesTemplate, helmMeta)
 }
 
