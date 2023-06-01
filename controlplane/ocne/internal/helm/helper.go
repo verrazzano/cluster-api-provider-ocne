@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
 	"path"
+	"path/filepath"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
@@ -245,21 +246,21 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	err = os.MkdirAll(verrazzanoPlatformOperatorChartPath, 0755)
+	err = os.MkdirAll(filepath.Join(verrazzanoPlatformOperatorChartPath, "crds"), 0755)
 	if err != nil {
-		log.Error(err, "Unable to create chart directory for verrazzano platform operator")
+		log.Error(err, "Unable to create crds chart directory for verrazzano platform operator")
+		return nil, err
+	}
+
+	err = os.MkdirAll(filepath.Join(verrazzanoPlatformOperatorChartPath, "templates"), 0755)
+	if err != nil {
+		log.Error(err, "Unable to create templates chart directory for verrazzano platform operator")
 		return nil, err
 	}
 
 	for k, v := range cm.Data {
-		log.Info(fmt.Sprintf("+++ AAMITRA KEY = %v +++", k))
-		var fileName string
-		if strings.Contains(k, "...") {
-			names := strings.Split(k, "...")
-			fileName = names[len(names)-1]
-		} else {
-			fileName = k
-		}
+		fileName := strings.ReplaceAll(k, "...", "/")
+		log.Info(fmt.Sprintf("+++ FILE TO CREATE = %s +++", fileName))
 		fp, fileErr := os.Create(path.Join(verrazzanoPlatformOperatorChartPath, fileName))
 		if fileErr != nil {
 			log.Error(fileErr, "Unable to create file")
