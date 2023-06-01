@@ -48,7 +48,7 @@ const (
 	// DefaultOCNECSISocket is teh default socket for OCI CSI
 	DefaultOCNECSISocket = "/var/run/shared-tmpfs/csi.sock"
 
-	K8sVersionOneTwoFourEight = "v1.24.8"
+	K8sVersionOneTwoFiveSeven = "v1.25.7"
 
 	configMapName                        = "ocne-metadata"
 	cmDataKey                            = "mapping"
@@ -145,7 +145,7 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 	var err error
 
 	if userData.KubernetesVersion == "" {
-		userData.KubernetesVersion = K8sVersionOneTwoFourEight
+		userData.KubernetesVersion = K8sVersionOneTwoFiveSeven
 	}
 
 	ocneMeta, err = GetOCNEMetadata(context.Background())
