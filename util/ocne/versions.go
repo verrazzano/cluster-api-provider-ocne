@@ -164,7 +164,7 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 				meta.OCNEImages.ModuleOperator = defaultModuleOperatorTag
 			}
 
-			// Add ModuleOperator Defaults Tag if missing
+			// Add VPO Defaults Tag if missing
 			if meta.OCNEImages.VerrazzanoPlatformOperator == "" {
 				meta.OCNEImages.VerrazzanoPlatformOperator = defaultVerrazzanoPlatformOperatorTag
 			}

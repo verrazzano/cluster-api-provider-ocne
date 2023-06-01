@@ -21,11 +21,13 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/internal/helm"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/k8s"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	"k8s.io/klog/v2"
-	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -578,11 +580,13 @@ func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx con
 		reterr = kerrors.NewAggregate([]error{reterr, err})
 	}
 
-	addonsSpec, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.ModuleOperator, ocnecp.Spec.Version)
+	addonsSpec, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.VerrazzanoPlatformOperator, ocnecp.Spec.Version)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return ctrl.Result{}, err
 	}
+
+	spew.Dump(addonsSpec)
 
 	if ocnecp.Spec.VerrazzanoPlatformOperator.Enabled {
 		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)

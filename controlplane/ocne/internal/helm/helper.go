@@ -44,7 +44,6 @@ const (
 	moduleOperatorImageName                          = "module-operator"
 	defaultImagePullPolicy                           = "IfNotPresent"
 	moduleOperatorChartPath                          = "charts/operators/verrazzano-module-operator/"
-	verrazzanoPlatformOperatorChartPath              = "charts/verrazzano-platform-operator/"
 	verrazzanoPlatformOperatorChartName              = "verrazzano-platform-operator"
 	verrazzanoPlatformOperatorNameSpace              = "verrazzano-install"
 	verrazzanoPlatformOperatorImageName              = "verrazzano-platform-operator"
@@ -55,11 +54,16 @@ var (
 	//go:embed imageMeta.tmpl
 	valuesTemplate string
 
+	//go.embed vpoImageMeta.tmpl
+	vpoValuesTemplate string
+
 	defaultTemplateFuncMap = template.FuncMap{
 		"Indent": templateYAMLIndent,
 	}
 
 	GetCoreV1Func = GetCoreV1Client
+
+	verrazzanoPlatformOperatorChartPath = path.Join(os.TempDir(), verrazzanoPlatformOperatorImageName)
 )
 
 func GetCoreV1Client() (v1.CoreV1Interface, error) {
@@ -203,7 +207,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		}
 	}
 
-	return generate("HelmValues", valuesTemplate, helmMeta)
+	return generate("HelmValues", vpoValuesTemplate, helmMeta)
 }
 
 func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
@@ -232,13 +236,14 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 	if err != nil {
 		return nil, err
 	}
+	// TODO namespace check
 
 	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace).Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = os.Remove(verrazzanoPlatformOperatorChartPath)
+	err = os.RemoveAll(verrazzanoPlatformOperatorChartPath)
 	if err != nil {
 		log.Error(err, "Unable to cleanup chart directory for verrazzano platform operator")
 		return nil, err
@@ -251,15 +256,22 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 	}
 
 	for k, v := range cm.Data {
-		log.Info(fmt.Sprintf("+++ AAMITRA KEY = %v +++", k))
 		var fileName string
 		if strings.Contains(k, "...") {
 			names := strings.Split(k, "...")
-			fileName = names[len(names)-1]
+			fileName = path.Join(verrazzanoPlatformOperatorChartPath, names[0], names[len(names)-1])
+			err = os.MkdirAll(path.Join(verrazzanoPlatformOperatorChartPath, names[0]), os.ModePerm)
+			if err != nil {
+				log.Error(err, "Unable to create sub directory fot vpo")
+				return nil, err
+			}
+			//log.Info(fmt.Sprintf("+++ AAMITRA Creating DIR = %v +++", path.Join(verrazzanoPlatformOperatorChartPath,names[0])))
 		} else {
-			fileName = k
+			fileName = path.Join(verrazzanoPlatformOperatorChartPath, k)
 		}
-		fp, fileErr := os.Create(path.Join(verrazzanoPlatformOperatorChartPath, fileName))
+		//log.Info(fmt.Sprintf("+++ AAMITRA KEY = %v +++", k))
+		//log.Info(fmt.Sprintf("+++ AAMITRA FILENAME = %v +++", fileName))
+		fp, fileErr := os.Create(fileName)
 		if fileErr != nil {
 			log.Error(fileErr, "Unable to create file")
 			return nil, fileErr
