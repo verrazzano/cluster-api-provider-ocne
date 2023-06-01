@@ -86,7 +86,7 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		configName := fmt.Sprintf("my-config-%d", i)
 		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
-			WithVersion("v1.25.7).
+			WithVersion("v1.25.7").
 			WithClusterName(cluster.Name).
 			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "").Unstructured()).
 			Build()
@@ -178,7 +178,7 @@ func TestOCNEConfigReconciler_TestSecretOwnerReferenceReconciliation(t *testing.
 	clusterName := "my-cluster"
 	cluster := builder.Cluster(metav1.NamespaceDefault, clusterName).Build()
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithClusterName(clusterName).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
@@ -290,7 +290,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
 	addKubeadmConfigToMachine(config, machine)
@@ -318,7 +318,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfReferencedMachineIsNotFound(t
 func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasDataSecretName(t *testing.T) {
 	g := NewWithT(t)
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	machine.Spec.Bootstrap.DataSecretName = pointer.String("something")
@@ -364,7 +364,7 @@ func TestOCNEConfigReconciler_ReturnEarlyIfClusterInfraNotReady(t *testing.T) {
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithClusterName(cluster.Name).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
@@ -420,7 +420,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnEarlyIfMachineHasNoCluster(t *test
 	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
@@ -464,7 +464,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfMachineDoesNotHaveAssociatedC
 	defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
 	config := newKubeadmConfig(metav1.NamespaceDefault, "cfg")
@@ -509,7 +509,7 @@ func TestOCNEConfigReconciler_Reconcile_ReturnNilIfAssociatedClusterIsNotFound(t
 
 	cluster := builder.Cluster(metav1.NamespaceDefault, "cluster").Build()
 	machine := builder.Machine(metav1.NamespaceDefault, "machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithClusterName(cluster.Name).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		Build()
@@ -1897,13 +1897,13 @@ func TestOCNEConfigReconciler_Reconcile_AlwaysCheckCAVerificationUnlessRequested
 
 	controlPlaneMachineName := "my-machine"
 	machine := builder.Machine(metav1.NamespaceDefault, controlPlaneMachineName).
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithClusterName(cluster.Name).
 		Build()
 
 	workerMachineName := "my-worker"
 	workerMachine := builder.Machine(metav1.NamespaceDefault, workerMachineName).
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithClusterName(cluster.Name).
 		Build()
 
@@ -1997,7 +1997,7 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		configName := fmt.Sprintf("my-config-%d", i)
 		m := builder.Machine(metav1.NamespaceDefault, fmt.Sprintf("my-machine-%d", i)).
-			WithVersion("v1.25.7).
+			WithVersion("v1.25.7").
 			WithClusterName(cluster.Name).
 			WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, configName).Unstructured()).
 			Build()
@@ -2481,7 +2481,7 @@ func TestOCNEConfigReconciler_ResolveUsers(t *testing.T) {
 // newWorkerMachineForCluster returns a Machine with the passed Cluster's information and a pre-configured name.
 func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
 	return builder.Machine(cluster.Namespace, "worker-machine").
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
 		WithClusterName(cluster.Name).
 		Build()
@@ -2490,7 +2490,7 @@ func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
 // newControlPlaneMachine returns a Machine with the passed Cluster information and a MachineControlPlaneLabelName.
 func newControlPlaneMachine(cluster *clusterv1.Cluster, name string) *clusterv1.Machine {
 	m := builder.Machine(cluster.Namespace, name).
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		WithClusterName(cluster.Name).
 		WithLabels(map[string]string{clusterv1.MachineControlPlaneLabelName: ""}).
@@ -2504,7 +2504,7 @@ func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool 
 		WithClusterName(cluster.Name).
 		WithLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
-		WithVersion("v1.25.7).
+		WithVersion("v1.25.7").
 		Build()
 	return m
 }
