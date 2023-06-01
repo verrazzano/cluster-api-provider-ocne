@@ -45,7 +45,7 @@ const (
 	moduleOperatorImageName                          = "module-operator"
 	defaultImagePullPolicy                           = "IfNotPresent"
 	moduleOperatorChartPath                          = "charts/operators/verrazzano-module-operator/"
-	verrazzanoPlatformOperatorChartPath              = "charts/verrazzano-platform-operator/"
+	verrazzanoPlatformOperatorChartPath              = "/tmp/charts/verrazzano-platform-operator/"
 	verrazzanoPlatformOperatorChartName              = "verrazzano-platform-operator"
 	verrazzanoPlatformOperatorNameSpace              = "verrazzano-install"
 	verrazzanoPlatformOperatorImageName              = "verrazzano-platform-operator"
