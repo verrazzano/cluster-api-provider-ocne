@@ -36,7 +36,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"text/template"
-	"time"
 )
 
 const (
@@ -112,7 +111,7 @@ func generateDataValuesForModuleOperator(ctx context.Context, spec *controlplane
 	var helmMeta HelmValuesTemplate
 
 	// Setting default values for image
-	if spec != nil && spec.Image != nil {
+	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Repository = getDefaultModuleOperatorImageRepo()
@@ -166,7 +165,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	var helmMeta HelmValuesTemplate
 
 	// Setting default values for image
-	if spec != nil && spec.Image != nil {
+	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Repository = getDefaultVPOImageRepo()
@@ -273,7 +272,6 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		}
 	}
 
-	time.Sleep(1000 * time.Second)
 	out, err := generateDataValuesForVerrazzanoPlatformOperator(ctx, spec, k8sVersion)
 	if err != nil {
 		log.Error(err, "failed to generate data")
