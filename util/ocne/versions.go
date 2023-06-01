@@ -46,7 +46,7 @@ type OCNEPackages struct {
 const (
 	defaultTigeraOperatorTag             = "v1.29.0"
 	defaultCalicoTag                     = "v3.25.0"
-	minOCNEVersion                       = "v1.24.8"
+	minOCNEVersion                       = "v1.25.7"
 	configMapName                        = "ocne-metadata"
 	cmDataKey                            = "mapping"
 	defaultModuleOperatorTag             = "v0.1.0-20230530200216-dba4f4d7"
@@ -164,7 +164,7 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 				meta.OCNEImages.ModuleOperator = defaultModuleOperatorTag
 			}
 
-			// Add ModuleOperator Defaults Tag if missing
+			// Add VerrazzanoPlatformOperator Defaults Tag if missing
 			if meta.OCNEImages.VerrazzanoPlatformOperator == "" {
 				meta.OCNEImages.VerrazzanoPlatformOperator = defaultVerrazzanoPlatformOperatorTag
 			}

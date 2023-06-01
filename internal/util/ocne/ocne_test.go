@@ -91,7 +91,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 	}{
 		{
 			testName:          "Valid K8s version and proxy",
-			kubernetesVersion: "v1.24.8",
+			kubernetesVersion: "v1.25.7",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -133,7 +133,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and no proxy",
-			kubernetesVersion: "v1.24.8",
+			kubernetesVersion: "v1.25.7",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -142,7 +142,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and proxy with skipinstall true",
-			kubernetesVersion: "v1.24.8",
+			kubernetesVersion: "v1.25.7",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
@@ -157,7 +157,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 		},
 		{
 			testName:          "Supported K8s version and no proxy with skipinstall true",
-			kubernetesVersion: "v1.24.8",
+			kubernetesVersion: "v1.25.7",
 			ocneImageRepo:     "foo",
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
