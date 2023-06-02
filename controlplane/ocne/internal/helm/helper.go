@@ -240,7 +240,7 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	_, err = client.Namespaces().Get(ctx, verrazzanoPlatformOperatorNameSpace, metav1.GetOptions{})
+	_, err = client.Namespaces().Get(ctx, verrazzanoPlatformOperatorNameSpace+"x", metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			log.Error(err, "Installing the verrazzano-platform-operator helm chart in an OCNE cluster requires a Verrazzano installation")
