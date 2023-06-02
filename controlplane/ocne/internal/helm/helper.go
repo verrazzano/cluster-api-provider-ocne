@@ -230,6 +230,7 @@ func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOpe
 
 }
 
+// GetVerrazzanoPlatformOperatorAddons returns the needed info to install the verrazzano-platform-operator helm chart.
 func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -238,7 +239,7 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace).Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
+	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace+"x").Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
