@@ -5,6 +5,6 @@ imagePullPolicy: {{.PullPolicy}}
 global:
   imagePullSecrets:
 {{- range .ImagePullSecrets }}
-    - name: {{ .Name }}
+    - {{ .Name }}
 {{- end }}
 {{- end }}
