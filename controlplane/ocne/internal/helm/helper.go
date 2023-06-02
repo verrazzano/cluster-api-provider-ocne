@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -239,7 +240,15 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace+"x").Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
+	_, err = client.Namespaces().Get(ctx, verrazzanoPlatformOperatorNameSpace, metav1.GetOptions{})
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			log.Error(err, "Installing the verrazzano-platform-operator helm chart in an OCNE cluster requires a Verrazzano installation")
+		}
+		return nil, err
+	}
+
+	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace).Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
