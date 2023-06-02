@@ -281,6 +281,7 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
+	log.Info(fmt.Sprintf("ValuesTemplate: %s", string(out)))
 	return &HelmModuleAddons{
 		ChartName:        verrazzanoPlatformOperatorChartName,
 		ReleaseName:      verrazzanoPlatformOperatorChartName,
