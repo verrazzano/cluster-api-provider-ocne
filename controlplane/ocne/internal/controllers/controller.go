@@ -585,7 +585,7 @@ func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx con
 	}
 
 	if ocnecp.Spec.VerrazzanoPlatformOperator.Enabled {
-		log.Info("Installing VPO helm chart")
+		log.Info("Installing verrazzano-platform-operator helm chart")
 		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
 		if err != nil {
 			log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
@@ -596,7 +596,7 @@ func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx con
 			conditions.MarkTrue(controlPlane.KCP, controlplanev1.VerrazzanoPlatformOperatorDeploy)
 		}
 	} else {
-		log.Info("Uninstalling VPO helm chart")
+		log.Info("Uninstalling verrazzano-platform-operator helm chart")
 		_, err := helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
 		if err == nil {
 			// If helm chart is found, remove it
