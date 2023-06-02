@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -170,7 +169,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 
 	// Setting default values for image
 	if spec.Image != nil {
-		// Set defaults or honour overrides
+		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Repository = getDefaultVPOImageRepo()
 		} else {
@@ -208,7 +207,6 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		}
 	}
 
-	log.Info(fmt.Sprintf("HelmValues: %v", helmMeta))
 	return generate("HelmValues", vpoValuesTemplate, helmMeta)
 }
 
@@ -240,25 +238,21 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	_, err = client.Namespaces().Get(ctx, verrazzanoPlatformOperatorNameSpace+"x", metav1.GetOptions{})
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			log.Error(err, "Installing the verrazzano-platform-operator helm chart in an OCNE cluster requires a Verrazzano installation")
-		}
-		return nil, err
-	}
-
+	// Get the config map containing the verrazzano-platform-operator helm chart.
 	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace).Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
 	if err != nil {
+		log.Error(err, "Installing the verrazzano-platform-operator helm chart in an OCNE cluster requires a Verrazzano installation")
 		return nil, err
 	}
 
+	// Cleanup verrazzano-platform-operator helm chart from a previous installation.
 	err = os.RemoveAll(verrazzanoPlatformOperatorChartPath)
 	if err != nil {
 		log.Error(err, "Unable to cleanup chart directory for verrazzano platform operator")
 		return nil, err
 	}
 
+	// Create the needed directories if they don't exist.
 	err = os.MkdirAll(filepath.Join(verrazzanoPlatformOperatorChartPath, "crds"), 0755)
 	if err != nil {
 		log.Error(err, "Unable to create crds chart directory for verrazzano platform operator")
@@ -271,6 +265,7 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
+	// Iterate through the config map and create all the verrazzano-platform-operator helm chart files.
 	for k, v := range cm.Data {
 		fileName := strings.ReplaceAll(k, "...", "/")
 		fp, fileErr := os.Create(path.Join(verrazzanoPlatformOperatorChartPath, fileName))
@@ -285,13 +280,14 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		}
 	}
 
+	// Get the values to pass to the verrazzano-platform-operator helm chart
 	out, err := generateDataValuesForVerrazzanoPlatformOperator(ctx, spec, k8sVersion)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return nil, err
 	}
 
-	log.Info(fmt.Sprintf("ValuesTemplate: %s", string(out)))
+	log.Info(fmt.Sprintf("Values to be passed to helm chart: %s", string(out)))
 	return &HelmModuleAddons{
 		ChartName:        verrazzanoPlatformOperatorChartName,
 		ReleaseName:      verrazzanoPlatformOperatorChartName,
@@ -300,5 +296,4 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		Local:            true,
 		ValuesTemplate:   string(out),
 	}, nil
-
 }
