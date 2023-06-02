@@ -56,7 +56,7 @@ var (
 	//go:embed imageMeta.tmpl
 	valuesTemplate string
 
-	//go: embed vpoImageMeta.tmpl
+	//go:embed vpoImageMeta.tmpl
 	vpoValuesTemplate string
 
 	defaultTemplateFuncMap = template.FuncMap{
