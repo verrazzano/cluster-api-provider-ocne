@@ -1,0 +1,10 @@
+createNamespace: false
+image: {{.Repository}}:{{.Tag}}
+imagePullPolicy: {{.PullPolicy}}
+{{- if .ImagePullSecrets }}
+global:
+  imagePullSecrets:
+{{- range .ImagePullSecrets }}
+    - {{ .Name }}
+{{- end }}
+{{- end }}
