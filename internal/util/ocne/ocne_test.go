@@ -147,7 +147,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
 			expectedError:     false,
-			overrideLength:    19,
+			overrideLength:    20,
 			proxy: &bootstrapv1.ProxySpec{
 				HttpProxy:  "foo",
 				HttpsProxy: "bar",
@@ -162,7 +162,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
 			expectedError:     false,
-			overrideLength:    15,
+			overrideLength:    16,
 			skipInstall:       true,
 		},
 	}
