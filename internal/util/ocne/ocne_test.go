@@ -101,7 +101,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 				NoProxy:    "hello",
 			},
 			expectedError:  false,
-			overrideLength: 22,
+			overrideLength: 23,
 		},
 		{
 			testName:          "Not Supported K8s version",
@@ -138,7 +138,7 @@ func TestGetOCNEOverrides(t *testing.T) {
 			podSubnet:         "1.1.1.1/24",
 			serviceSubnet:     "2.2.2.2/24",
 			expectedError:     false,
-			overrideLength:    18,
+			overrideLength:    19,
 		},
 		{
 			testName:          "Supported K8s version and proxy with skipinstall true",

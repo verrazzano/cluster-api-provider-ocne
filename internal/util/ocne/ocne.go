@@ -186,6 +186,7 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 		`sudo dnf install -y oracle-olcne-release-el8`,
 		`sudo dnf config-manager --enable ol8_olcne16 ol8_olcne15 ol8_addons ol8_baseos_latest ol8_appstream ol8_UEKR6`,
 		`sudo dnf config-manager --disable ol8_olcne14 ol8_olcne13 ol8_olcne12 ol8_developer`,
+		`sudo dnf update -y`,
 		fmt.Sprintf("sudo dnf install -y kubelet-%s.el8 kubeadm-%s.el8 kubectl-%s.el8 helm-%s.el8", ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubelet, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubectl, ocneMeta[userData.KubernetesVersion].OCNEPackages.Helm),
 		`sudo dnf install -y oraclelinux-developer-release-el8 python36-oci-cli olcnectl olcne-api-server olcne-utils`,
 	}
