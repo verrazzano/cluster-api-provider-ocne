@@ -66,6 +66,14 @@ var (
 	GetCoreV1Func = GetCoreV1Client
 )
 
+type VPOHelmValuesTemplate struct {
+	Image            string                      `json:"image,omitempty"`
+	Repository       string                      `json:"repository,omitempty"`
+	Registry         string                      `json:"registry,omitempty"`
+	PullPolicy       string                      `json:"pullPolicy,omitempty"`
+	ImagePullSecrets []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
+}
+
 func GetCoreV1Client() (v1.CoreV1Interface, error) {
 	restConfig := controllerruntime.GetConfigOrDie()
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
@@ -169,19 +177,22 @@ func getDefaultVPOImageFromHelmChart() (string, error) {
 }
 
 // parseDefaultVPOImage parse the default VPO image and returns the parts of the VPO image
-func parseDefaultVPOImage(vpoImage string) (repo string, image string, tag string) {
-	splitColon := strings.Split(vpoImage, ":")
-	tag = splitColon[1]
-	splitSlash := strings.Split(splitColon[0], "/")
-	image = splitSlash[len(splitSlash)-1]
-	repo = strings.ReplaceAll(splitColon[0], "/"+image, "")
-	return repo, image, tag
+func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image string, tag string) {
+	splitTag := strings.Split(vpoImage, ":")
+	tag = splitTag[1]
+	splitImage := strings.Split(splitTag[0], "/")
+	image = splitImage[len(splitImage)-1]
+	regRepo := strings.ReplaceAll(splitTag[0], "/"+image, "")
+	splitRegistry := strings.Split(regRepo, "/")
+	registry = splitRegistry[0]
+	repo = strings.ReplaceAll(regRepo, registry+"/", "")
+	return registry, repo, image, tag
 }
 
 func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	var helmMeta HelmValuesTemplate
+	var helmMeta VPOHelmValuesTemplate
 
 	// Setting default values for image
 	if spec.Image != nil {
@@ -192,25 +203,29 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		}
 
 		// Parse the default VPO image and return various parts of the image
-		repo, image, tag := parseDefaultVPOImage(vpoImage)
+		registry, repo, image, tag := parseDefaultVPOImage(vpoImage)
 
 		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
-			helmMeta.Repository = fmt.Sprintf("%s/%s", repo, image)
+			helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == image {
-				helmMeta.Repository = spec.Image.Repository
+				helmMeta.Image = spec.Image.Repository
 			} else {
-				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), image)
+				helmMeta.Image = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), image)
 			}
 		}
 
 		if spec.Image.Tag == "" {
-			helmMeta.Tag = tag
+			helmMeta.Image = fmt.Sprintf("%s:%s", helmMeta.Image, tag)
 		} else {
-			helmMeta.Tag = strings.TrimSpace(spec.Image.Tag)
+			helmMeta.Image = fmt.Sprintf("%s:%s", helmMeta.Image, strings.TrimSpace(spec.Image.Tag))
 		}
+
+		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
+		helmMeta.Registry = registry
+		helmMeta.Repository = repo
 
 		if spec.Image.PullPolicy == "" {
 			helmMeta.PullPolicy = defaultImagePullPolicy
@@ -224,7 +239,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 
 	} else {
 		// If nothing has been specified in API
-		helmMeta = HelmValuesTemplate{
+		helmMeta = VPOHelmValuesTemplate{
 			PullPolicy:       defaultImagePullPolicy,
 			ImagePullSecrets: []controlplanev1.SecretName{},
 		}
