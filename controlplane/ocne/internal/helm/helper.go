@@ -26,28 +26,54 @@ import (
 	"github.com/pkg/errors"
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
+	"path"
+	"path/filepath"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 	"text/template"
 )
 
 const (
-	moduleOperatorRepo      = "ghcr.io"
-	moduleOperatorNamespace = "verrazzano"
-	moduleOperatorChartName = "verrazzano-module-operator"
-	moduleOperatorImageName = "module-operator"
-	defaultImagePullPolicy  = "IfNotPresent"
-	moduleOperatorPath      = "charts/operators/verrazzano-module-operator/"
+	moduleOperatorRepo                               = "ghcr.io"
+	moduleOperatorNamespace                          = "verrazzano"
+	moduleOperatorChartName                          = "verrazzano-module-operator"
+	moduleOperatorImageName                          = "module-operator"
+	defaultImagePullPolicy                           = "IfNotPresent"
+	moduleOperatorChartPath                          = "charts/operators/verrazzano-module-operator/"
+	verrazzanoPlatformOperatorChartPath              = "/tmp/charts/verrazzano-platform-operator/"
+	verrazzanoPlatformOperatorChartName              = "verrazzano-platform-operator"
+	verrazzanoPlatformOperatorNameSpace              = "verrazzano-install"
+	verrazzanoPlatformOperatorImageName              = "verrazzano-platform-operator"
+	verrazzanoPlatformOperatorHelmChartConfigMapName = "vpo-helm-chart"
 )
 
 var (
 	//go:embed imageMeta.tmpl
 	valuesTemplate string
 
+	//go:embed vpoImageMeta.tmpl
+	vpoValuesTemplate string
+
 	defaultTemplateFuncMap = template.FuncMap{
 		"Indent": templateYAMLIndent,
 	}
+
+	GetCoreV1Func = GetCoreV1Client
 )
+
+func GetCoreV1Client() (v1.CoreV1Interface, error) {
+	restConfig := controllerruntime.GetConfigOrDie()
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return kubeClient.CoreV1(), nil
+}
 
 func templateYAMLIndent(i int, input string) string {
 	split := strings.Split(input, "\n")
@@ -68,11 +94,15 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func getDefaultOCNEModuleOperatorImageRepo() string {
+func getDefaultModuleOperatorImageRepo() string {
 	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, moduleOperatorImageName)
 }
 
-func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
+func getDefaultVPOImageRepo() string {
+	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, verrazzanoPlatformOperatorImageName)
+}
+
+func generateDataValuesForModuleOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
 	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
 	if err != nil {
@@ -87,7 +117,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 	if spec.Image != nil {
 		// Set defaults or honour overrides
 		if spec.Image.Repository == "" {
-			helmMeta.Repository = getDefaultOCNEModuleOperatorImageRepo()
+			helmMeta.Repository = getDefaultModuleOperatorImageRepo()
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == moduleOperatorImageName {
@@ -116,7 +146,7 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 	} else {
 		// If nothing has been specified in API
 		helmMeta = HelmValuesTemplate{
-			Repository:       getDefaultOCNEModuleOperatorImageRepo(),
+			Repository:       getDefaultModuleOperatorImageRepo(),
 			Tag:              ocneMeta[k8sVersion].OCNEImages.ModuleOperator,
 			PullPolicy:       defaultImagePullPolicy,
 			ImagePullSecrets: []controlplanev1.SecretName{},
@@ -126,9 +156,63 @@ func generateDataValues(ctx context.Context, spec *controlplanev1.ModuleOperator
 	return generate("HelmValues", valuesTemplate, helmMeta)
 }
 
-func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
-	out, err := generateDataValues(ctx, spec, k8sVersion)
+	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
+	if err != nil {
+		log.Error(err, "failed to get retrieve OCNE metadata")
+		return nil, err
+
+	}
+
+	var helmMeta HelmValuesTemplate
+
+	// Setting default values for image
+	if spec.Image != nil {
+		// Set defaults or honor overrides
+		if spec.Image.Repository == "" {
+			helmMeta.Repository = getDefaultVPOImageRepo()
+		} else {
+			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
+			if imageList[len(imageList)-1] == verrazzanoPlatformOperatorImageName {
+				helmMeta.Repository = spec.Image.Repository
+			} else {
+				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), verrazzanoPlatformOperatorImageName)
+			}
+		}
+
+		if spec.Image.Tag == "" {
+			helmMeta.Tag = ocneMeta[k8sVersion].OCNEImages.VerrazzanoPlatformOperator
+		} else {
+			helmMeta.Tag = strings.TrimSpace(spec.Image.Tag)
+		}
+
+		if spec.Image.PullPolicy == "" {
+			helmMeta.PullPolicy = defaultImagePullPolicy
+		} else {
+			helmMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
+		}
+
+		if spec.ImagePullSecrets != nil {
+			helmMeta.ImagePullSecrets = spec.ImagePullSecrets
+		}
+
+	} else {
+		// If nothing has been specified in API
+		helmMeta = HelmValuesTemplate{
+			Repository:       getDefaultVPOImageRepo(),
+			Tag:              ocneMeta[k8sVersion].OCNEImages.VerrazzanoPlatformOperator,
+			PullPolicy:       defaultImagePullPolicy,
+			ImagePullSecrets: []controlplanev1.SecretName{},
+		}
+	}
+
+	return generate("HelmValues", vpoValuesTemplate, helmMeta)
+}
+
+func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+	log := ctrl.LoggerFrom(ctx)
+	out, err := generateDataValuesForModuleOperator(ctx, spec, k8sVersion)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return nil, err
@@ -138,9 +222,78 @@ func GetOCNEModuleOperatorAddons(ctx context.Context, spec *controlplanev1.Modul
 		ChartName:        moduleOperatorChartName,
 		ReleaseName:      moduleOperatorChartName,
 		ReleaseNamespace: moduleOperatorChartName,
-		RepoURL:          moduleOperatorPath,
+		RepoURL:          moduleOperatorChartPath,
 		Local:            true,
 		ValuesTemplate:   string(out),
 	}, nil
 
+}
+
+// GetVerrazzanoPlatformOperatorAddons returns the needed info to install the verrazzano-platform-operator helm chart.
+func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	client, err := GetCoreV1Func()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the config map containing the verrazzano-platform-operator helm chart.
+	cm, err := client.ConfigMaps(verrazzanoPlatformOperatorNameSpace).Get(ctx, verrazzanoPlatformOperatorHelmChartConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err, "Installing the verrazzano-platform-operator helm chart in an OCNE cluster requires a Verrazzano installation")
+		return nil, err
+	}
+
+	// Cleanup verrazzano-platform-operator helm chart from a previous installation.
+	err = os.RemoveAll(verrazzanoPlatformOperatorChartPath)
+	if err != nil {
+		log.Error(err, "Unable to cleanup chart directory for verrazzano platform operator")
+		return nil, err
+	}
+
+	// Create the needed directories if they don't exist.
+	err = os.MkdirAll(filepath.Join(verrazzanoPlatformOperatorChartPath, "crds"), 0755)
+	if err != nil {
+		log.Error(err, "Unable to create crds chart directory for verrazzano platform operator")
+		return nil, err
+	}
+
+	err = os.MkdirAll(filepath.Join(verrazzanoPlatformOperatorChartPath, "templates"), 0755)
+	if err != nil {
+		log.Error(err, "Unable to create templates chart directory for verrazzano platform operator")
+		return nil, err
+	}
+
+	// Iterate through the config map and create all the verrazzano-platform-operator helm chart files.
+	for k, v := range cm.Data {
+		fileName := strings.ReplaceAll(k, "...", "/")
+		fp, fileErr := os.Create(path.Join(verrazzanoPlatformOperatorChartPath, fileName))
+		if fileErr != nil {
+			log.Error(fileErr, "Unable to create file")
+			return nil, fileErr
+		}
+		defer fp.Close()
+		if _, fileErr = fp.Write([]byte(v)); err != nil {
+			log.Error(fileErr, "Unable to write to file")
+			return nil, fileErr
+		}
+	}
+
+	// Get the values to pass to the verrazzano-platform-operator helm chart
+	out, err := generateDataValuesForVerrazzanoPlatformOperator(ctx, spec, k8sVersion)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return nil, err
+	}
+
+	log.Info(fmt.Sprintf("Values to be passed to helm chart: %s", string(out)))
+	return &HelmModuleAddons{
+		ChartName:        verrazzanoPlatformOperatorChartName,
+		ReleaseName:      verrazzanoPlatformOperatorChartName,
+		ReleaseNamespace: verrazzanoPlatformOperatorNameSpace,
+		RepoURL:          verrazzanoPlatformOperatorChartPath,
+		Local:            true,
+		ValuesTemplate:   string(out),
+	}, nil
 }

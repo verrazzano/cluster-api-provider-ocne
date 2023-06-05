@@ -248,6 +248,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.ModuleOperatorDeploy,
+			controlplanev1.VerrazzanoPlatformOperatorDeploy,
 		),
 	)
 
@@ -264,6 +265,7 @@ func patchOCNEControlPlane(ctx context.Context, patchHelper *patch.Helper, ocnec
 			controlplanev1.AvailableCondition,
 			controlplanev1.CertificatesAvailableCondition,
 			controlplanev1.ModuleOperatorDeploy,
+			controlplanev1.VerrazzanoPlatformOperatorDeploy,
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -510,7 +512,14 @@ func (r *OCNEControlPlaneReconciler) reconcile(ctx context.Context, cluster *clu
 	}
 
 	if ocnecp.Spec.ModuleOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
-		return r.reconcileOCNEModuleOperator(ctx, cluster, ocnecp, controlPlane)
+		result, err := r.reconcileOCNEModuleOperator(ctx, cluster, ocnecp, controlPlane)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	if ocnecp.Spec.VerrazzanoPlatformOperator != nil && conditions.IsTrue(controlPlane.KCP, controlplanev1.AvailableCondition) {
+		return r.reconcileVerrazzanoPlatformOperator(ctx, cluster, ocnecp, controlPlane)
 	}
 
 	return ctrl.Result{}, nil
@@ -525,7 +534,7 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 		reterr = kerrors.NewAggregate([]error{reterr, err})
 	}
 
-	addonsSpec, err := helm.GetOCNEModuleOperatorAddons(ctx, ocnecp.Spec.ModuleOperator, ocnecp.Spec.Version)
+	addonsSpec, err := helm.GetModuleOperatorAddons(ctx, ocnecp.Spec.ModuleOperator, ocnecp.Spec.Version)
 	if err != nil {
 		log.Error(err, "failed to generate data")
 		return ctrl.Result{}, err
@@ -553,6 +562,52 @@ func (r *OCNEControlPlaneReconciler) reconcileOCNEModuleOperator(ctx context.Con
 		}
 		if conditions.IsTrue(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy) {
 			conditions.MarkFalse(controlPlane.KCP, controlplanev1.ModuleOperatorDeploy, controlplanev1.ModuleOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
+		}
+
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func (r *OCNEControlPlaneReconciler) reconcileVerrazzanoPlatformOperator(ctx context.Context, cluster *clusterv1.Cluster, ocnecp *controlplanev1.OCNEControlPlane, controlPlane *internal.ControlPlane) (res ctrl.Result, reterr error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("Reconcile Verrazzano Platform Operator")
+	kubeconfig, err := k8s.GetClusterKubeconfig(ctx, cluster)
+	if err != nil {
+		log.Error(err, "failed to get kubeconfig for cluster ")
+		reterr = kerrors.NewAggregate([]error{reterr, err})
+	}
+
+	addonsSpec, err := helm.GetVerrazzanoPlatformOperatorAddons(ctx, ocnecp.Spec.VerrazzanoPlatformOperator, ocnecp.Spec.Version)
+	if err != nil {
+		log.Error(err, "failed to generate data")
+		return ctrl.Result{}, err
+	}
+
+	if ocnecp.Spec.VerrazzanoPlatformOperator.Enabled {
+		log.Info("Installing verrazzano-platform-operator helm chart")
+		release, err := helm.InstallOrUpgradeHelmReleases(ctx, kubeconfig, ocnecp.ObjectMeta.GetName(), addonsSpec.ValuesTemplate, addonsSpec)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Failed to install or upgrade release '%s' on OCNE controlplane  %s", release.Name, ocnecp.GetObjectMeta().GetName()))
+			reterr = kerrors.NewAggregate([]error{reterr, err})
+		}
+
+		if !conditions.IsTrue(controlPlane.KCP, controlplanev1.VerrazzanoPlatformOperatorDeploy) {
+			conditions.MarkTrue(controlPlane.KCP, controlplanev1.VerrazzanoPlatformOperatorDeploy)
+		}
+	} else {
+		log.Info("Uninstalling verrazzano-platform-operator helm chart")
+		_, err := helm.GetHelmRelease(ctx, kubeconfig, addonsSpec)
+		if err == nil {
+			// If helm chart is found, remove it
+			_, err := helm.UninstallHelmRelease(ctx, kubeconfig, addonsSpec)
+			if err != nil {
+				log.Error(err, fmt.Sprintf("Failed to uninstall release '%s' on OCNE controlplane  %s", addonsSpec.ReleaseName, ocnecp.GetObjectMeta().GetName()))
+				reterr = kerrors.NewAggregate([]error{reterr, err})
+			}
+		}
+		if conditions.IsTrue(controlPlane.KCP, controlplanev1.VerrazzanoPlatformOperatorDeploy) {
+			conditions.MarkFalse(controlPlane.KCP, controlplanev1.VerrazzanoPlatformOperatorDeploy, controlplanev1.VerrazzanoPlatformOperatorUninstalled, clusterv1.ConditionSeverityInfo, "")
 		}
 
 	}
