@@ -33,15 +33,10 @@ ARG goproxy=https://proxy.golang.org
 # Run this with docker build --build-arg package=./controlplane/kubeadm or --build-arg package=./bootstrap/kubeadm
 ENV GOPROXY=$goproxy
 
-ENV GOURL=https://yum.oracle.com/repo/OracleLinux/OL8/developer/x86_64/getPackage
-
-RUN dnf install -y oracle-olcne-release-el8 && \
-    dnf config-manager --enable ol8_olcne16 && \
-    dnf install -y openssl-devel delve gcc yq helm-3.11.1-1.el8 tar git && \
-    rpm -ivh ${GOURL}/go-toolset-1.19.4-1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
-    ${GOURL}/golang-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm \
-    ${GOURL}/golang-src-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.noarch.rpm \
-    ${GOURL}/golang-bin-1.19.4-2.0.1.module+el8.7.0+20922+47ac84ba.x86_64.rpm && \
+RUN dnf install -y oracle-olcne-release-el8 oraclelinux-developer-release-el8 && \
+    dnf config-manager --enable ol8_olcne16 ol8_developer && \
+    dnf update -y && \
+    dnf install -y yq helm-3.11.1-1.el8 tar git go-toolset-1.19.6 && \
     go version
 
 RUN git clone https://github.com/verrazzano/verrazzano-modules.git && \
