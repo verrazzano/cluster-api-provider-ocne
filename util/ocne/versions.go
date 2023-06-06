@@ -49,7 +49,7 @@ const (
 	minOCNEVersion                       = "v1.25.7"
 	configMapName                        = "ocne-metadata"
 	cmDataKey                            = "mapping"
-	defaultModuleOperatorTag             = "v0.1.0-20230530200216-dba4f4d7"
+	defaultModuleOperatorTag             = "v0.1.0-20230606042357-54f0f405"
 	defaultVerrazzanoPlatformOperatorTag = "v1.6.0-20230601044914-8f171f25"
 )
 
