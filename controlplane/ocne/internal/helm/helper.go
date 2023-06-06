@@ -325,7 +325,6 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	log.Info(fmt.Sprintf("Values to be passed to helm chart: %s", string(out)))
 	return &HelmModuleAddons{
 		ChartName:        verrazzanoPlatformOperatorChartName,
 		ReleaseName:      verrazzanoPlatformOperatorChartName,
