@@ -68,6 +68,7 @@ var (
 
 type VPOHelmValuesTemplate struct {
 	Image            string                      `json:"image,omitempty"`
+	PrivateRegistry  bool                        `json:"privateRegistry"`
 	Repository       string                      `json:"repository,omitempty"`
 	Registry         string                      `json:"registry,omitempty"`
 	PullPolicy       string                      `json:"pullPolicy,omitempty"`
@@ -233,6 +234,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
 
 		if spec.PrivateRegistry.Enabled {
+			helmMeta.PrivateRegistry = true
 			helmMeta.Registry = registry
 			helmMeta.Repository = repo
 		}
@@ -246,6 +248,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		registry, repo, _, _ := parseDefaultVPOImage(vpoImage)
 
 		if spec.PrivateRegistry.Enabled {
+			helmMeta.PrivateRegistry = true
 			helmMeta.Registry = registry
 			helmMeta.Repository = repo
 		}
