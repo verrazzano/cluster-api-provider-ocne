@@ -136,7 +136,7 @@ type VerrazzanoPlatformOperator struct {
 	// +optional
 	ImagePullSecrets []SecretName `json:"imagePullSecrets,omitempty"`
 
-	// PrivateRegistry sets the private registry settinss for installing Verrazzano.
+	// PrivateRegistry sets the private registry settings for installing Verrazzano.
 	// +optional
 	PrivateRegistry PrivateRegistry `json:"privateRegistry,omitempty"`
 }
@@ -159,7 +159,7 @@ type ImageMeta struct {
 }
 
 type PrivateRegistry struct {
-	// Enabled sets the if the private registry for installing Verrazzano is enabled.
+	// Enabled sets a flag to determine if a private registry will be used when installing Verrazzano.
 	// if not set, the Enabled is set to false.
 	// +optional
 	Enabled bool `json:"enabled,omitempty"`
