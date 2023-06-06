@@ -1384,7 +1384,7 @@ spec:
                       type: object
                     type: array
                   privateRegistry:
-                    description: PrivateRegistry set the private registry settinss
+                    description: PrivateRegistry sets the private registry settinss
                       for installing Verrazzano.
                     properties:
                       enabled:
