@@ -42,7 +42,6 @@ CAPOCNE provider follows the below support matrix with regards Kubernetes distri
 
 | K8s Version   | DNS Image Tag | ETCD Image Tag |
 |---------------|---------------|----------------|
-| 1.24.8        | 1.8.3         | 3.5.3          |
 | 1.25.7        | v1.9.3        | 3.5.6          |
 
 

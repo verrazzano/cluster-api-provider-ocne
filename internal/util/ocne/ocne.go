@@ -194,9 +194,10 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 		fmt.Sprintf(`sudo sh -c 'echo -e "[ crio ]\n[ crio.api ]\n[ crio.image ]\npause_image = \"%s/pause:%s\"\npause_image_auth_file = \"/run/containers/0/auth.json\"\nregistries = [\"docker.io\", \"%s\"]\n[ crio.metrics ]\n[ crio.network ]\nplugin_dirs = [\"/opt/cni/bin\"]\n[crio.runtime]\ncgroup_manager = \"systemd\"\nconmon = \"/usr/bin/conmon\"\nconmon_cgroup = \"system.slice\"\nmanage_network_ns_lifecycle = true\nmanage_ns_lifecycle = true\nselinux = false\n[ crio.runtime.runtimes ]\n[ crio.runtime.runtimes.kata ]\nruntime_path = \"/usr/bin/kata-runtime\"\nruntime_type = \"oci\"\n[ crio.runtime.runtimes.runc ]\nallowed_annotations = [\"io.containers.trace-syscall\"]\nmonitor_cgroup = \"system.slice\"\nmonitor_env = [\"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"]\nmonitor_exec_cgroup = \"\"\nmonitor_path = \"/usr/bin/conmon\"\nprivileged_without_host_devices = false\nruntime_config_path = \"\"\nruntime_path = \"\"\nruntime_root = \"/run/runc\"\nruntime_type = \"oci\"\n[ crio.stats ]\n[ crio.tracing ]\n"| sudo tee /etc/crio/crio.conf'`, userData.OCNEImageRepository, ocneMeta[userData.KubernetesVersion].OCNEImages.Pause, userData.OCNEImageRepository),
 		`sudo rm -rf /etc/cni/net.d/100-crio-bridge.conf && sudo systemctl enable crio && sudo systemctl restart crio && sudo systemctl enable kubelet`,
 		`sudo systemctl disable firewalld && sudo systemctl stop firewalld`,
-		`sudo echo "(allow iscsid_t self (capability (dac_override)))" > dac_override.cil`,
-		`sudo semodule -i ~/dac_override.cil `,
+		`sudo echo "(allow iscsid_t self (capability (dac_override)))" > /tmp/dac_override.cil`,
+		`sudo semodule -i /tmp/dac_override.cil`,
 		`sudo systemctl restart iscsid.service`,
+		`sudo rm -rf /tmp/dac_override.cil`,
 	}
 
 	// This is required in the beginning to help download utilities
