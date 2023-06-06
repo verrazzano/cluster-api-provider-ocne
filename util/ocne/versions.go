@@ -23,17 +23,16 @@ type OCNEMetadata struct {
 }
 
 type OCNEImages struct {
-	ETCD                       string `json:"etcd"`
-	CoreDNS                    string `json:"coredns"`
-	TigeraOperator             string `json:"tigera-operator"`
-	Calico                     string `json:"calico"`
-	Pause                      string `json:"pause"`
-	KubeControllerManager      string `json:"kube-controller-manager"`
-	KubeScheduler              string `json:"kube-scheduler"`
-	KubeApiServer              string `json:"kube-apiserver"`
-	KubeProxy                  string `json:"kube-proxy"`
-	ModuleOperator             string `json:"module-operator"`
-	VerrazzanoPlatformOperator string `json:"verrazzano-platform-operator"`
+	ETCD                  string `json:"etcd"`
+	CoreDNS               string `json:"coredns"`
+	TigeraOperator        string `json:"tigera-operator"`
+	Calico                string `json:"calico"`
+	Pause                 string `json:"pause"`
+	KubeControllerManager string `json:"kube-controller-manager"`
+	KubeScheduler         string `json:"kube-scheduler"`
+	KubeApiServer         string `json:"kube-apiserver"`
+	KubeProxy             string `json:"kube-proxy"`
+	ModuleOperator        string `json:"module-operator"`
 }
 
 type OCNEPackages struct {
@@ -44,13 +43,12 @@ type OCNEPackages struct {
 }
 
 const (
-	defaultTigeraOperatorTag             = "v1.29.0"
-	defaultCalicoTag                     = "v3.25.0"
-	minOCNEVersion                       = "v1.25.7"
-	configMapName                        = "ocne-metadata"
-	cmDataKey                            = "mapping"
-	defaultModuleOperatorTag             = "v0.1.0-20230606042357-54f0f405"
-	defaultVerrazzanoPlatformOperatorTag = "v1.6.0-20230601044914-8f171f25"
+	defaultTigeraOperatorTag = "v1.29.0"
+	defaultCalicoTag         = "v3.25.0"
+	minOCNEVersion           = "v1.25.7"
+	configMapName            = "ocne-metadata"
+	cmDataKey                = "mapping"
+	defaultModuleOperatorTag = "v0.1.0-20230606042357-54f0f405"
 )
 
 var k8s_ocne_version_maping = map[string]string{
@@ -162,11 +160,6 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 			// Add ModuleOperator Defaults Tag if missing
 			if meta.OCNEImages.ModuleOperator == "" {
 				meta.OCNEImages.ModuleOperator = defaultModuleOperatorTag
-			}
-
-			// Add VerrazzanoPlatformOperator Defaults Tag if missing
-			if meta.OCNEImages.VerrazzanoPlatformOperator == "" {
-				meta.OCNEImages.VerrazzanoPlatformOperator = defaultVerrazzanoPlatformOperatorTag
 			}
 
 			// Add release if missing

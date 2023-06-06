@@ -100,7 +100,7 @@ type OCNEControlPlaneSpec struct {
 
 	// VerrazzanoPlatformOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
 	// +optional
-	VerrazzanoPlatformOperator *ModuleOperator `json:"verrazzanoPlatformOperator,omitempty"`
+	VerrazzanoPlatformOperator *VerrazzanoPlatformOperator `json:"verrazzanoPlatformOperator,omitempty"`
 }
 
 type ModuleOperator struct {
@@ -120,6 +120,27 @@ type ModuleOperator struct {
 	ImagePullSecrets []SecretName `json:"imagePullSecrets,omitempty"`
 }
 
+type VerrazzanoPlatformOperator struct {
+	// Enabled sets the operational mode for a specific module.
+	// if not set, the Enabled is set to false.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// Image is used to set various attributes regarding a specific module.
+	// If not set, they are set as per the ImageMeta definitions.
+	// +optional
+	Image *ImageMeta `json:"image,omitempty"`
+
+	// ImagePullSecrets allows to specify secrets if the image is being pulled from an authenticated private registry.
+	// if not set, it will be assumed the images are public.
+	// +optional
+	ImagePullSecrets []SecretName `json:"imagePullSecrets,omitempty"`
+
+	// PrivateRegistry sets the private registry settings for installing Verrazzano.
+	// +optional
+	PrivateRegistry PrivateRegistry `json:"privateRegistry,omitempty"`
+}
+
 type ImageMeta struct {
 	// Repository sets the container registry to pull images from.
 	// if not set, the Repository defined in OCNEMeta will be used instead.
@@ -135,6 +156,13 @@ type ImageMeta struct {
 	// if not set, the PullPolicy is IfNotPresent.
 	// +optional
 	PullPolicy string `json:"pullPolicy,omitempty"`
+}
+
+type PrivateRegistry struct {
+	// Enabled sets a flag to determine if a private registry will be used when installing Verrazzano.
+	// if not set, the Enabled is set to false.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
 }
 
 type SecretName struct {

@@ -27,6 +27,7 @@ import (
 	controlplanev1 "github.com/verrazzano/cluster-api-provider-ocne/controlplane/ocne/api/v1alpha1"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
@@ -48,7 +49,6 @@ const (
 	verrazzanoPlatformOperatorChartPath              = "/tmp/charts/verrazzano-platform-operator/"
 	verrazzanoPlatformOperatorChartName              = "verrazzano-platform-operator"
 	verrazzanoPlatformOperatorNameSpace              = "verrazzano-install"
-	verrazzanoPlatformOperatorImageName              = "verrazzano-platform-operator"
 	verrazzanoPlatformOperatorHelmChartConfigMapName = "vpo-helm-chart"
 )
 
@@ -65,6 +65,15 @@ var (
 
 	GetCoreV1Func = GetCoreV1Client
 )
+
+type VPOHelmValuesTemplate struct {
+	Image            string                      `json:"image,omitempty"`
+	PrivateRegistry  bool                        `json:"privateRegistry"`
+	Repository       string                      `json:"repository,omitempty"`
+	Registry         string                      `json:"registry,omitempty"`
+	PullPolicy       string                      `json:"pullPolicy,omitempty"`
+	ImagePullSecrets []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
+}
 
 func GetCoreV1Client() (v1.CoreV1Interface, error) {
 	restConfig := controllerruntime.GetConfigOrDie()
@@ -96,10 +105,6 @@ func generate(kind string, tpl string, data interface{}) ([]byte, error) {
 
 func getDefaultModuleOperatorImageRepo() string {
 	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, moduleOperatorImageName)
-}
-
-func getDefaultVPOImageRepo() string {
-	return fmt.Sprintf("%s/%s/%s", moduleOperatorRepo, moduleOperatorNamespace, verrazzanoPlatformOperatorImageName)
 }
 
 func generateDataValuesForModuleOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
@@ -156,35 +161,67 @@ func generateDataValuesForModuleOperator(ctx context.Context, spec *controlplane
 	return generate("HelmValues", valuesTemplate, helmMeta)
 }
 
-func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
-	log := ctrl.LoggerFrom(ctx)
-	ocneMeta, err := ocne.GetOCNEMetadata(context.Background())
+// getDefaultVPOImageFromHelmChart returns the default VPO image found in the VPO helm charts value.yaml
+func getDefaultVPOImageFromHelmChart() (string, error) {
+	data, err := os.ReadFile(filepath.Join(verrazzanoPlatformOperatorChartPath, "values.yaml"))
 	if err != nil {
-		log.Error(err, "failed to get retrieve OCNE metadata")
-		return nil, err
-
+		return "", err
 	}
 
-	var helmMeta HelmValuesTemplate
+	var values map[string]interface{}
+	err = yaml.Unmarshal(data, &values)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%v", values["image"]), nil
+}
+
+// parseDefaultVPOImage parses the default VPO image and returns the parts of the VPO image
+func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image string, tag string) {
+	splitTag := strings.Split(vpoImage, ":")
+	tag = splitTag[1]
+	splitImage := strings.Split(splitTag[0], "/")
+	image = splitImage[len(splitImage)-1]
+	regRepo := strings.ReplaceAll(splitTag[0], "/"+image, "")
+	splitRegistry := strings.Split(regRepo, "/")
+	registry = splitRegistry[0]
+	repo = strings.ReplaceAll(regRepo, registry+"/", "")
+	return registry, repo, image, tag
+}
+
+func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.VerrazzanoPlatformOperator, k8sVersion string) ([]byte, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	var helmMeta VPOHelmValuesTemplate
+
+	vpoImage, err := getDefaultVPOImageFromHelmChart()
+	if err != nil {
+		log.Error(err, "failed to get verrazzano-platform-operator image from helm chart")
+		return nil, err
+	}
 
 	// Setting default values for image
 	if spec.Image != nil {
+		// Parse the default VPO image and return various parts of the image
+		registry, repo, image, tag := parseDefaultVPOImage(vpoImage)
+
 		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
-			helmMeta.Repository = getDefaultVPOImageRepo()
+			helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
-			if imageList[len(imageList)-1] == verrazzanoPlatformOperatorImageName {
-				helmMeta.Repository = spec.Image.Repository
+			if imageList[len(imageList)-1] == image {
+				helmMeta.Image = spec.Image.Repository
 			} else {
-				helmMeta.Repository = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), verrazzanoPlatformOperatorImageName)
+				helmMeta.Image = fmt.Sprintf("%s/%s", strings.Join(imageList[0:len(imageList)], "/"), image)
 			}
 		}
 
 		if spec.Image.Tag == "" {
-			helmMeta.Tag = ocneMeta[k8sVersion].OCNEImages.VerrazzanoPlatformOperator
+			helmMeta.Image = fmt.Sprintf("%s:%s", helmMeta.Image, tag)
 		} else {
-			helmMeta.Tag = strings.TrimSpace(spec.Image.Tag)
+			helmMeta.Image = fmt.Sprintf("%s:%s", helmMeta.Image, strings.TrimSpace(spec.Image.Tag))
 		}
 
 		if spec.Image.PullPolicy == "" {
@@ -193,18 +230,35 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 			helmMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
 		}
 
-		if spec.ImagePullSecrets != nil {
-			helmMeta.ImagePullSecrets = spec.ImagePullSecrets
+		// Parse the override image and return various parts of the image
+		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
+
+		if spec.PrivateRegistry.Enabled {
+			helmMeta.PrivateRegistry = true
+			helmMeta.Registry = registry
+			helmMeta.Repository = repo
+		}
+	} else {
+		// If nothing has been specified for the image in the API
+		helmMeta = VPOHelmValuesTemplate{
+			PullPolicy: defaultImagePullPolicy,
 		}
 
-	} else {
-		// If nothing has been specified in API
-		helmMeta = HelmValuesTemplate{
-			Repository:       getDefaultVPOImageRepo(),
-			Tag:              ocneMeta[k8sVersion].OCNEImages.VerrazzanoPlatformOperator,
-			PullPolicy:       defaultImagePullPolicy,
-			ImagePullSecrets: []controlplanev1.SecretName{},
+		// Parse the default VPO image and return various parts of the image
+		registry, repo, _, _ := parseDefaultVPOImage(vpoImage)
+
+		if spec.PrivateRegistry.Enabled {
+			helmMeta.PrivateRegistry = true
+			helmMeta.Registry = registry
+			helmMeta.Repository = repo
 		}
+
+	}
+
+	if spec.ImagePullSecrets != nil {
+		helmMeta.ImagePullSecrets = spec.ImagePullSecrets
+	} else {
+		helmMeta.ImagePullSecrets = []controlplanev1.SecretName{}
 	}
 
 	return generate("HelmValues", vpoValuesTemplate, helmMeta)
@@ -230,7 +284,7 @@ func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOpe
 }
 
 // GetVerrazzanoPlatformOperatorAddons returns the needed info to install the verrazzano-platform-operator helm chart.
-func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.VerrazzanoPlatformOperator, k8sVersion string) (*HelmModuleAddons, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	client, err := GetCoreV1Func()
@@ -287,7 +341,6 @@ func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplane
 		return nil, err
 	}
 
-	log.Info(fmt.Sprintf("Values to be passed to helm chart: %s", string(out)))
 	return &HelmModuleAddons{
 		ChartName:        verrazzanoPlatformOperatorChartName,
 		ReleaseName:      verrazzanoPlatformOperatorChartName,

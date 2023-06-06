@@ -1,10 +1,18 @@
 createNamespace: false
-image: {{.Repository}}:{{.Tag}}
+{{- if .Image }}
+image: {{.Image}}
+{{- end }}
 imagePullPolicy: {{.PullPolicy}}
-{{- if .ImagePullSecrets }}
+{{- if or .PrivateRegistry .ImagePullSecrets }}
 global:
+{{- if .PrivateRegistry }}
+  registry: {{.Registry}}
+  repository: {{.Repository}}
+{{- end }}
+{{- if .ImagePullSecrets }}
   imagePullSecrets:
 {{- range .ImagePullSecrets }}
     - {{ .Name }}
+{{- end }}
 {{- end }}
 {{- end }}
