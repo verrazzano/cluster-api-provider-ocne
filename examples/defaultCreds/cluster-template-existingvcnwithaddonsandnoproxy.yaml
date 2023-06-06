@@ -12,11 +12,11 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - ${POD_CIDR}
+        - ${POD_CIDR=192.168.0.0/16}
     serviceDomain: cluster.local
     services:
       cidrBlocks:
-        - ${CLUSTER_CIDR}
+        - ${CLUSTER_CIDR=10.128.0.0/12}
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: OCNEControlPlane
@@ -71,15 +71,15 @@ spec:
           - localhost
           - 127.0.0.1
       dns:
-        imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
-        imageTag: ${DNS_TAG}
+        imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
+        imageTag: ${DNS_TAG=v1.9.3}
       etcd:
         local:
-          imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
-          imageTag: ${ETCD_TAG}
+          imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
+          imageTag: ${ETCD_TAG=3.5.6}
       networking: {}
       scheduler: {}
-      imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
+      imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/crio/crio.sock
@@ -93,11 +93,6 @@ spec:
         kubeletExtraArgs:
           cloud-provider: external
           provider-id: oci://{{ ds["id"] }}
-    imageConfiguration:
-      proxy:
-        httpProxy: "${NETWORK_PROXY}"
-        httpsProxy: "${NETWORK_PROXY}"
-        noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -152,17 +147,12 @@ spec:
   template:
     spec:
       clusterConfiguration:
-        imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
+        imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-provider: external
             provider-id: oci://{{ ds["id"] }}
-      imageConfiguration:
-        proxy:
-          httpProxy: "${NETWORK_PROXY}"
-          httpsProxy: "${NETWORK_PROXY}"
-          noProxy: "${POD_CIDR},${CLUSTER_CIDR}"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -1033,7 +1023,7 @@ data:
         bgp: Disabled
         # Note: The ipPools section cannot be modified post-install.
         ipPools:
-        - cidr: ${POD_CIDR}
+        - cidr: ${POD_CIDR=192.168.0.0/16}
           encapsulation: VXLAN
           # natOutgoing: Enabled
           # nodeSelector: all()
@@ -1347,7 +1337,7 @@ data:
           dnsPolicy: ClusterFirstWithHostNet
           containers:
             - name: tigera-operator
-              image: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}/tigera-operator:${TIGERA_TAG}
+              image: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}/tigera-operator:${TIGERA_TAG}
               imagePullPolicy: IfNotPresent
               command:
                 - operator
