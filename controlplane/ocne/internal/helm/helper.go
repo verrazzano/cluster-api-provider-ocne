@@ -176,7 +176,7 @@ func getDefaultVPOImageFromHelmChart() (string, error) {
 	return fmt.Sprintf("%v", values["image"]), nil
 }
 
-// parseDefaultVPOImage parse the default VPO image and returns the parts of the VPO image
+// parseDefaultVPOImage parses the default VPO image and returns the parts of the VPO image
 func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image string, tag string) {
 	splitTag := strings.Split(vpoImage, ":")
 	tag = splitTag[1]
@@ -189,19 +189,19 @@ func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image 
 	return registry, repo, image, tag
 }
 
-func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) ([]byte, error) {
+func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *controlplanev1.VerrazzanoPlatformOperator, k8sVersion string) ([]byte, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	var helmMeta VPOHelmValuesTemplate
 
+	vpoImage, err := getDefaultVPOImageFromHelmChart()
+	if err != nil {
+		log.Error(err, "failed to get verrazzano-platform-operator image from helm chart")
+		return nil, err
+	}
+
 	// Setting default values for image
 	if spec.Image != nil {
-		vpoImage, err := getDefaultVPOImageFromHelmChart()
-		if err != nil {
-			log.Error(err, "failed to get verrazzano-platform-operator image from helm chart")
-			return nil, err
-		}
-
 		// Parse the default VPO image and return various parts of the image
 		registry, repo, image, tag := parseDefaultVPOImage(vpoImage)
 
@@ -223,20 +223,33 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 			helmMeta.Image = fmt.Sprintf("%s:%s", helmMeta.Image, strings.TrimSpace(spec.Image.Tag))
 		}
 
-		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
-		helmMeta.Registry = registry
-		helmMeta.Repository = repo
-
 		if spec.Image.PullPolicy == "" {
 			helmMeta.PullPolicy = defaultImagePullPolicy
 		} else {
 			helmMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
+		}
+
+		// Parse the override image and return various parts of the image
+		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
+
+		if spec.PrivateRegistry.Enabled {
+			helmMeta.Registry = registry
+			helmMeta.Repository = repo
 		}
 	} else {
 		// If nothing has been specified for the image in the API
 		helmMeta = VPOHelmValuesTemplate{
 			PullPolicy: defaultImagePullPolicy,
 		}
+
+		// Parse the default VPO image and return various parts of the image
+		registry, repo, _, _ := parseDefaultVPOImage(vpoImage)
+
+		if spec.PrivateRegistry.Enabled {
+			helmMeta.Registry = registry
+			helmMeta.Repository = repo
+		}
+
 	}
 
 	if spec.ImagePullSecrets != nil {
@@ -268,7 +281,7 @@ func GetModuleOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOpe
 }
 
 // GetVerrazzanoPlatformOperatorAddons returns the needed info to install the verrazzano-platform-operator helm chart.
-func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.ModuleOperator, k8sVersion string) (*HelmModuleAddons, error) {
+func GetVerrazzanoPlatformOperatorAddons(ctx context.Context, spec *controlplanev1.VerrazzanoPlatformOperator, k8sVersion string) (*HelmModuleAddons, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	client, err := GetCoreV1Func()

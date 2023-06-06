@@ -3,9 +3,9 @@ createNamespace: false
 image: {{.Image}}
 {{- end }}
 imagePullPolicy: {{.PullPolicy}}
-{{- if or .Image .ImagePullSecrets }}
+{{- if or .PrivateRegistry .ImagePullSecrets }}
 global:
-{{- if .Image }}
+{{- if .PrivateRegistry }}
   registry: {{.Registry}}
   repository: {{.Repository}}
 {{- end }}
