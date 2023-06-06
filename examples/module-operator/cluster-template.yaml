@@ -124,7 +124,7 @@ spec:
       bootVolumeSizeInGBs: "${OCI_NODE_BOOT_VOLUME=100}"
       compartmentId: ${OCI_COMPARTMENT_ID}
       imageId: ${OCI_IMAGE_ID}
-      isPvEncryptionInTransitEnabled: ${OCI_NODE_PV_TRANSIT_ENCRYPTION=true}
+      isPvEncryptionInTransitEnabled: ${OCI_NODE_PV_TRANSIT_ENCRYPTION=false}
       metadata:
         ssh_authorized_keys: ${OCI_SSH_KEY}
       shape: ${OCI_NODE_MACHINE_TYPE=VM.Standard.E4.Flex}
@@ -142,7 +142,7 @@ spec:
       bootVolumeSizeInGBs: "${OCI_NODE_BOOT_VOLUME=100}"
       compartmentId: ${OCI_COMPARTMENT_ID}
       imageId: ${OCI_IMAGE_ID}
-      isPvEncryptionInTransitEnabled: ${OCI_NODE_PV_TRANSIT_ENCRYPTION=true}
+      isPvEncryptionInTransitEnabled: ${OCI_NODE_PV_TRANSIT_ENCRYPTION=false}
       metadata:
         ssh_authorized_keys: ${OCI_SSH_KEY}
       shape: ${OCI_NODE_MACHINE_TYPE=VM.Standard.E4.Flex}
