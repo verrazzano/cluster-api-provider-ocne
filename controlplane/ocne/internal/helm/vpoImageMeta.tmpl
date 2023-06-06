@@ -3,7 +3,7 @@ createNamespace: false
 image: {{.Image}}
 {{- end }}
 imagePullPolicy: {{.PullPolicy}}
-{{- if or (.Image) (.ImagePullSecrets) }}
+{{- if or .Image .ImagePullSecrets }}
 global:
 {{- if .Image }}
   registry: {{.Registry}}

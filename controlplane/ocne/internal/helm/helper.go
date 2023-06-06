@@ -232,17 +232,17 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		} else {
 			helmMeta.PullPolicy = strings.TrimSpace(spec.Image.PullPolicy)
 		}
-
-		if spec.ImagePullSecrets != nil {
-			helmMeta.ImagePullSecrets = spec.ImagePullSecrets
-		}
-
 	} else {
-		// If nothing has been specified in API
+		// If nothing has been specified for the image in the API
 		helmMeta = VPOHelmValuesTemplate{
-			PullPolicy:       defaultImagePullPolicy,
-			ImagePullSecrets: []controlplanev1.SecretName{},
+			PullPolicy: defaultImagePullPolicy,
 		}
+	}
+
+	if spec.ImagePullSecrets != nil {
+		helmMeta.ImagePullSecrets = spec.ImagePullSecrets
+	} else {
+		helmMeta.ImagePullSecrets = []controlplanev1.SecretName{}
 	}
 
 	return generate("HelmValues", vpoValuesTemplate, helmMeta)
