@@ -75,7 +75,7 @@ type VPOHelmValuesTemplate struct {
 	PullPolicy           string                      `json:"pullPolicy,omitempty"`
 	ImagePullSecrets     []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
 	AppOperatorImage     string                      `json:"appOperatorImage,omitempty"`
-	ClusterOperatorImage string                      `json:"ClusterOperatorImage,omitempty"`
+	ClusterOperatorImage string                      `json:"clusterOperatorImage,omitempty"`
 }
 
 func GetCoreV1Client() (v1.CoreV1Interface, error) {
