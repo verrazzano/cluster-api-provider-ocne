@@ -186,16 +186,10 @@ func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image 
 	tag = splitTag[1]
 	splitImage := strings.Split(splitTag[0], "/")
 	image = splitImage[len(splitImage)-1]
-	regRepo := strings.ReplaceAll(splitTag[0], "/"+image, "")
+	regRepo := strings.TrimSuffix(splitTag[0], "/"+image)
 	splitRegistry := strings.Split(regRepo, "/")
 	registry = splitRegistry[0]
-	repo = strings.ReplaceAll(regRepo, registry+"/", "")
-	splitRepo := strings.Split(repo, "/")
-	if len(splitRepo) == 1 {
-		repo = ""
-	} else {
-		repo = strings.ReplaceAll(repo, "/"+"verrazzano", "")
-	}
+	repo = strings.TrimPrefix(regRepo, registry+"/")
 	return registry, repo, image, tag
 }
 
@@ -222,11 +216,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	if spec.Image != nil {
 		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
-			if repo != "" {
-				helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
-			} else {
-				helmMeta.Image = fmt.Sprintf("%s/%s", registry, image)
-			}
+			helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == image {
@@ -261,7 +251,7 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	if spec.PrivateRegistry.Enabled {
 		helmMeta.PrivateRegistry = true
 		helmMeta.Registry = registry
-		helmMeta.Repository = repo
+		helmMeta.Repository = strings.TrimSuffix(repo, "/verrazzano")
 	}
 
 	// This handles the use case where a developer has built a verrazzano-platform-operator in the non-default
