@@ -194,7 +194,7 @@ func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image 
 	if len(splitRepo) == 1 {
 		repo = ""
 	} else {
-		repo = strings.ReplaceAll(repo, "/"+splitRepo[len(splitRepo)-1], "")
+		repo = strings.ReplaceAll(repo, "/"+"verrazzano", "")
 	}
 	return registry, repo, image, tag
 }
