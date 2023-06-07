@@ -190,6 +190,12 @@ func parseDefaultVPOImage(vpoImage string) (registry string, repo string, image 
 	splitRegistry := strings.Split(regRepo, "/")
 	registry = splitRegistry[0]
 	repo = strings.ReplaceAll(regRepo, registry+"/", "")
+	splitRepo := strings.Split(repo, "/")
+	if len(splitRepo) == 1 {
+		repo = ""
+	} else {
+		repo = strings.ReplaceAll(repo, "/"+splitRepo[len(splitRepo)-1], "")
+	}
 	return registry, repo, image, tag
 }
 
@@ -216,7 +222,11 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 	if spec.Image != nil {
 		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
-			helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
+			if repo != "" {
+				helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
+			} else {
+				helmMeta.Image = fmt.Sprintf("%s/%s", registry, image)
+			}
 		} else {
 			imageList := strings.Split(strings.Trim(strings.TrimSpace(spec.Image.Repository), "/"), "/")
 			if imageList[len(imageList)-1] == image {
