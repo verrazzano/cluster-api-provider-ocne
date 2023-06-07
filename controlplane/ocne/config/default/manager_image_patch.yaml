@@ -8,5 +8,5 @@ spec:
   template:
     spec:
       containers:
-        - image: iad.ocir.io/odsbuilddev/sandboxes/verrazzano/cluster-api-ocne-control-plane-controller:v0.1.0-912e7a5
+        - image: ghcr.io/verrazzano/cluster-api-ocne-control-plane-controller
           name: manager
