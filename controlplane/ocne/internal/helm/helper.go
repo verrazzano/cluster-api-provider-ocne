@@ -46,6 +46,7 @@ const (
 	moduleOperatorImageName                          = "module-operator"
 	defaultImagePullPolicy                           = "IfNotPresent"
 	moduleOperatorChartPath                          = "charts/operators/verrazzano-module-operator/"
+	verrazzanoPlatformOperatorRepo                   = "ghcr.io"
 	verrazzanoPlatformOperatorChartPath              = "/tmp/charts/verrazzano-platform-operator/"
 	verrazzanoPlatformOperatorChartName              = "verrazzano-platform-operator"
 	verrazzanoPlatformOperatorNameSpace              = "verrazzano-install"
@@ -67,12 +68,14 @@ var (
 )
 
 type VPOHelmValuesTemplate struct {
-	Image            string                      `json:"image,omitempty"`
-	PrivateRegistry  bool                        `json:"privateRegistry"`
-	Repository       string                      `json:"repository,omitempty"`
-	Registry         string                      `json:"registry,omitempty"`
-	PullPolicy       string                      `json:"pullPolicy,omitempty"`
-	ImagePullSecrets []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
+	Image                string                      `json:"image,omitempty"`
+	PrivateRegistry      bool                        `json:"privateRegistry"`
+	Repository           string                      `json:"repository,omitempty"`
+	Registry             string                      `json:"registry,omitempty"`
+	PullPolicy           string                      `json:"pullPolicy,omitempty"`
+	ImagePullSecrets     []controlplanev1.SecretName `json:"imagePullSecrets,omitempty"`
+	AppOperatorImage     string                      `json:"appOperatorImage,omitempty"`
+	ClusterOperatorImage string                      `json:"ClusterOperatorImage,omitempty"`
 }
 
 func GetCoreV1Client() (v1.CoreV1Interface, error) {
@@ -201,11 +204,16 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 		return nil, err
 	}
 
+	var registry string
+	var repo string
+	var image string
+	var tag string
+
+	// Parse the default VPO image and return various parts of the image
+	registry, repo, image, tag = parseDefaultVPOImage(vpoImage)
+
 	// Setting default values for image
 	if spec.Image != nil {
-		// Parse the default VPO image and return various parts of the image
-		registry, repo, image, tag := parseDefaultVPOImage(vpoImage)
-
 		// Set defaults or honor overrides
 		if spec.Image.Repository == "" {
 			helmMeta.Image = fmt.Sprintf("%s/%s/%s", registry, repo, image)
@@ -232,27 +240,29 @@ func generateDataValuesForVerrazzanoPlatformOperator(ctx context.Context, spec *
 
 		// Parse the override image and return various parts of the image
 		registry, repo, image, tag = parseDefaultVPOImage(helmMeta.Image)
-
-		if spec.PrivateRegistry.Enabled {
-			helmMeta.PrivateRegistry = true
-			helmMeta.Registry = registry
-			helmMeta.Repository = repo
-		}
 	} else {
 		// If nothing has been specified for the image in the API
 		helmMeta = VPOHelmValuesTemplate{
 			PullPolicy: defaultImagePullPolicy,
 		}
 
-		// Parse the default VPO image and return various parts of the image
-		registry, repo, _, _ := parseDefaultVPOImage(vpoImage)
+	}
 
-		if spec.PrivateRegistry.Enabled {
-			helmMeta.PrivateRegistry = true
-			helmMeta.Registry = registry
-			helmMeta.Repository = repo
+	if spec.PrivateRegistry.Enabled {
+		helmMeta.PrivateRegistry = true
+		helmMeta.Registry = registry
+		helmMeta.Repository = repo
+	}
+
+	// This handles the use case where a developer has built a verrazzano-platform-operator in the non-default
+	// registry and private registry is not being used.  In this case, the app operator and cluster operator
+	// need to be explicitly set in the helm chart otherwise the wrong registry (ghcr.io) will be used resulting
+	// in image pull errors.
+	if registry != verrazzanoPlatformOperatorRepo {
+		if !spec.PrivateRegistry.Enabled {
+			helmMeta.AppOperatorImage = fmt.Sprintf("%s/%s/%s:%s", registry, repo, strings.ReplaceAll(image, "verrazzano-platform-operator", "verrazzano-application-operator"), tag)
+			helmMeta.ClusterOperatorImage = fmt.Sprintf("%s/%s/%s:%s", registry, repo, strings.ReplaceAll(image, "verrazzano-platform-operator", "verrazzano-cluster-operator"), tag)
 		}
-
 	}
 
 	if spec.ImagePullSecrets != nil {
