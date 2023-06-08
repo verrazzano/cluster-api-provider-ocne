@@ -45,7 +45,7 @@ type OCNEPackages struct {
 const (
 	defaultTigeraOperatorTag = "v1.29.0"
 	defaultCalicoTag         = "v3.25.0"
-	minOCNEVersion           = "v1.25.7"
+	minOCNEVersion           = "v1.24.8"
 	configMapName            = "ocne-metadata"
 	cmDataKey                = "mapping"
 	defaultModuleOperatorTag = "v0.1.0-20230606042357-54f0f405"

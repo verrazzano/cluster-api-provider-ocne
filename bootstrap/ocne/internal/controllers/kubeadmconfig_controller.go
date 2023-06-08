@@ -490,7 +490,7 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	}
 
 	// Overriding the criSocket for ocne
-	scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+	// scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
 
 	var podSubnet, serviceSubnet string
 	if scope.Cluster.Spec.ClusterNetwork != nil {
