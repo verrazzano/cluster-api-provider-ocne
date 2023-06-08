@@ -1209,17 +1209,19 @@ func setOCNEControlPlaneClusterConfigurationDefaults(ctx context.Context, in *bo
 		return nil, err
 	}
 
+	ocneClusterConfig := in.DeepCopy()
+
 	if in.DNS.ImageRepository == "" {
-		in.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
+		ocneClusterConfig.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
 	}
 
 	if in.DNS.ImageTag == "" {
-		in.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
+		ocneClusterConfig.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
 	} else {
 		if in.DNS.ImageTag != ocneMeta[k8sVersion].CoreDNS {
 			// Set to OCNE tag only if user overrride uses containerregistry
 			if in.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
-				in.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
+				ocneClusterConfig.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
 			}
 		}
 	}
@@ -1232,36 +1234,38 @@ func setOCNEControlPlaneClusterConfigurationDefaults(ctx context.Context, in *bo
 	}
 
 	if in.Etcd.Local == nil {
-		in.Etcd.Local = &etcdLocal
+		ocneClusterConfig.Etcd.Local = &etcdLocal
 	} else {
 		// Verify and update user supplied values, helps in an upgrade case as well
 		if in.Etcd.Local.ImageMeta.ImageRepository == ocne.DefaultOCNEImageRepository {
 			if in.Etcd.Local.ImageMeta.ImageTag != ocneMeta[k8sVersion].ETCD {
-				in.Etcd.Local = &etcdLocal
+				ocneClusterConfig.Etcd.Local = &etcdLocal
 			}
 		}
 	}
 
 	if in.ImageRepository == "" {
-		in.ImageRepository = ocne.DefaultOCNEImageRepository
+		ocneClusterConfig.ImageRepository = ocne.DefaultOCNEImageRepository
 	}
 
-	return in, nil
+	return ocneClusterConfig, nil
 }
 
 // Ensures that default values are set for kubeadm init configuration when input is empty
 func setOCNEControlPlaneInitConfigurationDefaults(in *bootstrapv1.InitConfiguration) *bootstrapv1.InitConfiguration {
+	ocneInitConfig := in.DeepCopy()
 	if in.NodeRegistration.CRISocket == "" {
-		in.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+		ocneInitConfig.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
 	}
-	return in
+	return ocneInitConfig
 }
 
 // Ensures that default values are set for kubeadm join configuration when input is empty
 func setOCNEJoinConfigurationDefaults(in *bootstrapv1.JoinConfiguration) *bootstrapv1.JoinConfiguration {
+	ocneJoinConfig := in.DeepCopy()
 	if in.NodeRegistration.CRISocket == "" {
-		in.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+		ocneJoinConfig.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
 	}
-	return in
+	return ocneJoinConfig
 
 }
