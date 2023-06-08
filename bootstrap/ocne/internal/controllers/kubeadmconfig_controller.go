@@ -419,7 +419,10 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 			},
 		}
 	}
-	initdata, err := ocnetypes.MarshalInitConfigurationForVersion(scope.Config.Spec.InitConfiguration, parsedVersion)
+
+	newInitSpec := setOCNEControlPlaneInitConfigurationDefaults(scope.Config.Spec.InitConfiguration)
+
+	initdata, err := ocnetypes.MarshalInitConfigurationForVersion(newInitSpec, parsedVersion)
 	if err != nil {
 		scope.Error(err, "Failed to marshal init configuration")
 		return ctrl.Result{}, err
@@ -437,7 +440,13 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	// injects into config.ClusterConfiguration values from top level object
 	r.reconcileTopLevelObjectSettings(ctx, scope.Cluster, machine, scope.Config)
 
-	clusterdata, err := ocnetypes.MarshalClusterConfigurationForVersion(scope.Config.Spec.ClusterConfiguration, parsedVersion)
+	newSpec, err := setOCNEControlPlaneClusterConfigurationDefaults(ctx, scope.Config.Spec.ClusterConfiguration, kubernetesVersion)
+	if err != nil {
+		scope.Error(err, "Failed to set OCNE defaults for kubeadm")
+		return ctrl.Result{}, err
+	}
+
+	clusterdata, err := ocnetypes.MarshalClusterConfigurationForVersion(newSpec, parsedVersion)
 	if err != nil {
 		scope.Error(err, "Failed to marshal cluster configuration")
 		return ctrl.Result{}, err
@@ -596,7 +605,9 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kubernetesVersion)
 	}
 
-	joinData, err := ocnetypes.MarshalJoinConfigurationForVersion(scope.Config.Spec.JoinConfiguration, parsedVersion)
+	newJoinSpec := setOCNEJoinConfigurationDefaults(scope.Config.Spec.JoinConfiguration)
+
+	joinData, err := ocnetypes.MarshalJoinConfigurationForVersion(newJoinSpec, parsedVersion)
 	if err != nil {
 		scope.Error(err, "Failed to marshal join configuration")
 		return ctrl.Result{}, err
@@ -741,7 +752,9 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 		return ctrl.Result{}, errors.Wrapf(err, "failed to parse kubernetes version %q", kubernetesVersion)
 	}
 
-	joinData, err := ocnetypes.MarshalJoinConfigurationForVersion(scope.Config.Spec.JoinConfiguration, parsedVersion)
+	newJoinSpec := setOCNEJoinConfigurationDefaults(scope.Config.Spec.JoinConfiguration)
+
+	joinData, err := ocnetypes.MarshalJoinConfigurationForVersion(newJoinSpec, parsedVersion)
 	if err != nil {
 		scope.Error(err, "Failed to marshal join configuration")
 		return ctrl.Result{}, err
@@ -1187,4 +1200,68 @@ func (r *OCNEConfigReconciler) ensureBootstrapSecretOwnersRef(ctx context.Contex
 		return errors.Wrapf(err, "could not add OCNEConfig %s as ownerReference to bootstrap Secret %s", scope.ConfigOwner.GetName(), secret.GetName())
 	}
 	return nil
+}
+
+// Ensures that default values are set for kubeadm cluster configuration when input is empty
+func setOCNEControlPlaneClusterConfigurationDefaults(ctx context.Context, in *bootstrapv1.ClusterConfiguration, k8sVersion string) (*bootstrapv1.ClusterConfiguration, error) {
+	ocneMeta, err := ocne.GetOCNEMetadata(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.DNS.ImageRepository == "" {
+		in.DNS.ImageRepository = ocne.DefaultOCNEImageRepository
+	}
+
+	if in.DNS.ImageTag == "" {
+		in.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
+	} else {
+		if in.DNS.ImageTag != ocneMeta[k8sVersion].CoreDNS {
+			// Set to OCNE tag only if user overrride uses containerregistry
+			if in.DNS.ImageRepository == ocne.DefaultOCNEImageRepository {
+				in.DNS.ImageTag = ocneMeta[k8sVersion].CoreDNS
+			}
+		}
+	}
+
+	etcdLocal := bootstrapv1.LocalEtcd{
+		ImageMeta: bootstrapv1.ImageMeta{
+			ImageTag:        ocneMeta[k8sVersion].ETCD,
+			ImageRepository: ocne.DefaultOCNEImageRepository,
+		},
+	}
+
+	if in.Etcd.Local == nil {
+		in.Etcd.Local = &etcdLocal
+	} else {
+		// Verify and update user supplied values, helps in an upgrade case as well
+		if in.Etcd.Local.ImageMeta.ImageRepository == ocne.DefaultOCNEImageRepository {
+			if in.Etcd.Local.ImageMeta.ImageTag != ocneMeta[k8sVersion].ETCD {
+				in.Etcd.Local = &etcdLocal
+			}
+		}
+	}
+
+	if in.ImageRepository == "" {
+		in.ImageRepository = ocne.DefaultOCNEImageRepository
+	}
+
+	return in, nil
+}
+
+// Ensures that default values are set for kubeadm init configuration when input is empty
+func setOCNEControlPlaneInitConfigurationDefaults(in *bootstrapv1.InitConfiguration) *bootstrapv1.InitConfiguration {
+	if in.NodeRegistration.CRISocket == "" {
+		in.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+	}
+	return in
+}
+
+// Ensures that default values are set for kubeadm join configuration when input is empty
+func setOCNEJoinConfigurationDefaults(in *bootstrapv1.JoinConfiguration) *bootstrapv1.JoinConfiguration {
+	if in.NodeRegistration.CRISocket == "" {
+		in.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
+	}
+	return in
+
 }
