@@ -498,9 +498,6 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 		ocneRepository = scope.Config.Spec.ClusterConfiguration.ImageRepository
 	}
 
-	// Overriding the criSocket for ocne
-	// scope.Config.Spec.InitConfiguration.NodeRegistration.CRISocket = ocne.DefaultOCNESocket
-
 	var podSubnet, serviceSubnet string
 	if scope.Cluster.Spec.ClusterNetwork != nil {
 		if scope.Cluster.Spec.ClusterNetwork.Pods != nil {
