@@ -220,7 +220,7 @@ spec:
     matchLabels:
       cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
   resources:
-    - kind: ConfigMap
+    - kind: Secret
       name: ${CLUSTER_NAME}-oci-cloud-controller-manager
   strategy: ApplyOnce
 ---
@@ -234,12 +234,12 @@ spec:
     matchLabels:
       cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
   resources:
-    - kind: ConfigMap
+    - kind: Secret
       name: ${CLUSTER_NAME}-oci-csi
   strategy: ApplyOnce
 ---
 apiVersion: v1
-data:
+stringData:
   cloud-controller-manager.yaml: |
     apiVersion: v1
     kind: Secret
@@ -479,7 +479,8 @@ data:
       - kind: ServiceAccount
         name: cloud-controller-manager
         namespace: kube-system
-kind: ConfigMap
+kind: Secret
+type: addons.cluster.x-k8s.io/resource-set
 metadata:
   annotations:
     note: generated
@@ -489,7 +490,7 @@ metadata:
   namespace: ${NAMESPACE}
 ---
 apiVersion: v1
-data:
+stringData:
   csi.yaml: |
     apiVersion: v1
     kind: Secret
@@ -945,7 +946,8 @@ data:
     allowVolumeExpansion: true
     ---
 
-kind: ConfigMap
+kind: Secret
+type: addons.cluster.x-k8s.io/resource-set
 metadata:
   annotations:
     note: generated
