@@ -46,7 +46,7 @@ RUN dnf install -y oracle-olcne-release-el8 oraclelinux-developer-release-el8 &&
     go version
 
 RUN git clone -b $VERRAZZANO_MODULE_BRANCH https://github.com/verrazzano/verrazzano-modules.git && \
-    git -C $VERRAZZANO_MODULE_DIRECTORY checkout VERRAZZANO_MODULE_COMMIT && \
+    git -C $VERRAZZANO_MODULE_DIRECTORY checkout $VERRAZZANO_MODULE_COMMIT && \
     cd verrazzano-modules/module-operator/manifests/charts/modules && \
     find . -type d -exec helm package -u '{}' \; && helm repo index .
 
