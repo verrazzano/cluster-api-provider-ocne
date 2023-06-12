@@ -97,15 +97,15 @@ spec:
     imagePullSecrets:
       - name: verrazzano-container-registry
     image:
-      repository: phx.ocir.io/odsbuilddev/sandboxes/jonathan.maron/ocne
-      tag: v0.1.0-20230609124906-0e3740db
+      repository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
+      tag: ${MODULE_OPERATOR_IMAGE_TAGE}
   verrazzanoPlatformOperator:
     enabled: true
     imagePullSecrets:
       - name: verrazzano-container-registry
     image:
-      repository: phx.ocir.io/odsbuilddev/sandboxes/jonathan.maron/ocne/verrazzano/verrazzano-platform-operator
-      tag: v1.6.0-20230609051144-d52c03d8
+      repository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
+      tag: ${VERRAZZANO_PLATFORM_OPERATOR_IMAGE_TAGE}
     privateRegistry:
       enabled: true
   controlPlaneConfig:
