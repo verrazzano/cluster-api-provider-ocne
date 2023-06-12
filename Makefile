@@ -26,7 +26,6 @@ SHELL:=/usr/bin/env bash
 # Go.
 #
 GO_CONTAINER_IMAGE ?= ghcr.io/oracle/oraclelinux:8
-
 # Use GOPROXY environment variable if set
 GOPROXY := $(shell go env GOPROXY)
 ifeq ($(GOPROXY),)
@@ -188,9 +187,9 @@ TEST_EXTENSION_IMG ?= $(REGISTRY)/$(TEST_EXTENSION_IMAGE_NAME)
 
 # It is set by Prow GIT_TAG, a git-based tag of the form vYYYYMMDD-hash, e.g., v20210120-v0.3.10-308-gc61521971
 
-MAJOR_VERSION ?= 0
-MINOR_VERSION ?= 1
-PATCH_VERSION ?= 0
+MAJOR_VERSION ?= 1
+MINOR_VERSION ?= 6
+PATCH_VERSION ?= 1
 SHORT_COMMIT_SHA := $(shell git rev-parse --short HEAD)
 TAG ?= v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}-${SHORT_COMMIT_SHA}
 ARCH ?= $(shell go env GOARCH)
@@ -210,7 +209,8 @@ endif
 LDFLAGS := $(shell hack/version.sh)
 
 # Branch for obtaining module charts
-BRANCH := main
+VERRAZZANO_MODULE_BRANCH ?= main
+VERRAZZANO_MODULE_COMMIT ?= 4a81e701e49ffea6f8f06ac7496ff32345226e20
 
 all: test managers
 
@@ -352,7 +352,7 @@ docker-pull-prerequisites:
 generate-modules-repo-artifacts:
 	git clone https://github.com/verrazzano/verrazzano-modules.git
 	cd $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules; \
-    git checkout $(BRANCH); \
+    git checkout $(VERRAZZANO_MODULE_BRANCH); \
  	find . -type d -exec helm package -u '{}' \; && helm repo index . ; \
  	mv $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts/modules/index.yaml $(ROOT_DIR); \
  	cp -R $(ROOT_DIR)/verrazzano-modules/module-operator/manifests/charts $(ROOT_DIR); \
@@ -375,13 +375,13 @@ ALL_DOCKER_BUILD_E2E = ocne-bootstrap ocne-control-plane
 
 .PHONY: docker-build-ocne-bootstrap
 docker-build-ocne-bootstrap: ## Build the docker image for ocne bootstrap controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_BOOTSTRAP_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-build-ocne-control-plane
 docker-build-ocne-control-plane: ## Build the docker image for ocne control plane controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./controlplane/ocne/config/default/manager_pull_policy.yaml"
 
