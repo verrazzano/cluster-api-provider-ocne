@@ -210,7 +210,7 @@ LDFLAGS := $(shell hack/version.sh)
 
 # Branch for obtaining module charts
 VERRAZZANO_MODULE_BRANCH ?= main
-VERRAZZANO_MODULE_COMMIT ?= 4a81e701e49ffea6f8f06ac7496ff32345226e20
+VERRAZZANO_MODULE_COMMIT ?= eb4a2b9456a73cfeea30c58fa9dfa2f54b881b7f
 
 all: test managers
 
