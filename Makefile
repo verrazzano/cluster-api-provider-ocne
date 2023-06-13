@@ -209,8 +209,8 @@ endif
 LDFLAGS := $(shell hack/version.sh)
 
 # Branch for obtaining module charts
-VERRAZZANO_MODULE_BRANCH ?= main
-VERRAZZANO_MODULE_COMMIT ?= 4a81e701e49ffea6f8f06ac7496ff32345226e20
+VERRAZZANO_MODULE_BRANCH ?= release/1.6
+VERRAZZANO_MODULE_COMMIT ?= f0808d7d525b20bbe2c8b575635d15fde343f906
 
 all: test managers
 
