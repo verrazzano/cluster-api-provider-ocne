@@ -211,6 +211,7 @@ LDFLAGS := $(shell hack/version.sh)
 # Branch for obtaining module charts
 VERRAZZANO_MODULE_BRANCH ?= release/1.6
 VERRAZZANO_MODULE_COMMIT ?= f0808d7d525b20bbe2c8b575635d15fde343f906
+VERRAZZANO_MODULE_OPERATOR_TAG ?= v0.1.0-20230613202926-e88f7d2b
 
 all: test managers
 
@@ -375,13 +376,13 @@ ALL_DOCKER_BUILD_E2E = ocne-bootstrap ocne-control-plane
 
 .PHONY: docker-build-ocne-bootstrap
 docker-build-ocne-bootstrap: ## Build the docker image for ocne bootstrap controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg vz_module_tag=$(VERRAZZANO_MODULE_OPERATOR_TAG) --build-arg package=./bootstrap/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_BOOTSTRAP_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_BOOTSTRAP_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./bootstrap/ocne/config/default/manager_pull_policy.yaml"
 
 .PHONY: docker-build-ocne-control-plane
 docker-build-ocne-control-plane: ## Build the docker image for ocne control plane controller manager
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg vz_module_tag=$(VERRAZZANO_MODULE_OPERATOR_TAG) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./controlplane/ocne/config/default/manager_pull_policy.yaml"
 
