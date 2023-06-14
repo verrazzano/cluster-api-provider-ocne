@@ -214,7 +214,7 @@ spec:
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
-  name: ${CLUSTER_NAME}-ccm-configmap
+  name: ${CLUSTER_NAME}-ccm-secret
   namespace: ${NAMESPACE}
 spec:
   clusterSelector:
@@ -270,7 +270,7 @@ metadata:
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
-  name: ${CLUSTER_NAME}-csi-configmap
+  name: ${CLUSTER_NAME}-csi-secret
   namespace: ${NAMESPACE}
 spec:
   clusterSelector:
@@ -392,10 +392,10 @@ data:
               calicoNetwork:
                 bgp: Disabled
                 ipPools:
-                  - cidr: ${POD_CIDR}
+                  - cidr: ${POD_CIDR=192.168.0.0/16}
                     encapsulation: VXLAN
-              registry: ${OCNE_IMAGE_REPOSITORY}
-              imagePath: ${OCNE_IMAGE_PATH}
+              registry: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}
+              imagePath: ${OCNE_IMAGE_PATH=olcne}
 kind: ConfigMap
 metadata:
   annotations:
