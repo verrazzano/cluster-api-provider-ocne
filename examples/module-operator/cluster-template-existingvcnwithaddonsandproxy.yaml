@@ -392,20 +392,19 @@ data:
     spec:
       moduleName: calico
       targetNamespace: default
-      overrides:
-        - values:
-            tigeraOperator:
-              version: ${TIGERA_TAG=v1.29.0}
-            installation:
-              cni:
-                type: Calico
-              calicoNetwork:
-                bgp: Disabled
-                ipPools:
-                  - cidr: ${POD_CIDR=192.168.0.0/16}
-                    encapsulation: VXLAN
-              registry: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}
-              imagePath: ${OCNE_IMAGE_PATH=olcne}
+      values:
+        tigeraOperator:
+          version: ${TIGERA_TAG=v1.29.0}
+        installation:
+          cni:
+            type: Calico
+          calicoNetwork:
+            bgp: Disabled
+            ipPools:
+              - cidr: ${POD_CIDR=192.168.0.0/16}
+                encapsulation: VXLAN
+          registry: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}
+          imagePath: ${OCNE_IMAGE_PATH=olcne}
 kind: ConfigMap
 metadata:
   annotations:
