@@ -74,17 +74,17 @@ kind create cluster --config kind-cluster-with-extramounts.yaml
 ```shell
 providers:
   - name: "ocne"
-    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/download/v1.6.1/bootstrap-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.6.1/bootstrap-components.yaml"
     type: "BootstrapProvider"
   - name: "ocne"
-    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/download/v1.6.1/control-plane-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.6.1/control-plane-components.yaml"
     type: "ControlPlaneProvider"
 ```
 
 You will now be able to initialize clusterctl with the OCNE providers:
 
 ```
-clusterctl init --bootstrap ocne --control-plane ocne -i oci:v0.9.0
+clusterctl init --bootstrap ocne:v1.6.1 --control-plane ocne:v1.6.1 -i oci:v0.9.0
 ```
 
 **NOTE**: Currently OCNE Provider is verified only for the OCI infrastructure provider. Follow the instructions [here](https://oracle.github.io/cluster-api-provider-oci/gs/install-cluster-api.html) for setting up OCI provider.
