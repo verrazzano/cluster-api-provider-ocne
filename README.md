@@ -115,7 +115,7 @@ clusterctl describe cluster ocne-cluster
 NAME                                                            READY  SEVERITY  REASON  SINCE  MESSAGE
 Cluster/ocne-cluster                                             True                     45m
   ClusterInfrastructure - OCICluster/ocne-cluster                True                     56m
-  ControlPlane - KubeadmControlPlane/ocne-cluster-control-plane  True                     45m
+  ControlPlane - OCNEControlPlane/ocne-cluster-control-plane     True                     45m
     Machine/ocne-cluster-control-plane-z47bj                     True                     55m
   Workers
     MachineDeployment/ocne-cluster-md-0                          True                     36m
@@ -128,9 +128,9 @@ Before we install the providers we need to build them from source:
 
 ```shell
 git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
-export MAJOR_VERSION=0
-export MINOR_VERSION=1
-export PATCH_VERSION=0
+export MAJOR_VERSION=1
+export MINOR_VERSION=6
+export PATCH_VERSION=1
 export TAG="<image tag>"
 export REGISTRY="<image-registry>" # default is ghcr.io/verrazzano
 make ocnebuild
@@ -143,11 +143,11 @@ The release artifacts are created in the following folder structure:
 ```shell
 release
 ├── bootstrap-ocne
-│   └── v0.1.0
+│   └── v1.6.1
 │       ├── bootstrap-components.yaml
 │       └── metadata.yaml
 └── control-plane-ocne
-    └── v0.1.0
+    └── v1.6.1
         ├── control-plane-components.yaml
         └── metadata.yaml
 ```
