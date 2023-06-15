@@ -49,7 +49,7 @@ CAPOCNE provider follows the below support matrix with regards Kubernetes distri
 
 * Install clusterctl following the [upstream instructions](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl)
 ```
-curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.3/clusterctl-linux-amd64 -o clusterctl
+curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.3/clusterctl-linux-amd64 -o clusterctl
 ```
 
 * Install a Kubernetes cluster using KinD:
