@@ -122,9 +122,9 @@ Cluster/ocne-cluster                                             True           
       Machine/ocne-cluster-md-0-846df89cb4-dbrdn                 True                     44m
 ```
 
-### ⚙️ Build OCNE Providers
+### ⚙️ Build 
 
-Before we install the providers we need to build them from source:
+You can also build the providers locally and then use them in your development cluster. 
 
 ```shell
 git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
@@ -152,3 +152,20 @@ release
         └── metadata.yaml
 ```
 
+The above folder structure can then be referenced in the `clusterctl` configuration file `~/.cluster-api/clusterctl.yaml`.
+
+```shell
+providers:
+  - name: "ocne"
+    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.6.1/bootstrap-components.yaml"
+    type: "BootstrapProvider"
+  - name: "ocne"
+    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.6.1/control-plane-components.yaml"
+    type: "ControlPlaneProvider"
+```
+
+Then initialize `clusterctl` with the locally built OCNE providers:
+
+```
+clusterctl init --bootstrap ocne --control-plane ocne -i oci:v0.9.0
+```
