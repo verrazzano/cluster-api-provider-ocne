@@ -67,36 +67,6 @@ EOF
 kind create cluster --config kind-cluster-with-extramounts.yaml
 ```
 
-### ⚙️ Build OCNE Providers
-
-Before we install the providers we need to build them from source: 
-
-```shell
-git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
-export MAJOR_VERSION=0
-export MINOR_VERSION=1
-export PATCH_VERSION=0
-export TAG="<image tag>"
-export REGISTRY="<image-registry>" # default is ghcr.io/verrazzano
-make ocnebuild
-```
-
-These commands will create the release manifests and also push the images for the OCNE bootstrap and OCNE control plane providers to the specified registry and tag. 
-
-The release artifacts are created in the following folder structure: 
-
-```shell
-release
-├── bootstrap-ocne
-│   └── v0.1.0
-│       ├── bootstrap-components.yaml
-│       └── metadata.yaml
-└── control-plane-ocne
-    └── v0.1.0
-        ├── control-plane-components.yaml
-        └── metadata.yaml
-```
-
 ### ⚙️ Installation
 
 * To install the OCNE providers, convert the existing KIND cluster created above into a management cluster. Update the `clusterctl` configuration file `~/.cluster-api/clusterctl.yaml` to point to the release artifacts folder:
@@ -104,17 +74,17 @@ release
 ```shell
 providers:
   - name: "ocne"
-    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/bootstrap-ocne/v0.1.0/bootstrap-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/download/v1.6.1/bootstrap-components.yaml"
     type: "BootstrapProvider"
   - name: "ocne"
-    url: "${GOPATH}/src/github.com/verrazzano/cluster-api-provider-ocne/release/control-plane-ocne/v0.1.0/control-plane-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/download/v1.6.1/control-plane-components.yaml"
     type: "ControlPlaneProvider"
 ```
 
 You will now be able to initialize clusterctl with the OCNE providers:
 
 ```
-clusterctl init --bootstrap ocne --control-plane ocne -i oci:v0.8.0
+clusterctl init --bootstrap ocne --control-plane ocne -i oci:v0.9.0
 ```
 
 **NOTE**: Currently OCNE Provider is verified only for the OCI infrastructure provider. Follow the instructions [here](https://oracle.github.io/cluster-api-provider-oci/gs/install-cluster-api.html) for setting up OCI provider.
@@ -152,4 +122,33 @@ Cluster/ocne-cluster                                             True           
       Machine/ocne-cluster-md-0-846df89cb4-dbrdn                 True                     44m
 ```
 
+### ⚙️ Build OCNE Providers
+
+Before we install the providers we need to build them from source:
+
+```shell
+git clone https://github.com/verrazzano/cluster-api-provider-ocne.git && cd $_
+export MAJOR_VERSION=0
+export MINOR_VERSION=1
+export PATCH_VERSION=0
+export TAG="<image tag>"
+export REGISTRY="<image-registry>" # default is ghcr.io/verrazzano
+make ocnebuild
+```
+
+These commands will create the release manifests and also push the images for the OCNE bootstrap and OCNE control plane providers to the specified registry and tag.
+
+The release artifacts are created in the following folder structure:
+
+```shell
+release
+├── bootstrap-ocne
+│   └── v0.1.0
+│       ├── bootstrap-components.yaml
+│       └── metadata.yaml
+└── control-plane-ocne
+    └── v0.1.0
+        ├── control-plane-components.yaml
+        └── metadata.yaml
+```
 
