@@ -315,3 +315,47 @@
     kubectl: 1.25.7-1
     kubelet: 1.25.7-1
     helm: 3.11.1-1
+  extra-images:
+    kubernetes-dashboard: v2.5.1
+    flannel: v0.14.1
+    nginx: 1.17.7
+    externalip-webhook: v1.0.0-1
+1.25.11:
+  container-images:
+    pause: 3.8
+    etcd: 3.5.6
+    coredns: v1.9.3
+    kube-controller-manager: v1.25.11
+    kube-scheduler: v1.25.11
+    kube-apiserver: v1.25.11
+    kube-proxy: v1.25.11
+  packages:
+    kubeadm: 1.25.11-1
+    kubectl: 1.25.11-1
+    kubelet: 1.25.11-1
+    helm: 3.11.1-1
+  extra-images:
+    kubernetes-dashboard: v2.5.1
+    flannel: v0.14.1
+    nginx: 1.17.7
+    externalip-webhook: v1.0.0-1
+1.26.6:
+  container-images:
+    pause: 3.9
+    etcd: 3.5.6
+    coredns: v1.9.3
+    kube-controller-manager: v1.26.6
+    kube-scheduler: v1.26.6
+    kube-apiserver: v1.26.6
+    kube-proxy: v1.26.6
+  packages:
+    kubeadm: 1.26.6-1
+    kubectl: 1.26.6-1
+    kubelet: 1.26.6-1
+    helm: 3.12.0-1
+  extra-images:
+    kubernetes-dashboard: v2.5.1
+    flannel: v0.14.1
+    nginx: 1.17.7
+    externalip-webhook: v1.0.0-1
+    module-operator: v1.7.0
