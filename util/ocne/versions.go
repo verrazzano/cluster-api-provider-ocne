@@ -52,7 +52,7 @@ const (
 )
 
 var k8s_ocne_version_maping = map[string]string{
-	"v1.26.6.": "1.7",
+	"v1.26.6":  "1.7",
 	"v1.25.11": "1.6",
 	"v1.25.7":  "1.6",
 	"v1.24.8":  "1.5",
