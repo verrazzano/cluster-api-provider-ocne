@@ -209,7 +209,7 @@ endif
 LDFLAGS := $(shell hack/version.sh)
 
 # Branch for obtaining module charts
-VERRAZZANO_MODULE_BRANCH ?= main
+VERRAZZANO_MODULE_BRANCH ?= release/1.7
 VERRAZZANO_MODULE_COMMIT ?= e5c07e3c8e22b4ce838533da31fc93f637beec03
 VERRAZZANO_MODULE_OPERATOR_TAG ?= v1.7.0-20230710145827-e5c07e3c
 
