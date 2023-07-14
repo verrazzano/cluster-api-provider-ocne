@@ -195,7 +195,7 @@ spec:
   template:
     spec:
       clusterConfiguration:
-        imageRepository: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
+        imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
@@ -366,9 +366,9 @@ data:
       values:
         global:
           oci:
-            registry: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
+            registry: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
           csi:
-            registry: ${OCNE_IMAGE_REPOSITORY}/${OCNE_IMAGE_PATH}
+            registry: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
 kind: ConfigMap
 metadata:
   annotations:
