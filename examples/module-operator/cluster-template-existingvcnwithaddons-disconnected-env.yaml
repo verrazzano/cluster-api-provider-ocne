@@ -101,14 +101,14 @@ spec:
       - name: verrazzano-container-registry
     image:
       repository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
-      tag: ${MODULE_OPERATOR_IMAGE_TAGE}
+      tag: ${MODULE_OPERATOR_IMAGE_TAG}
   verrazzanoPlatformOperator:
     enabled: true
     imagePullSecrets:
       - name: verrazzano-container-registry
     image:
       repository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
-      tag: ${VERRAZZANO_PLATFORM_OPERATOR_IMAGE_TAGE}
+      tag: ${VERRAZZANO_PLATFORM_OPERATOR_IMAGE_TAG}
     privateRegistry:
       enabled: true
   controlPlaneConfig:
