@@ -100,7 +100,7 @@ spec:
     imagePullSecrets:
       - name: verrazzano-container-registry
     image:
-      repository: ${OCNE_IMAGE_REPOSITORY=ghcr.io}/${VZ_IMAGE_PATH=olcne}
+      repository: ${OCNE_IMAGE_REPOSITORY=ghcr.io}/${VZ_IMAGE_PATH=verrazzano}
       tag: ${MODULE_OPERATOR_IMAGE_TAG}
   verrazzanoPlatformOperator:
     enabled: true
