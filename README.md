@@ -38,9 +38,11 @@ CAPOCNE enables dynamic installation of dependencies without the need to maintai
 CAPOCNE provider follows the below support matrix with regards Kubernetes distribution. All images are hosted at `container-registry.oracle.com`. 
 
 
-| K8s Version   | DNS Image Tag | ETCD Image Tag |
-|---------------|---------------|----------------|
-| 1.25.7        | v1.9.3        | 3.5.6          |
+| K8s Version | DNS Image Tag | ETCD Image Tag |
+|-------------|---------------|----------------|
+| 1.25.7      | v1.9.3        | 3.5.6          |
+| 1.25.11     | v1.9.3        | 3.5.6          |
+| 1.26.6      | v1.9.3        | 3.5.6          |
 
 
 ### ⚙️ Prerequisites
@@ -72,17 +74,17 @@ kind create cluster --config kind-cluster-with-extramounts.yaml
 ```shell
 providers:
   - name: "ocne"
-    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.6.1/bootstrap-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.7.0/bootstrap-components.yaml"
     type: "BootstrapProvider"
   - name: "ocne"
-    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.6.1/control-plane-components.yaml"
+    url: "https://github.com/verrazzano/cluster-api-provider-ocne/releases/v1.7.0/control-plane-components.yaml"
     type: "ControlPlaneProvider"
 ```
 
 You will now be able to initialize clusterctl with the OCNE providers:
 
 ```
-clusterctl init --bootstrap ocne:v1.6.1 --control-plane ocne:v1.6.1 -i oci:v0.9.0
+clusterctl init --bootstrap ocne:v1.7.0 --control-plane ocne:v1.7.0 -i oci:v0.12.0
 ```
 
 **NOTE**: Currently OCNE Provider is verified only for the OCI infrastructure provider. Follow the instructions [here](https://oracle.github.io/cluster-api-provider-oci/gs/install-cluster-api.html) for setting up OCI provider.
