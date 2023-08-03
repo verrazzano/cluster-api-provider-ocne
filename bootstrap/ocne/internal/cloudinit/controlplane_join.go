@@ -72,7 +72,9 @@ func NewJoinControlPlane(input *ControlPlaneJoinInput) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	input.OCNEOverrides = ocneCommands
+	if !input.DockerInfrastructure {
+		input.OCNEOverrides = ocneCommands
+	}
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.ControlPlane = true
 	if err := input.prepare(); err != nil {

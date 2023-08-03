@@ -74,7 +74,9 @@ func NewInitControlPlane(input *ControlPlaneInput) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	input.OCNEOverrides = ocneCommands
+	if !input.DockerInfrastructure {
+		input.OCNEOverrides = ocneCommands
+	}
 	input.Header = cloudConfigHeader
 	input.WriteFiles = input.Certificates.AsFiles()
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)

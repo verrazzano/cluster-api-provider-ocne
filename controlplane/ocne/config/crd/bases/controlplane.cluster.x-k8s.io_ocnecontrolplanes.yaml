@@ -588,6 +588,8 @@ spec:
                         description: Dependencies contains details about dependencies
                           on the image that can be configured at boot time.
                         properties:
+                          dockerInfraStructure:
+                            type: boolean
                           skipInstall:
                             description: SkipInstall is the flag that can be used
                               to tell the provider to skip install of OCNE dependencies.

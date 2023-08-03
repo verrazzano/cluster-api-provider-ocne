@@ -514,10 +514,12 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 	}
 
 	skipInstall := false
+	dockerInfra := false
 	var proxy *bootstrapv1.ProxySpec
 	if scope.Config.Spec.ImageConfiguration != nil {
 		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
 			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+			dockerInfra = scope.Config.Spec.ImageConfiguration.Dependencies.DockerInfraStructure
 		}
 		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
 			proxy = scope.Config.Spec.ImageConfiguration.Proxy
@@ -526,20 +528,21 @@ func (r *OCNEConfigReconciler) handleClusterNotInitialized(ctx context.Context, 
 
 	controlPlaneInput := &cloudinit.ControlPlaneInput{
 		BaseUserData: cloudinit.BaseUserData{
-			AdditionalFiles:     files,
-			NTP:                 scope.Config.Spec.NTP,
-			PreOCNECommands:     scope.Config.Spec.PreOCNECommands,
-			PostOCNECommands:    scope.Config.Spec.PostOCNECommands,
-			Users:               users,
-			Mounts:              scope.Config.Spec.Mounts,
-			DiskSetup:           scope.Config.Spec.DiskSetup,
-			OCNEVerbosity:       verbosityFlag,
-			KubernetesVersion:   kubernetesVersion,
-			OCNEImageRepository: ocneRepository,
-			Proxy:               proxy,
-			PodSubnet:           podSubnet,
-			ServiceSubnet:       serviceSubnet,
-			SkipInstall:         skipInstall,
+			AdditionalFiles:      files,
+			NTP:                  scope.Config.Spec.NTP,
+			PreOCNECommands:      scope.Config.Spec.PreOCNECommands,
+			PostOCNECommands:     scope.Config.Spec.PostOCNECommands,
+			Users:                users,
+			Mounts:               scope.Config.Spec.Mounts,
+			DiskSetup:            scope.Config.Spec.DiskSetup,
+			OCNEVerbosity:        verbosityFlag,
+			KubernetesVersion:    kubernetesVersion,
+			OCNEImageRepository:  ocneRepository,
+			Proxy:                proxy,
+			PodSubnet:            podSubnet,
+			ServiceSubnet:        serviceSubnet,
+			SkipInstall:          skipInstall,
+			DockerInfrastructure: dockerInfra,
 		},
 		InitConfiguration:    initdata,
 		ClusterConfiguration: clusterdata,
@@ -654,10 +657,12 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 	}
 
 	skipInstall := false
+	dockerInfra := false
 	var proxy *bootstrapv1.ProxySpec
 	if scope.Config.Spec.ImageConfiguration != nil {
 		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
 			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+			dockerInfra = scope.Config.Spec.ImageConfiguration.Dependencies.DockerInfraStructure
 		}
 		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
 			proxy = scope.Config.Spec.ImageConfiguration.Proxy
@@ -681,6 +686,7 @@ func (r *OCNEConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (ct
 			ServiceSubnet:        serviceSubnet,
 			KubernetesVersion:    kubernetesVersion,
 			SkipInstall:          skipInstall,
+			DockerInfrastructure: dockerInfra,
 		},
 		JoinConfiguration: joinData,
 	}
@@ -796,10 +802,12 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 	}
 
 	skipInstall := false
+	dockerInfra := false
 	var proxy *bootstrapv1.ProxySpec
 	if scope.Config.Spec.ImageConfiguration != nil {
 		if scope.Config.Spec.ImageConfiguration.Dependencies != nil {
 			skipInstall = scope.Config.Spec.ImageConfiguration.Dependencies.SkipInstall
+			dockerInfra = scope.Config.Spec.ImageConfiguration.Dependencies.DockerInfraStructure
 		}
 		if scope.Config.Spec.ImageConfiguration.Proxy != nil {
 			proxy = scope.Config.Spec.ImageConfiguration.Proxy
@@ -825,6 +833,7 @@ func (r *OCNEConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 			PodSubnet:            podSubnet,
 			ServiceSubnet:        serviceSubnet,
 			SkipInstall:          skipInstall,
+			DockerInfrastructure: dockerInfra,
 		},
 	}
 

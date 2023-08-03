@@ -67,6 +67,7 @@ type BaseUserData struct {
 	ServiceSubnet        string
 	KubeadmVerbosity     string
 	SkipInstall          bool
+	DockerInfrastructure bool
 }
 
 func (input *BaseUserData) prepare() error {
@@ -82,7 +83,9 @@ func (input *BaseUserData) prepare() error {
 	if err != nil {
 		return err
 	}
-	input.OCNEOverrides = ocneCommands
+	if !input.DockerInfrastructure {
+		input.OCNEOverrides = ocneCommands
+	}
 	input.Header = cloudConfigHeader
 	input.WriteFiles = append(input.WriteFiles, input.AdditionalFiles...)
 	input.OCNECommand = fmt.Sprintf(standardJoinCommand, input.OCNEVerbosity)

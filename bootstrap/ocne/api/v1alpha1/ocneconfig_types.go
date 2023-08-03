@@ -130,6 +130,8 @@ type DependencySpec struct {
 	// By default, this value is false.
 	// +optional
 	SkipInstall bool `json:"skipInstall,omitempty"`
+
+	DockerInfraStructure bool `json:"dockerInfraStructure,omitempty"`
 }
 
 type ProxySpec struct {
