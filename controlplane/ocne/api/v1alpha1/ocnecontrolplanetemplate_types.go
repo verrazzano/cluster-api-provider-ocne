@@ -93,6 +93,14 @@ type OCNEControlPlaneTemplateResourceSpec struct {
 	// +optional
 	// +kubebuilder:default={type: "RollingUpdate", rollingUpdate: {maxSurge: 1}}
 	RolloutStrategy *RolloutStrategy `json:"rolloutStrategy,omitempty"`
+
+	// ModuleOperator deploys the OCNE module operator to the worker cluster post installation.
+	// +optional
+	ModuleOperator *ModuleOperator `json:"moduleOperator,omitempty"`
+
+	// VerrazzanoPlatformOperator deploys the Verrazzano Platform operator to the worker cluster post installation.
+	// +optional
+	VerrazzanoPlatformOperator *VerrazzanoPlatformOperator `json:"verrazzanoPlatformOperator,omitempty"`
 }
 
 // OCNEControlPlaneTemplateMachineTemplate defines the template for Machines
