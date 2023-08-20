@@ -1,12 +1,6 @@
 # Copyright (c) 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    kubernetes.io/metadata.name: ${CLUSTER_NAMESPACE}
-  name: ${CLUSTER_NAMESPACE}
+
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
@@ -14,7 +8,7 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
   name: ${CLUSTER_NAME}
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
@@ -32,8 +26,12 @@ spec:
     variables:
       - name: moduleOperatorEnabled
         value: true
-      - name: verrazzanoPlatformOperatorEnabled
-        value: true
+      - name: dnsImageTag
+        value: ${DNS_TAG=v1.9.3}
+      - name: etcdImageTag
+        value: ${ETCD_TAG=3.5.6}
+      - name: k8sImageRepository
+        value: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
     workers:
       machineDeployments:
         - class: ${CLUSTER_NAME}-md-0-class
@@ -47,7 +45,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
 metadata:
   name: ${CLUSTER_NAME}-cluster-class
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
   labels:
     cluster.x-k8s.io/provider: oci
 spec:
@@ -56,19 +54,19 @@ spec:
       apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
       kind: OCNEControlPlaneTemplate
       name: ${CLUSTER_NAME}-control-plane-template
-      namespace: ${CLUSTER_NAMESPACE}
+      namespace: ${NAMESPACE}
     machineInfrastructure:
       ref:
         kind: OCIMachineTemplate
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         name: ${CLUSTER_NAME}-control-plane-machine-template
-        namespace: ${CLUSTER_NAMESPACE}
+        namespace: ${NAMESPACE}
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: OCIClusterTemplate
       name: ${CLUSTER_NAME}-cluster-template
-      namespace: ${CLUSTER_NAMESPACE}
+      namespace: ${NAMESPACE}
   workers:
     machineDeployments:
       - class: ${CLUSTER_NAME}-md-0-class
@@ -78,13 +76,13 @@ spec:
               apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
               kind: OCNEConfigTemplate
               name: ${CLUSTER_NAME}-md-0-template
-              namespace: ${CLUSTER_NAMESPACE}
+              namespace: ${NAMESPACE}
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
               kind: OCIMachineTemplate
               name: ${CLUSTER_NAME}-md-0-machine-template
-              namespace: ${CLUSTER_NAMESPACE}
+              namespace: ${NAMESPACE}
       - class: ${CLUSTER_NAME}-md-1-class
         template:
           bootstrap:
@@ -92,13 +90,13 @@ spec:
               apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
               kind: OCNEConfigTemplate
               name: ${CLUSTER_NAME}-md-1-template
-              namespace: ${CLUSTER_NAMESPACE}
+              namespace: ${NAMESPACE}
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
               kind: OCIMachineTemplate
               name: ${CLUSTER_NAME}-md-1-machine-template
-              namespace: ${CLUSTER_NAMESPACE}
+              namespace: ${NAMESPACE}
   variables:
     - name: moduleOperatorEnabled
       required: false
@@ -108,16 +106,32 @@ spec:
           description: Flag to enable Module Operator.
           default: true
           example: true
-    - name: verrazzanoPlatformOperatorEnabled
+    - name: dnsImageTag
       required: false
       schema:
         openAPIV3Schema:
-          type: boolean
-          description: Flag to enable VPO.
-          default: true
-          example: true
+          type: string
+          description: Image tag for DNS.
+          default: v1.9.3
+          example: v1.9.3
+    - name: etcdImageTag
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          description: Image tag for ETCD.
+          default: 3.5.6
+          example: 3.5.6
+    - name: k8sImageRepository
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          description: Image repository for K8s container images.
+          default: container-registry.oracle.com/olcne
+          example: container-registry.oracle.com/olcne
   patches:
-    - name: moduleOperatorEnabled
+    - name: controlPlaneConfiguration
       definitions:
         - selector:
             apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
@@ -125,28 +139,49 @@ spec:
             matchResources:
               controlPlane: true
           jsonPatches:
-            - op: replace
+            - op: add
               path: /spec/template/spec/moduleOperator/enabled
               valueFrom:
                 variable: moduleOperatorEnabled
-    - name: verrazzanoPlatformOperatorEnabled
+            - op: add
+              path: /spec/template/spec/controlPlaneConfig/clusterConfiguration/dns
+              valueFrom:
+                template: |
+                  imageRepository: {{ .k8sImageRepository }}
+                  imageTag: {{ .dnsImageTag }}
+            - op: add
+              path: /spec/template/spec/controlPlaneConfig/clusterConfiguration/etcd
+              valueFrom:
+                template: |
+                  local:
+                    imageRepository: {{ .k8sImageRepository }}
+                    imageTag: {{ .etcdImageTag }}
+            - op: add
+              path: /spec/template/spec/controlPlaneConfig/clusterConfiguration/imageRepository
+              valueFrom:
+                variable: k8sImageRepository
+    - name: configTemplateConfiguration
       definitions:
         - selector:
-            apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
-            kind: OCNEControlPlaneTemplate
+            apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
+            kind: OCNEConfigTemplate
             matchResources:
-              controlPlane: true
+              machineDeploymentClass:
+                names:
+                  - ${CLUSTER_NAME}-md-0-class
+                  - ${CLUSTER_NAME}-md-1-class
           jsonPatches:
-            - op: replace
-              path: /spec/template/spec/verrazzanoPlatformOperator/enabled
+            - op: add
+              path: /spec/template/spec/clusterConfiguration
               valueFrom:
-                variable: verrazzanoPlatformOperatorEnabled
+                template: |
+                  imageRepository: {{ .k8sImageRepository }}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: ${CLUSTER_NAME}-user-credentials
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 type: Opaque
 data:
   tenancy: ${OCI_TENANCY_ID_B64}
@@ -160,18 +195,18 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIClusterIdentity
 metadata:
   name: ${CLUSTER_NAME}-cluster-identity
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   type: UserPrincipal
   principalSecret:
     name: ${CLUSTER_NAME}-user-credentials
-    namespace: ${CLUSTER_NAMESPACE}
+    namespace: ${NAMESPACE}
   allowedNamespaces: {}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIClusterTemplate
 metadata:
-  name: ${CLUSTER_NAME}-cluster
+  name: ${CLUSTER_NAME}-cluster-template
   namespace: ${NAMESPACE}
 spec:
   template:
@@ -207,35 +242,18 @@ kind: OCNEControlPlaneTemplate
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
 metadata:
   name: ${CLUSTER_NAME}-control-plane-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
       moduleOperator:
         enabled: true
-      verrazzanoPlatformOperator:
-        enabled: true
-        imagePullSecrets:
-          - name: ${IMAGE_PULL_SECRET=verrazzano-container-registry}
-        image:
-          repository: ${VPO_IMAGE}
-          tag: ${VPO_TAG}
       controlPlaneConfig:
         clusterConfiguration:
           apiServer:
             certSANs:
               - localhost
               - 127.0.0.1
-          dns:
-            imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
-            imageTag: ${DNS_TAG=v1.9.3}
-          etcd:
-            local:
-              imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
-              imageTag: ${ETCD_TAG=3.5.6}
-          networking: {}
-          scheduler: {}
-          imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
         initConfiguration:
           nodeRegistration:
             criSocket: /var/run/crio/crio.sock
@@ -254,7 +272,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane-machine-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -273,7 +291,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0-machine-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -292,7 +310,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-1-machine-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
@@ -311,12 +329,10 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
 kind: OCNEConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
-      clusterConfiguration:
-        imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
@@ -327,12 +343,10 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
 kind: OCNEConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-1-template
-  namespace: ${CLUSTER_NAMESPACE}
+  namespace: ${NAMESPACE}
 spec:
   template:
     spec:
-      clusterConfiguration:
-        imageRepository: ${OCNE_IMAGE_REPOSITORY=container-registry.oracle.com}/${OCNE_IMAGE_PATH=olcne}
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
