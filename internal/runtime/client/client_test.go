@@ -21,29 +21,27 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"regexp"
-	"testing"
-
 	. "github.com/onsi/gomega"
+	runtimeregistry "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/registry"
+	fakev1alpha1 "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/test/v1alpha1"
+	fakev1alpha2 "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/test/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/testcerts"
 	"k8s.io/utils/pointer"
-	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	runtimeregistry "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/registry"
-	fakev1alpha1 "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/test/v1alpha1"
-	fakev1alpha2 "github.com/verrazzano/cluster-api-provider-ocne/internal/runtime/test/v1alpha2"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"regexp"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	runtimev1 "sigs.k8s.io/cluster-api/exp/runtime/api/v1alpha1"
 	runtimecatalog "sigs.k8s.io/cluster-api/exp/runtime/catalog"
 	runtimehooksv1 "sigs.k8s.io/cluster-api/exp/runtime/hooks/api/v1alpha1"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"testing"
 )
 
 func TestClient_httpCall(t *testing.T) {
@@ -202,7 +200,7 @@ func TestClient_httpCall(t *testing.T) {
 			if tt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred())
 			}
 		})
 	}
@@ -325,7 +323,7 @@ func TestURLForExtension(t *testing.T) {
 			if tt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(u.Scheme).To(Equal(tt.want.scheme))
 				g.Expect(u.Host).To(Equal(tt.want.host))
 				g.Expect(u.Path).To(Equal(tt.want.path))
@@ -362,7 +360,7 @@ func Test_defaultAndValidateDiscoveryResponse(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "error with name violating DNS1123",
+			name: "error if handler name has capital letters",
 			discovery: &runtimehooksv1.DiscoveryResponse{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "DiscoveryResponse",
@@ -370,6 +368,23 @@ func Test_defaultAndValidateDiscoveryResponse(t *testing.T) {
 				},
 				Handlers: []runtimehooksv1.ExtensionHandler{{
 					Name: "HAS-CAPITAL-LETTERS",
+					RequestHook: runtimehooksv1.GroupVersionHook{
+						Hook:       "FakeHook",
+						APIVersion: fakev1alpha1.GroupVersion.String(),
+					},
+				}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "error if handler name has full stops",
+			discovery: &runtimehooksv1.DiscoveryResponse{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "DiscoveryResponse",
+					APIVersion: runtimehooksv1.GroupVersion.String(),
+				},
+				Handlers: []runtimehooksv1.ExtensionHandler{{
+					Name: "has.full.stops",
 					RequestHook: runtimehooksv1.GroupVersionHook{
 						Hook:       "FakeHook",
 						APIVersion: fakev1alpha1.GroupVersion.String(),
@@ -573,7 +588,7 @@ func TestClient_CallExtension(t *testing.T) {
 	type args struct {
 		hook     runtimecatalog.Hook
 		name     string
-		request  runtime.Object
+		request  runtimehooksv1.RequestObject
 		response runtimehooksv1.ResponseObject
 	}
 	tests := []struct {
@@ -636,7 +651,8 @@ func TestClient_CallExtension(t *testing.T) {
 				responses: map[string]testServerResponse{
 					"/*": response(runtimehooksv1.ResponseStatusSuccess),
 				},
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -652,7 +668,8 @@ func TestClient_CallExtension(t *testing.T) {
 				responses: map[string]testServerResponse{
 					"/*": response(runtimehooksv1.ResponseStatusSuccess),
 				},
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -668,7 +685,8 @@ func TestClient_CallExtension(t *testing.T) {
 				responses: map[string]testServerResponse{
 					"/*": response(runtimehooksv1.ResponseStatusFailure),
 				},
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -684,7 +702,8 @@ func TestClient_CallExtension(t *testing.T) {
 				responses: map[string]testServerResponse{
 					"/*": response(runtimehooksv1.ResponseStatusFailure),
 				},
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -698,7 +717,8 @@ func TestClient_CallExtension(t *testing.T) {
 			registeredExtensionConfigs: []runtimev1.ExtensionConfig{validExtensionHandlerWithIgnorePolicy},
 			testServer: testServerConfig{
 				start: false,
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -711,7 +731,8 @@ func TestClient_CallExtension(t *testing.T) {
 			registeredExtensionConfigs: []runtimev1.ExtensionConfig{validExtensionHandlerWithFailPolicy},
 			testServer: testServerConfig{
 				start: false,
-			}, args: args{
+			},
+			args: args{
 				hook:     fakev1alpha1.FakeHook,
 				name:     "valid-extension",
 				request:  &fakev1alpha1.FakeRequest{},
@@ -760,10 +781,89 @@ func TestClient_CallExtension(t *testing.T) {
 			if tt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred())
 			}
 		})
 	}
+}
+
+func TestPrepareRequest(t *testing.T) {
+	t.Run("request should have the correct settings", func(t *testing.T) {
+		tests := []struct {
+			name         string
+			request      runtimehooksv1.RequestObject
+			registration *runtimeregistry.ExtensionRegistration
+			want         map[string]string
+		}{
+			{
+				name: "settings in request should be preserved as is if there are not setting in the registration",
+				request: &runtimehooksv1.BeforeClusterCreateRequest{
+					CommonRequest: runtimehooksv1.CommonRequest{
+						Settings: map[string]string{
+							"key1": "value1",
+						},
+					},
+				},
+				registration: &runtimeregistry.ExtensionRegistration{},
+				want: map[string]string{
+					"key1": "value1",
+				},
+			},
+			{
+				name: "settings in registration should be used as is if there are no settings in the request",
+				request: &runtimehooksv1.BeforeClusterCreateRequest{
+					CommonRequest: runtimehooksv1.CommonRequest{},
+				},
+				registration: &runtimeregistry.ExtensionRegistration{
+					Settings: map[string]string{
+						"key1": "value1",
+					},
+				},
+				want: map[string]string{
+					"key1": "value1",
+				},
+			},
+			{
+				name: "settings in request and registry should be merged with request taking precedence",
+				request: &runtimehooksv1.BeforeClusterCreateRequest{
+					CommonRequest: runtimehooksv1.CommonRequest{
+						Settings: map[string]string{
+							"key1": "value1",
+							"key2": "value2",
+						},
+					},
+				},
+				registration: &runtimeregistry.ExtensionRegistration{
+					Settings: map[string]string{
+						"key1": "value11",
+						"key3": "value3",
+					},
+				},
+				want: map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+					"key3": "value3",
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				g := NewWithT(t)
+				var originalRegistrationSettings map[string]string
+				if tt.registration.Settings != nil {
+					originalRegistrationSettings = map[string]string{}
+					for k, v := range tt.registration.Settings {
+						originalRegistrationSettings[k] = v
+					}
+				}
+
+				g.Expect(cloneAndAddSettings(tt.request, tt.registration.Settings).GetSettings()).To(Equal(tt.want))
+				// Make sure that the original settings in the registration are not modified.
+				g.Expect(tt.registration.Settings).To(Equal(originalRegistrationSettings))
+			})
+		}
+	})
 }
 
 func TestClient_CallAllExtensions(t *testing.T) {
@@ -822,7 +922,7 @@ func TestClient_CallAllExtensions(t *testing.T) {
 
 	type args struct {
 		hook     runtimecatalog.Hook
-		request  runtime.Object
+		request  runtimehooksv1.RequestObject
 		response runtimehooksv1.ResponseObject
 	}
 	tests := []struct {
@@ -965,7 +1065,7 @@ func TestClient_CallAllExtensions(t *testing.T) {
 			if tt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred())
 			}
 		})
 	}
@@ -1006,7 +1106,7 @@ func Test_client_matchNamespace(t *testing.T) {
 			},
 		},
 	})
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	notMatchingMatchExpressions, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
@@ -1016,7 +1116,7 @@ func Test_client_matchNamespace(t *testing.T) {
 			},
 		},
 	})
-	g.Expect(err).To(BeNil())
+	g.Expect(err).ToNot(HaveOccurred())
 	tests := []struct {
 		name               string
 		selector           labels.Selector

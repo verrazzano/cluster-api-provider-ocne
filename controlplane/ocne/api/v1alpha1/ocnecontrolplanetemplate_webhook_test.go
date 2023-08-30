@@ -81,7 +81,8 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateEnabled(t *testing.T) {
 				},
 			},
 		}
-		g.Expect(ocnecpTemplate.ValidateCreate()).To(Succeed())
+		_, err := ocnecpTemplate.ValidateCreate()
+		g.Expect(err).To(Succeed())
 	})
 }
 
@@ -105,6 +106,7 @@ func TestOCNEControlPlaneTemplateValidationFeatureGateDisabled(t *testing.T) {
 				},
 			},
 		}
-		g.Expect(ocnecpTemplate.ValidateCreate()).NotTo(Succeed())
+		_, err := ocnecpTemplate.ValidateCreate()
+		g.Expect(err).NotTo(Succeed())
 	})
 }

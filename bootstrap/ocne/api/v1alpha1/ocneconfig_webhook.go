@@ -20,6 +20,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,18 +68,18 @@ func DefaultOCNEConfigSpec(r *OCNEConfigSpec) {
 var _ webhook.Validator = &OCNEConfig{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (c *OCNEConfig) ValidateCreate() error {
-	return c.Spec.validate(c.Name)
+func (c *OCNEConfig) ValidateCreate() (admission.Warnings, error) {
+	return nil, c.Spec.validate(c.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (c *OCNEConfig) ValidateUpdate(_ runtime.Object) error {
-	return c.Spec.validate(c.Name)
+func (c *OCNEConfig) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+	return nil, c.Spec.validate(c.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (c *OCNEConfig) ValidateDelete() error {
-	return nil
+func (c *OCNEConfig) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
 func (c *OCNEConfigSpec) validate(name string) error {

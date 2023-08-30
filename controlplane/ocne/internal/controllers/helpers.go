@@ -150,7 +150,7 @@ func (r *OCNEControlPlaneReconciler) reconcileExternalReference(ctx context.Cont
 		return nil
 	}
 
-	if err := utilconversion.UpdateReferenceAPIContract(ctx, r.Client, r.APIReader, ref); err != nil {
+	if err := utilconversion.UpdateReferenceAPIContract(ctx, r.Client, ref); err != nil {
 		return err
 	}
 

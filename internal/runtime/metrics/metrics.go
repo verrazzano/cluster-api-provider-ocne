@@ -18,8 +18,10 @@ limitations under the License.
 package metrics
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/url"
+	runtimehooksv1 "sigs.k8s.io/cluster-api/exp/runtime/hooks/api/v1alpha1"
 	"strconv"
 	"time"
 
@@ -37,7 +39,8 @@ func init() {
 
 // Metrics subsystem and all of the keys used by the Runtime SDK.
 const (
-	runtimeSDKSubsystem = "capi_runtime_sdk"
+	runtimeSDKSubsystem   = "capi_runtime_sdk"
+	unknownResponseStatus = "Unknown"
 )
 
 var (
@@ -65,8 +68,8 @@ type requestsTotalObserver struct {
 }
 
 // Observe observes a http request result and increments the metric for the given
-// error status code, host and gvh.
-func (m *requestsTotalObserver) Observe(req *http.Request, resp *http.Response, gvh runtimecatalog.GroupVersionHook, err error) {
+// http status code, host, gvh and response.
+func (m *requestsTotalObserver) Observe(req *http.Request, resp *http.Response, gvh runtimecatalog.GroupVersionHook, err error, response runtime.Object) {
 	host := req.URL.Host
 
 	// Errors can be arbitrary strings. Unbound label cardinality is not suitable for a metric
@@ -75,7 +78,13 @@ func (m *requestsTotalObserver) Observe(req *http.Request, resp *http.Response, 
 	if err == nil {
 		code = strconv.Itoa(resp.StatusCode)
 	}
-	m.metric.WithLabelValues(code, host, gvh.Group, gvh.Version, gvh.Hook).Inc()
+
+	status := unknownResponseStatus
+	if responseObject, ok := response.(runtimehooksv1.ResponseObject); ok && responseObject.GetStatus() != "" {
+		status = string(responseObject.GetStatus())
+	}
+
+	m.metric.WithLabelValues(code, host, gvh.Group, gvh.Version, gvh.Hook, status).Inc()
 }
 
 type requestDurationObserver struct {

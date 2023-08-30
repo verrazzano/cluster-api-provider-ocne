@@ -21,8 +21,6 @@ package util
 import (
 	"context"
 	"fmt"
-	"testing"
-
 	"github.com/blang/semver"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -31,13 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"testing"
 )
 
 func TestMachineToInfrastructureMapFunc(t *testing.T) {
@@ -105,7 +103,7 @@ func TestMachineToInfrastructureMapFunc(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			fn := MachineToInfrastructureMapFunc(tc.input)
-			out := fn(tc.request)
+			out := fn(ctx, tc.request)
 			g.Expect(out).To(Equal(tc.output))
 		})
 	}
@@ -227,7 +225,7 @@ func TestClusterToInfrastructureMapFunc(t *testing.T) {
 			referenceObject.SetKind(tc.request.Spec.InfrastructureRef.Kind)
 
 			fn := ClusterToInfrastructureMapFunc(context.Background(), tc.input, clientBuilder.Build(), referenceObject)
-			out := fn(tc.request)
+			out := fn(ctx, tc.request)
 			g.Expect(out).To(Equal(tc.output))
 		})
 	}
@@ -471,13 +469,13 @@ func TestGetOwnerClusterSuccessByName(t *testing.T) {
 		Name:      "my-resource-owned-by-cluster",
 	}
 	cluster, err := GetOwnerCluster(ctx, c, objm)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(cluster).NotTo(BeNil())
 
 	// Make sure API version does not matter
 	objm.OwnerReferences[0].APIVersion = "cluster.x-k8s.io/v1alpha1234"
 	cluster, err = GetOwnerCluster(ctx, c, objm)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(cluster).NotTo(BeNil())
 }
 
@@ -507,7 +505,7 @@ func TestGetOwnerMachineSuccessByName(t *testing.T) {
 		Name:      "my-resource-owned-by-machine",
 	}
 	machine, err := GetOwnerMachine(ctx, c, objm)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(machine).NotTo(BeNil())
 }
 
@@ -537,7 +535,7 @@ func TestGetOwnerMachineSuccessByNameFromDifferentVersion(t *testing.T) {
 		Name:      "my-resource-owned-by-machine",
 	}
 	machine, err := GetOwnerMachine(ctx, c, objm)
-	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(machine).NotTo(BeNil())
 }
 
@@ -553,7 +551,7 @@ func TestIsExternalManagedControlPlane(t *testing.T) {
 			},
 		}
 		result := IsExternalManagedControlPlane(controlPlane)
-		g.Expect(result).Should(Equal(true))
+		g.Expect(result).Should(BeTrue())
 	})
 
 	t.Run("should return false if control plane status externalManagedControlPlane is false", func(t *testing.T) {
@@ -565,7 +563,7 @@ func TestIsExternalManagedControlPlane(t *testing.T) {
 			},
 		}
 		result := IsExternalManagedControlPlane(controlPlane)
-		g.Expect(result).Should(Equal(false))
+		g.Expect(result).Should(BeFalse())
 	})
 
 	t.Run("should return false if control plane status externalManagedControlPlane is not set", func(t *testing.T) {
@@ -577,7 +575,7 @@ func TestIsExternalManagedControlPlane(t *testing.T) {
 			},
 		}
 		result := IsExternalManagedControlPlane(controlPlane)
-		g.Expect(result).Should(Equal(false))
+		g.Expect(result).Should(BeFalse())
 	})
 }
 
@@ -668,7 +666,7 @@ func TestClusterToObjectsMapper(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine1",
 						Labels: map[string]string{
-							clusterv1.ClusterLabelName: "test1",
+							clusterv1.ClusterNameLabel: "test1",
 						},
 					},
 				},
@@ -676,7 +674,7 @@ func TestClusterToObjectsMapper(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "machine2",
 						Labels: map[string]string{
-							clusterv1.ClusterLabelName: "test1",
+							clusterv1.ClusterNameLabel: "test1",
 						},
 					},
 				},
@@ -694,7 +692,7 @@ func TestClusterToObjectsMapper(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "md1",
 						Labels: map[string]string{
-							clusterv1.ClusterLabelName: "test1",
+							clusterv1.ClusterNameLabel: "test1",
 						},
 					},
 				},
@@ -702,7 +700,7 @@ func TestClusterToObjectsMapper(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "md2",
 						Labels: map[string]string{
-							clusterv1.ClusterLabelName: "test2",
+							clusterv1.ClusterNameLabel: "test2",
 						},
 					},
 				},
@@ -710,7 +708,7 @@ func TestClusterToObjectsMapper(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "md3",
 						Labels: map[string]string{
-							clusterv1.ClusterLabelName: "test1",
+							clusterv1.ClusterNameLabel: "test1",
 						},
 					},
 				},
@@ -741,9 +739,9 @@ func TestClusterToObjectsMapper(t *testing.T) {
 		restMapper.Add(gvk, meta.RESTScopeNamespace)
 
 		client := fake.NewClientBuilder().WithObjects(tc.objects...).WithRESTMapper(restMapper).Build()
-		f, err := ClusterToObjectsMapper(client, tc.input, scheme)
+		f, err := ClusterToTypedObjectsMapper(client, tc.input, scheme)
 		g.Expect(err != nil, err).To(Equal(tc.expectError))
-		g.Expect(f(cluster)).To(ConsistOf(tc.output))
+		g.Expect(f(ctx, cluster)).To(ConsistOf(tc.output))
 	}
 }
 

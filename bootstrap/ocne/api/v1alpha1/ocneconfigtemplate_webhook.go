@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (r *OCNEConfigTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -46,18 +47,18 @@ func (r *OCNEConfigTemplate) Default() {
 var _ webhook.Validator = &OCNEConfigTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OCNEConfigTemplate) ValidateCreate() error {
-	return r.Spec.validate(r.Name)
+func (r *OCNEConfigTemplate) ValidateCreate() (admission.Warnings, error) {
+	return nil, r.Spec.validate(r.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *OCNEConfigTemplate) ValidateUpdate(_ runtime.Object) error {
-	return r.Spec.validate(r.Name)
+func (r *OCNEConfigTemplate) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
+	return nil, r.Spec.validate(r.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *OCNEConfigTemplate) ValidateDelete() error {
-	return nil
+func (r *OCNEConfigTemplate) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
 func (r *OCNEConfigTemplateSpec) validate(name string) error {

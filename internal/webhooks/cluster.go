@@ -19,8 +19,13 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
@@ -28,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
@@ -37,6 +41,7 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/topology/variables"
 	"github.com/verrazzano/cluster-api-provider-ocne/util/version"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/conditions"
 )
 
 // SetupWebhookWithManager sets up Cluster webhooks.
@@ -59,8 +64,13 @@ type Cluster struct {
 var _ webhook.CustomDefaulter = &Cluster{}
 var _ webhook.CustomValidator = &Cluster{}
 
+var errClusterClassNotReconciled = errors.New("ClusterClass is not up to date")
+
 // Default satisfies the defaulting webhook interface.
 func (webhook *Cluster) Default(ctx context.Context, obj runtime.Object) error {
+	// We gather all defaulting errors and return them together.
+	var allErrs field.ErrorList
+
 	cluster, ok := obj.(*clusterv1.Cluster)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", obj))
@@ -80,39 +90,18 @@ func (webhook *Cluster) Default(ctx context.Context, obj runtime.Object) error {
 		if !strings.HasPrefix(cluster.Spec.Topology.Version, "v") {
 			cluster.Spec.Topology.Version = "v" + cluster.Spec.Topology.Version
 		}
-		clusterClass, err := webhook.getClusterClassForCluster(ctx, cluster)
+		clusterClass, err := webhook.pollClusterClassForCluster(ctx, cluster)
 		if err != nil {
-			// Return early with errors if the ClusterClass can't be retrieved.
-			return apierrors.NewInternalError(errors.Wrapf(err, "Cluster %s can't be validated. ClusterClass %s can not be retrieved", cluster.Name, cluster.Spec.Topology.Class))
-		}
-
-		// We gather all defaulting errors and return them together.
-		var allErrs field.ErrorList
-
-		defaultedVariables, errs := variables.DefaultClusterVariables(cluster.Spec.Topology.Variables, clusterClass.Spec.Variables,
-			field.NewPath("spec", "topology", "variables"))
-		if len(errs) > 0 {
-			allErrs = append(allErrs, errs...)
-		} else {
-			cluster.Spec.Topology.Variables = defaultedVariables
-		}
-
-		if cluster.Spec.Topology.Workers != nil {
-			for i, md := range cluster.Spec.Topology.Workers.MachineDeployments {
-				// Continue if there are no variable overrides.
-				if md.Variables == nil || len(md.Variables.Overrides) == 0 {
-					continue
-				}
-
-				defaultedVariables, errs := variables.DefaultMachineDeploymentVariables(md.Variables.Overrides, clusterClass.Spec.Variables,
-					field.NewPath("spec", "topology", "workers", "machineDeployments").Index(i).Child("variables", "overrides"))
-				if len(errs) > 0 {
-					allErrs = append(allErrs, errs...)
-				} else {
-					md.Variables.Overrides = defaultedVariables
-				}
+			// If the ClusterClass can't be found or is not up to date ignore the error.
+			if apierrors.IsNotFound(err) || errors.Is(err, errClusterClassNotReconciled) {
+				return nil
 			}
+			return apierrors.NewInternalError(errors.Wrapf(err, "Cluster %s can't be defaulted. ClusterClass %s can not be retrieved", cluster.Name, cluster.Spec.Topology.Class))
 		}
+
+		// Doing both defaulting and validating here prevents a race condition where the ClusterClass could be
+		// different in the defaulting and validating webhook.
+		allErrs = append(allErrs, DefaultAndValidateVariables(cluster, clusterClass)...)
 
 		if len(allErrs) > 0 {
 			return apierrors.NewInvalid(clusterv1.GroupVersion.WithKind("Cluster").GroupKind(), cluster.Name, allErrs)
@@ -122,34 +111,35 @@ func (webhook *Cluster) Default(ctx context.Context, obj runtime.Object) error {
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (webhook *Cluster) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (webhook *Cluster) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	cluster, ok := obj.(*clusterv1.Cluster)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", obj))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", obj))
 	}
 	return webhook.validate(ctx, nil, cluster)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (webhook *Cluster) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (webhook *Cluster) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	newCluster, ok := newObj.(*clusterv1.Cluster)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", newObj))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", newObj))
 	}
 	oldCluster, ok := oldObj.(*clusterv1.Cluster)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", oldObj))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a Cluster but got a %T", oldObj))
 	}
 	return webhook.validate(ctx, oldCluster, newCluster)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (webhook *Cluster) ValidateDelete(_ context.Context, _ runtime.Object) error {
-	return nil
+func (webhook *Cluster) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+	return nil, nil
 }
 
-func (webhook *Cluster) validate(ctx context.Context, oldCluster, newCluster *clusterv1.Cluster) error {
+func (webhook *Cluster) validate(ctx context.Context, oldCluster, newCluster *clusterv1.Cluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
+	var allWarnings admission.Warnings
 	// The Cluster name is used as a label value. This check ensures that names which are not valid label values are rejected.
 	if errs := validation.IsValidLabelValue(newCluster.Name); len(errs) != 0 {
 		for _, err := range errs {
@@ -202,7 +192,9 @@ func (webhook *Cluster) validate(ctx context.Context, oldCluster, newCluster *cl
 
 	// Validate the managed topology, if defined.
 	if newCluster.Spec.Topology != nil {
-		allErrs = append(allErrs, webhook.validateTopology(ctx, oldCluster, newCluster, topologyPath)...)
+		topologyWarnings, topologyErrs := webhook.validateTopology(ctx, oldCluster, newCluster, topologyPath)
+		allWarnings = append(allWarnings, topologyWarnings...)
+		allErrs = append(allErrs, topologyErrs...)
 	}
 
 	// On update.
@@ -217,16 +209,18 @@ func (webhook *Cluster) validate(ctx context.Context, oldCluster, newCluster *cl
 	}
 
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(clusterv1.GroupVersion.WithKind("Cluster").GroupKind(), newCluster.Name, allErrs)
+		return allWarnings, apierrors.NewInvalid(clusterv1.GroupVersion.WithKind("Cluster").GroupKind(), newCluster.Name, allErrs)
 	}
-	return nil
+	return allWarnings, nil
 }
 
-func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newCluster *clusterv1.Cluster, fldPath *field.Path) field.ErrorList {
+func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newCluster *clusterv1.Cluster, fldPath *field.Path) (admission.Warnings, field.ErrorList) {
+	var allWarnings admission.Warnings
+
 	// NOTE: ClusterClass and managed topologies are behind ClusterTopology feature gate flag; the web hook
 	// must prevent the usage of Cluster.Topology in case the feature flag is disabled.
 	if !feature.Gates.Enabled(feature.ClusterTopology) {
-		return field.ErrorList{
+		return allWarnings, field.ErrorList{
 			field.Forbidden(
 				fldPath,
 				"can be set only if the ClusterTopology feature flag is enabled",
@@ -245,6 +239,8 @@ func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newClu
 				"class cannot be empty",
 			),
 		)
+		// Return early if there is no defined class to validate.
+		return allWarnings, allErrs
 	}
 
 	// version should be valid.
@@ -259,44 +255,58 @@ func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newClu
 		)
 	}
 
-	// clusterClass must exist.
-	clusterClass := &clusterv1.ClusterClass{}
-	// Check to see if the ClusterClass referenced in the Cluster currently exists.
-	if err := webhook.Client.Get(ctx, client.ObjectKey{Namespace: newCluster.Namespace, Name: newCluster.Spec.Topology.Class}, clusterClass); err != nil {
-		allErrs = append(
-			allErrs, field.Invalid(
-				fldPath.Child("class"),
-				newCluster.Name,
-				fmt.Sprintf("ClusterClass with name %q could not be found", newCluster.Spec.Topology.Class)))
-		return allErrs
-	}
-
-	allErrs = append(allErrs, check.MachineDeploymentTopologiesAreValidAndDefinedInClusterClass(newCluster, clusterClass)...)
-
-	// Check if the variables defined in the ClusterClass are valid.
-	allErrs = append(allErrs, variables.ValidateClusterVariables(newCluster.Spec.Topology.Variables, clusterClass.Spec.Variables,
-		fldPath.Child("variables"))...)
-
-	// validate the MachineHealthChecks defined in the cluster topology
-	allErrs = append(allErrs, validateMachineHealthChecks(newCluster, clusterClass)...)
-
-	if newCluster.Spec.Topology.Workers != nil {
-		for i, md := range newCluster.Spec.Topology.Workers.MachineDeployments {
-			// Continue if there are no variable overrides.
-			if md.Variables == nil || len(md.Variables.Overrides) == 0 {
-				continue
-			}
-
-			allErrs = append(allErrs, variables.ValidateMachineDeploymentVariables(md.Variables.Overrides, clusterClass.Spec.Variables,
-				fldPath.Child("workers", "machineDeployments").Index(i).Child("variables", "overrides"))...)
+	// upgrade concurrency should be a numeric value.
+	if concurrency, ok := newCluster.Annotations[clusterv1.ClusterTopologyUpgradeConcurrencyAnnotation]; ok {
+		concurrencyAnnotationField := field.NewPath("metadata", "annotations", clusterv1.ClusterTopologyUpgradeConcurrencyAnnotation)
+		concurrencyInt, err := strconv.Atoi(concurrency)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(
+				concurrencyAnnotationField,
+				concurrency,
+				errors.Wrap(err, "could not parse the value of the annotation").Error(),
+			))
+		} else if concurrencyInt < 1 {
+			allErrs = append(allErrs, field.Invalid(
+				concurrencyAnnotationField,
+				concurrency,
+				"value cannot be less than 1",
+			))
 		}
 	}
 
+	// Get the ClusterClass referenced in the Cluster.
+	clusterClass, warnings, clusterClassPollErr := webhook.validateClusterClassExistsAndIsReconciled(ctx, newCluster)
+	// If the error is anything other than "NotFound" or "NotReconciled" return all errors.
+	if clusterClassPollErr != nil && !(apierrors.IsNotFound(clusterClassPollErr) || errors.Is(clusterClassPollErr, errClusterClassNotReconciled)) {
+		allErrs = append(
+			allErrs, field.InternalError(
+				fldPath.Child("class"),
+				clusterClassPollErr))
+		return allWarnings, allErrs
+	}
+
+	// Add the warnings if no error was returned.
+	allWarnings = append(allWarnings, warnings...)
+
+	// If there's no error validate the Cluster based on the ClusterClass.
+	if clusterClassPollErr == nil {
+		allErrs = append(allErrs, ValidateClusterForClusterClass(newCluster, clusterClass)...)
+	}
 	if oldCluster != nil { // On update
-		// Topology or Class can not be added on update unless unsafe cluster topology update annotation is set
+		// The ClusterClass must exist to proceed with update validation. Return an error if the ClusterClass was
+		// not found.
+		if apierrors.IsNotFound(clusterClassPollErr) {
+			allErrs = append(
+				allErrs, field.InternalError(
+					fldPath.Child("class"),
+					clusterClassPollErr))
+			return allWarnings, allErrs
+		}
+
+		// Topology or Class can not be added on update unless ClusterTopologyUnsafeUpdateClassNameAnnotation is set.
 		if oldCluster.Spec.Topology == nil || oldCluster.Spec.Topology.Class == "" {
 			if _, ok := newCluster.Annotations[clusterv1.ClusterTopologyUnsafeUpdateClassNameAnnotation]; ok {
-				return allErrs
+				return allWarnings, allErrs
 			}
 
 			allErrs = append(
@@ -307,7 +317,7 @@ func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newClu
 				),
 			)
 			// return early here if there is no class to compare.
-			return allErrs
+			return allWarnings, allErrs
 		}
 
 		// Version could only be increased.
@@ -363,32 +373,23 @@ func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newClu
 		// If the ClusterClass referenced in the Topology has changed compatibility checks are needed.
 		if oldCluster.Spec.Topology.Class != newCluster.Spec.Topology.Class {
 			// Check to see if the ClusterClass referenced in the old version of the Cluster exists.
-			oldClusterClass, err := webhook.getClusterClassForCluster(ctx, oldCluster)
+			oldClusterClass, err := webhook.pollClusterClassForCluster(ctx, oldCluster)
 			if err != nil {
 				allErrs = append(
 					allErrs, field.Forbidden(
 						fldPath.Child("class"),
-						fmt.Sprintf("ClusterClass with name %q could not be found, change from class %[1]q to class %q cannot be validated",
-							oldCluster.Spec.Topology.Class, newCluster.Spec.Topology.Class)))
+						fmt.Sprintf("valid ClusterClass with name %q could not be retrieved, change from class %[1]q to class %q cannot be validated. Error: %s",
+							oldCluster.Spec.Topology.Class, newCluster.Spec.Topology.Class, err.Error())))
 
 				// Return early with errors if the ClusterClass can't be retrieved.
-				return allErrs
+				return allWarnings, allErrs
 			}
 
 			// Check if the new and old ClusterClasses are compatible with one another.
 			allErrs = append(allErrs, check.ClusterClassesAreCompatible(oldClusterClass, clusterClass)...)
 		}
 	}
-	return allErrs
-}
-
-func (webhook *Cluster) getClusterClassForCluster(ctx context.Context, cluster *clusterv1.Cluster) (*clusterv1.ClusterClass, error) {
-	clusterClass := &clusterv1.ClusterClass{}
-	// Check to see if the ClusterClass referenced in the old version of the Cluster exists.
-	if err := webhook.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Spec.Topology.Class}, clusterClass); err != nil {
-		return nil, err
-	}
-	return clusterClass, nil
+	return allWarnings, allErrs
 }
 
 func validateMachineHealthChecks(cluster *clusterv1.Cluster, clusterClass *clusterv1.ClusterClass) field.ErrorList {
@@ -484,4 +485,147 @@ func validateCIDRBlocks(fldPath *field.Path, cidrs []string) field.ErrorList {
 		}
 	}
 	return allErrs
+}
+
+// DefaultAndValidateVariables defaults and validates variables in the Cluster and MachineDeployment topologies based
+// on the definitions in the ClusterClass.
+func DefaultAndValidateVariables(cluster *clusterv1.Cluster, clusterClass *clusterv1.ClusterClass) field.ErrorList {
+	var allErrs field.ErrorList
+	allErrs = append(allErrs, DefaultVariables(cluster, clusterClass)...)
+
+	// Variables must be validated in the defaulting webhook. Variable definitions are stored in the ClusterClass status
+	// and are patched in the ClusterClass reconcile.
+	allErrs = append(allErrs, variables.ValidateClusterVariables(cluster.Spec.Topology.Variables, clusterClass.Status.Variables,
+		field.NewPath("spec", "topology", "variables"))...)
+	if cluster.Spec.Topology.Workers != nil {
+		for i, md := range cluster.Spec.Topology.Workers.MachineDeployments {
+			// Continue if there are no variable overrides.
+			if md.Variables == nil || len(md.Variables.Overrides) == 0 {
+				continue
+			}
+			allErrs = append(allErrs, variables.ValidateMachineDeploymentVariables(md.Variables.Overrides, clusterClass.Status.Variables,
+				field.NewPath("spec", "topology", "workers", "machineDeployments").Index(i).Child("variables", "overrides"))...)
+		}
+	}
+	return allErrs
+}
+
+// DefaultVariables defaults variables in the Cluster based on information in the ClusterClass.
+func DefaultVariables(cluster *clusterv1.Cluster, clusterClass *clusterv1.ClusterClass) field.ErrorList {
+	var allErrs field.ErrorList
+	if cluster == nil {
+		return field.ErrorList{field.InternalError(field.NewPath(""), errors.New("Cluster can not be nil"))}
+	}
+	if clusterClass == nil {
+		return field.ErrorList{field.InternalError(field.NewPath(""), errors.New("ClusterClass can not be nil"))}
+	}
+	defaultedVariables, errs := variables.DefaultClusterVariables(cluster.Spec.Topology.Variables, clusterClass.Status.Variables,
+		field.NewPath("spec", "topology", "variables"))
+	if len(errs) > 0 {
+		allErrs = append(allErrs, errs...)
+	} else {
+		cluster.Spec.Topology.Variables = defaultedVariables
+	}
+
+	if cluster.Spec.Topology.Workers != nil {
+		for i, md := range cluster.Spec.Topology.Workers.MachineDeployments {
+			// Continue if there are no variable overrides.
+			if md.Variables == nil || len(md.Variables.Overrides) == 0 {
+				continue
+			}
+			defaultedVariables, errs := variables.DefaultMachineDeploymentVariables(md.Variables.Overrides, clusterClass.Status.Variables,
+				field.NewPath("spec", "topology", "workers", "machineDeployments").Index(i).Child("variables", "overrides"))
+			if len(errs) > 0 {
+				allErrs = append(allErrs, errs...)
+			} else {
+				md.Variables.Overrides = defaultedVariables
+			}
+		}
+	}
+	return allErrs
+}
+
+// ValidateClusterForClusterClass uses information in the ClusterClass to validate the Cluster.
+func ValidateClusterForClusterClass(cluster *clusterv1.Cluster, clusterClass *clusterv1.ClusterClass) field.ErrorList {
+	var allErrs field.ErrorList
+	if cluster == nil {
+		return field.ErrorList{field.InternalError(field.NewPath(""), errors.New("Cluster can not be nil"))}
+	}
+	if clusterClass == nil {
+		return field.ErrorList{field.InternalError(field.NewPath(""), errors.New("ClusterClass can not be nil"))}
+	}
+	allErrs = append(allErrs, check.MachineDeploymentTopologiesAreValidAndDefinedInClusterClass(cluster, clusterClass)...)
+
+	// Validate the MachineHealthChecks defined in the cluster topology.
+	allErrs = append(allErrs, validateMachineHealthChecks(cluster, clusterClass)...)
+	return allErrs
+}
+
+// validateClusterClassExistsAndIsReconciled will try to get the ClusterClass referenced in the Cluster. If it does not exist or is not reconciled it will add a warning.
+// In any other case it will return an error.
+func (webhook *Cluster) validateClusterClassExistsAndIsReconciled(ctx context.Context, newCluster *clusterv1.Cluster) (*clusterv1.ClusterClass, admission.Warnings, error) {
+	var allWarnings admission.Warnings
+	clusterClass, clusterClassPollErr := webhook.pollClusterClassForCluster(ctx, newCluster)
+	if clusterClassPollErr != nil {
+		// Add a warning if the Class does not exist or if it has not been successfully reconciled.
+		switch {
+		case apierrors.IsNotFound(clusterClassPollErr):
+			allWarnings = append(allWarnings,
+				fmt.Sprintf(
+					"Cluster refers to ClusterClass %s in the topology but it does not exist. "+
+						"Cluster topology has not been fully validated. "+
+						"The ClusterClass must be created to reconcile the Cluster", newCluster.Spec.Topology.Class),
+			)
+		case errors.Is(clusterClassPollErr, errClusterClassNotReconciled):
+			allWarnings = append(allWarnings,
+				fmt.Sprintf(
+					"Cluster refers to ClusterClass %s but this object which hasn't yet been reconciled. "+
+						"Cluster topology has not been fully validated. ", newCluster.Spec.Topology.Class),
+			)
+		// If there's any other error return a generic warning with the error message.
+		default:
+			allWarnings = append(allWarnings,
+				fmt.Sprintf(
+					"Cluster refers to ClusterClass %s in the topology but it could not be retrieved. "+
+						"Cluster topology has not been fully validated: %s", newCluster.Spec.Topology.Class, clusterClassPollErr.Error()),
+			)
+		}
+	}
+	return clusterClass, allWarnings, clusterClassPollErr
+}
+
+// pollClusterClassForCluster will retry getting the ClusterClass referenced in the Cluster for two seconds.
+func (webhook *Cluster) pollClusterClassForCluster(ctx context.Context, cluster *clusterv1.Cluster) (*clusterv1.ClusterClass, error) {
+	clusterClass := &clusterv1.ClusterClass{}
+	var clusterClassPollErr error
+	_ = wait.PollUntilContextTimeout(ctx, 200*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (bool, error) {
+		if clusterClassPollErr = webhook.Client.Get(ctx, client.ObjectKey{Namespace: cluster.Namespace, Name: cluster.Spec.Topology.Class}, clusterClass); clusterClassPollErr != nil {
+			return false, nil //nolint:nilerr
+		}
+
+		if clusterClassPollErr = clusterClassIsReconciled(clusterClass); clusterClassPollErr != nil {
+			return false, nil //nolint:nilerr
+		}
+		clusterClassPollErr = nil
+		return true, nil
+	})
+	if clusterClassPollErr != nil {
+		return nil, clusterClassPollErr
+	}
+	return clusterClass, nil
+}
+
+// clusterClassIsReconciled returns errClusterClassNotReconciled if the ClusterClass has not successfully reconciled or if the
+// ClusterClass variables have not been successfully reconciled.
+func clusterClassIsReconciled(clusterClass *clusterv1.ClusterClass) error {
+	// If the clusterClass metadata generation does not match the status observed generation, the ClusterClass has not been successfully reconciled.
+	if clusterClass.Generation != clusterClass.Status.ObservedGeneration {
+		return errClusterClassNotReconciled
+	}
+	// If the clusterClass does not have ClusterClassVariablesReconciled==True, the ClusterClass has not been successfully reconciled.
+	if !conditions.Has(clusterClass, clusterv1.ClusterClassVariablesReconciledCondition) ||
+		conditions.IsFalse(clusterClass, clusterv1.ClusterClassVariablesReconciledCondition) {
+		return errClusterClassNotReconciled
+	}
+	return nil
 }

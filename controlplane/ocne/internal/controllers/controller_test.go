@@ -99,7 +99,7 @@ func TestClusterToKubeadmControlPlane(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	got := r.ClusterToKubeadmControlPlane(cluster)
+	got := r.ClusterToKubeadmControlPlane(ctx, cluster)
 	g.Expect(got).To(Equal(expectedResult))
 }
 
@@ -114,7 +114,7 @@ func TestClusterToKubeadmControlPlaneNoControlPlane(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	got := r.ClusterToKubeadmControlPlane(cluster)
+	got := r.ClusterToKubeadmControlPlane(ctx, cluster)
 	g.Expect(got).To(BeNil())
 }
 
@@ -137,7 +137,7 @@ func TestClusterToKubeadmControlPlaneOtherControlPlane(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	got := r.ClusterToKubeadmControlPlane(cluster)
+	got := r.ClusterToKubeadmControlPlane(ctx, cluster)
 	g.Expect(got).To(BeNil())
 }
 
@@ -255,7 +255,8 @@ func TestReconcileNoClusterOwnerRef(t *testing.T) {
 		},
 	}
 	ocnecp.Default()
-	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
+	_, err := ocnecp.ValidateCreate()
+	g.Expect(err).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
 	r := &OCNEControlPlaneReconciler{
@@ -331,7 +332,8 @@ func TestReconcileNoCluster(t *testing.T) {
 		},
 	}
 	ocnecp.Default()
-	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
+	_, err := ocnecp.ValidateCreate()
+	g.Expect(err).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy())
 	r := &OCNEControlPlaneReconciler{
@@ -339,7 +341,7 @@ func TestReconcileNoCluster(t *testing.T) {
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
+	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
 	g.Expect(err).To(HaveOccurred())
 
 	machineList := &clusterv1.MachineList{}
@@ -380,14 +382,15 @@ func TestReconcilePaused(t *testing.T) {
 		},
 	}
 	ocnecp.Default()
-	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
+	_, err := ocnecp.ValidateCreate()
+	g.Expect(err).To(Succeed())
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy())
 	r := &OCNEControlPlaneReconciler{
 		Client:   fakeClient,
 		recorder: record.NewFakeRecorder(32),
 	}
 
-	_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
+	_, err = r.Reconcile(ctx, ctrl.Request{NamespacedName: util.ObjectKey(ocnecp)})
 	g.Expect(err).NotTo(HaveOccurred())
 
 	machineList := &clusterv1.MachineList{}
@@ -447,7 +450,8 @@ func TestReconcileClusterNoEndpoints(t *testing.T) {
 		},
 	}
 	ocnecp.Default()
-	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
+	_, err = ocnecp.ValidateCreate()
+	g.Expect(err).To(Succeed())
 
 	fakeClient := newFakeClient(ocnecp.DeepCopy(), cluster.DeepCopy(), configMap.DeepCopy())
 	r := &OCNEControlPlaneReconciler{
@@ -1222,7 +1226,8 @@ func TestReconcileInitializeControlPlane(t *testing.T) {
 		},
 	}
 	ocnecp.Default()
-	g.Expect(ocnecp.ValidateCreate()).To(Succeed())
+	_, err = ocnecp.ValidateCreate()
+	g.Expect(err).To(Succeed())
 
 	corednsCM := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1278,7 +1283,7 @@ kubernetesVersion: metav1.16.1`,
 		corednsDepl.DeepCopy(),
 		configMap.DeepCopy(),
 	)
-	expectedLabels := map[string]string{clusterv1.ClusterLabelName: "foo"}
+	expectedLabels := map[string]string{clusterv1.ClusterNameLabel: "foo"}
 	r := &OCNEControlPlaneReconciler{
 		Client:    fakeClient,
 		APIReader: fakeClient,
@@ -1678,7 +1683,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 				Name:      "worker",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterLabelName: cluster.Name,
+					clusterv1.ClusterNameLabel: cluster.Name,
 				},
 			},
 		}
@@ -1709,7 +1714,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 		controlPlaneMachines := clusterv1.MachineList{}
 		labels := map[string]string{
-			clusterv1.MachineControlPlaneLabelName: "",
+			clusterv1.MachineControlPlaneNameLabel: "",
 		}
 		g.Expect(fakeClient.List(ctx, &controlPlaneMachines, client.MatchingLabels(labels))).To(Succeed())
 		g.Expect(controlPlaneMachines.Items).To(HaveLen(3))
@@ -1727,7 +1732,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 				Name:      "worker",
 				Namespace: cluster.Namespace,
 				Labels: map[string]string{
-					clusterv1.ClusterLabelName: cluster.Name,
+					clusterv1.ClusterNameLabel: cluster.Name,
 				},
 			},
 		}
@@ -1758,7 +1763,7 @@ func TestOCNEControlPlaneReconciler_reconcileDelete(t *testing.T) {
 
 		controlPlaneMachines := clusterv1.MachineList{}
 		labels := map[string]string{
-			clusterv1.MachineControlPlaneLabelName: "",
+			clusterv1.MachineControlPlaneNameLabel: "",
 		}
 		g.Expect(fakeClient.List(ctx, &controlPlaneMachines, client.MatchingLabels(labels))).To(Succeed())
 		g.Expect(controlPlaneMachines.Items).To(HaveLen(3))

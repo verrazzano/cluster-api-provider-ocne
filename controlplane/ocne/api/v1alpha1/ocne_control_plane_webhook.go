@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/util/ocne"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"strings"
 
 	"github.com/blang/semver"
@@ -101,7 +102,7 @@ func defaultRolloutStrategy(rolloutStrategy *RolloutStrategy) *RolloutStrategy {
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (in *OCNEControlPlane) ValidateCreate() error {
+func (in *OCNEControlPlane) ValidateCreate() (admission.Warnings, error) {
 	spec := in.Spec
 	allErrs := validateKubeadmControlPlaneSpec(spec, in.Namespace, field.NewPath("spec"))
 	allErrs = append(allErrs, validateClusterConfiguration(spec.ControlPlaneConfig.ClusterConfiguration, nil, field.NewPath("spec", "controlPlaneConfig", "clusterConfiguration"))...)
@@ -109,9 +110,9 @@ func (in *OCNEControlPlane) ValidateCreate() error {
 	allErrs = append(allErrs, in.validateOCNESocket(&in.Spec.ControlPlaneConfig)...)
 	allErrs = append(allErrs, spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
-	return nil
+	return nil, nil
 }
 
 const (
@@ -141,7 +142,7 @@ const (
 const minimumCertificatesExpiryDays = 7
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
+func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	// add a * to indicate everything beneath is ok.
 	// For example, {"spec", "*"} will allow any path under "spec" to change.
 	allowedPaths := [][]string{
@@ -191,7 +192,7 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	prev, ok := old.(*OCNEControlPlane)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expecting OCNEControlPlane but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expecting OCNEControlPlane but got a %T", old))
 	}
 
 	// NOTE: Defaulting for the format field has been added in v1.1.0 after implementing ignition support.
@@ -202,20 +203,20 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 
 	originalJSON, err := json.Marshal(prev)
 	if err != nil {
-		return apierrors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 	modifiedJSON, err := json.Marshal(in)
 	if err != nil {
-		return apierrors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 
 	diff, err := jsonpatch.CreateMergePatch(originalJSON, modifiedJSON)
 	if err != nil {
-		return apierrors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 	jsonPatch := map[string]interface{}{}
 	if err := json.Unmarshal(diff, &jsonPatch); err != nil {
-		return apierrors.NewInternalError(err)
+		return nil, apierrors.NewInternalError(err)
 	}
 	// Build a list of all paths that are trying to change
 	diffpaths := paths([]string{}, jsonPatch)
@@ -242,10 +243,10 @@ func (in *OCNEControlPlane) ValidateUpdate(old runtime.Object) error {
 	allErrs = append(allErrs, in.Spec.ControlPlaneConfig.Validate(field.NewPath("spec", "controlPlaneConfig"))...)
 
 	if len(allErrs) > 0 {
-		return apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("OCNEControlPlane").GroupKind(), in.Name, allErrs)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func validateKubeadmControlPlaneSpec(s OCNEControlPlaneSpec, namespace string, pathPrefix *field.Path) field.ErrorList {
@@ -758,6 +759,6 @@ func (in *OCNEControlPlane) validateOCNESocket(controlPlaneConfigSpec *bootstrap
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (in *OCNEControlPlane) ValidateDelete() error {
-	return nil
+func (in *OCNEControlPlane) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

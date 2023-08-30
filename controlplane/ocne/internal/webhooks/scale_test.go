@@ -200,7 +200,7 @@ func TestOCNEControlPlaneValidateScale(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			decoder, _ := admission.NewDecoder(scheme)
+			decoder := admission.NewDecoder(scheme)
 			fakeClient := fake.NewClientBuilder().WithScheme(scheme).WithObjects(ocnecpManagedEtcd, ocnecpExternalEtcd).Build()
 
 			// Create the webhook and add the fakeClient as its client.

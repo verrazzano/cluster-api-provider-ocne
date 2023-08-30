@@ -43,7 +43,7 @@ func TestGetConfigOwner(t *testing.T) {
 				Name:      "my-machine",
 				Namespace: metav1.NamespaceDefault,
 				Labels: map[string]string{
-					clusterv1.MachineControlPlaneLabelName: "",
+					clusterv1.MachineControlPlaneNameLabel: "",
 				},
 			},
 			Spec: clusterv1.MachineSpec{
@@ -92,7 +92,7 @@ func TestGetConfigOwner(t *testing.T) {
 				Name:      "my-machine-pool",
 				Namespace: metav1.NamespaceDefault,
 				Labels: map[string]string{
-					clusterv1.MachineControlPlaneLabelName: "",
+					clusterv1.MachineControlPlaneNameLabel: "",
 				},
 			},
 			Spec: expv1.MachinePoolSpec{

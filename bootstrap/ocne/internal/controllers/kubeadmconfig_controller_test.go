@@ -106,7 +106,7 @@ func TestOCNEConfigReconciler_MachineToBootstrapMapFuncReturn(t *testing.T) {
 	}
 	for i := 0; i < 3; i++ {
 		o := machineObjs[i]
-		configs := reconciler.MachineToBootstrapMapFunc(o)
+		configs := reconciler.MachineToBootstrapMapFunc(ctx, o)
 		if i == 1 {
 			g.Expect(configs[0].Name).To(Equal(expectedConfigName))
 		} else {
@@ -1159,7 +1159,7 @@ func TestOCNEConfigSecretCreatedStatusNotPatched(t *testing.T) {
 			Name:      workerJoinConfig.Name,
 			Namespace: workerJoinConfig.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: cluster.Name,
+				clusterv1.ClusterNameLabel: cluster.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -2018,7 +2018,7 @@ func TestOCNEConfigReconciler_ClusterToKubeadmConfigs(t *testing.T) {
 	reconciler := &OCNEConfigReconciler{
 		Client: fakeClient,
 	}
-	configs := reconciler.ClusterToOCNEConfigs(cluster)
+	configs := reconciler.ClusterToOCNEConfigs(ctx, cluster)
 	names := make([]string, 6)
 	for i := range configs {
 		names[i] = configs[i].Name
@@ -2487,13 +2487,13 @@ func newWorkerMachineForCluster(cluster *clusterv1.Cluster) *clusterv1.Machine {
 		Build()
 }
 
-// newControlPlaneMachine returns a Machine with the passed Cluster information and a MachineControlPlaneLabelName.
+// newControlPlaneMachine returns a Machine with the passed Cluster information and a MachineControlPlaneNameLabel.
 func newControlPlaneMachine(cluster *clusterv1.Cluster, name string) *clusterv1.Machine {
 	m := builder.Machine(cluster.Namespace, name).
 		WithVersion("v1.25.7").
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(metav1.NamespaceDefault, "cfg").Unstructured()).
 		WithClusterName(cluster.Name).
-		WithLabels(map[string]string{clusterv1.MachineControlPlaneLabelName: ""}).
+		WithLabels(map[string]string{clusterv1.MachineControlPlaneNameLabel: ""}).
 		Build()
 	return m
 }
@@ -2502,7 +2502,7 @@ func newControlPlaneMachine(cluster *clusterv1.Cluster, name string) *clusterv1.
 func newMachinePool(cluster *clusterv1.Cluster, name string) *expv1.MachinePool {
 	m := builder.MachinePool(cluster.Namespace, name).
 		WithClusterName(cluster.Name).
-		WithLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}).
+		WithLabels(map[string]string{clusterv1.ClusterNameLabel: cluster.Name}).
 		WithBootstrapTemplate(bootstrapbuilder.OCNEConfig(cluster.Namespace, "conf1").Unstructured()).
 		WithVersion("v1.25.7").
 		Build()

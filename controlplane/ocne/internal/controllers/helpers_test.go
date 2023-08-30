@@ -245,7 +245,7 @@ func TestReconcileKubeconfigSecretDoesNotAdoptsUserSecrets(t *testing.T) {
 			Name:      secret.Name("foo", secret.Kubeconfig),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "foo",
+				clusterv1.ClusterNameLabel: "foo",
 			},
 			OwnerReferences: []metav1.OwnerReference{},
 		},
@@ -334,7 +334,7 @@ func TestOCNEControlPlaneReconciler_reconcileKubeconfig(t *testing.T) {
 	g.Expect(r.Client.Get(ctx, secretName, kubeconfigSecret)).To(Succeed())
 	g.Expect(kubeconfigSecret.OwnerReferences).NotTo(BeEmpty())
 	g.Expect(kubeconfigSecret.OwnerReferences).To(ContainElement(*metav1.NewControllerRef(ocnecp, controlplanev1.GroupVersion.WithKind("OCNEControlPlane"))))
-	g.Expect(kubeconfigSecret.Labels).To(HaveKeyWithValue(clusterv1.ClusterLabelName, cluster.Name))
+	g.Expect(kubeconfigSecret.Labels).To(HaveKeyWithValue(clusterv1.ClusterNameLabel, cluster.Name))
 }
 
 func TestCloneConfigsAndGenerateMachine(t *testing.T) {
@@ -563,8 +563,8 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 	for k, v := range ocnecpMachineTemplateObjectMeta.Labels {
 		g.Expect(machine.Labels[k]).To(Equal(v))
 	}
-	g.Expect(machine.Labels[clusterv1.ClusterLabelName]).To(Equal(cluster.Name))
-	g.Expect(machine.Labels[clusterv1.MachineControlPlaneLabelName]).To(Equal(""))
+	g.Expect(machine.Labels[clusterv1.ClusterNameLabel]).To(Equal(cluster.Name))
+	g.Expect(machine.Labels[clusterv1.MachineControlPlaneNameLabel]).To(Equal(""))
 	g.Expect(machine.Labels[clusterv1.MachineControlPlaneNameLabel]).To(Equal(ocnecp.Name))
 
 	for k, v := range ocnecpMachineTemplateObjectMeta.Annotations {
@@ -572,8 +572,8 @@ func TestOCNEControlPlaneReconciler_generateMachine(t *testing.T) {
 	}
 
 	// Verify that machineTemplate.ObjectMeta in KCP has not been modified.
-	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.ClusterLabelName))
-	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneLabelName))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.ClusterNameLabel))
+	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneNameLabel))
 	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Labels).NotTo(HaveKey(clusterv1.MachineControlPlaneNameLabel))
 	g.Expect(ocnecp.Spec.MachineTemplate.ObjectMeta.Annotations).NotTo(HaveKey(controlplanev1.OCNEClusterConfigurationAnnotation))
 }

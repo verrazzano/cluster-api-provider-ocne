@@ -444,7 +444,7 @@ func testControlPlaneMachine(name string) *clusterv1.Machine {
 		},
 	}
 	controlPlaneMachine := testMachine(name)
-	controlPlaneMachine.ObjectMeta.Labels[clusterv1.MachineControlPlaneLabelName] = ""
+	controlPlaneMachine.ObjectMeta.Labels[clusterv1.MachineControlPlaneNameLabel] = ""
 	controlPlaneMachine.OwnerReferences = ownedRef
 
 	return controlPlaneMachine
@@ -457,7 +457,7 @@ func testMachine(name string) *clusterv1.Machine {
 			Name:      name,
 			Namespace: "my-namespace",
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: "my-cluster",
+				clusterv1.ClusterNameLabel: "my-cluster",
 			},
 		},
 	}

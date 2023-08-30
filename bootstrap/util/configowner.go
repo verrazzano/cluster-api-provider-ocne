@@ -102,7 +102,7 @@ func (co ConfigOwner) IsControlPlaneMachine() bool {
 	if labels == nil {
 		return false
 	}
-	_, ok := labels[clusterv1.MachineControlPlaneLabelName]
+	_, ok := labels[clusterv1.MachineControlPlaneNameLabel]
 	return ok
 }
 

@@ -70,8 +70,10 @@ func TestOCNEConfigTemplateValidation(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			g := NewWithT(t)
-			g.Expect(tt.in.ValidateCreate()).To(Succeed())
-			g.Expect(tt.in.ValidateUpdate(nil)).To(Succeed())
+			_, err := tt.in.ValidateCreate()
+			g.Expect(err).To(Succeed())
+			_, err = tt.in.ValidateUpdate(nil)
+			g.Expect(err).To(Succeed())
 		})
 	}
 }

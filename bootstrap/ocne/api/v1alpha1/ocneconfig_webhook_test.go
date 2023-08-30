@@ -465,11 +465,15 @@ func TestOCNEConfigValidate(t *testing.T) {
 			}
 			g := NewWithT(t)
 			if tt.expectErr {
-				g.Expect(tt.in.ValidateCreate()).NotTo(Succeed())
-				g.Expect(tt.in.ValidateUpdate(nil)).NotTo(Succeed())
+				_, err := tt.in.ValidateCreate()
+				g.Expect(err).NotTo(Succeed())
+				_, err = tt.in.ValidateUpdate(nil)
+				g.Expect(err).NotTo(Succeed())
 			} else {
-				g.Expect(tt.in.ValidateCreate()).To(Succeed())
-				g.Expect(tt.in.ValidateUpdate(nil)).To(Succeed())
+				_, err := tt.in.ValidateCreate()
+				g.Expect(err).To(Succeed())
+				_, err = tt.in.ValidateUpdate(nil)
+				g.Expect(err).To(Succeed())
 			}
 		})
 	}

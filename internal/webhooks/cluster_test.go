@@ -17,6 +17,9 @@ limitations under the License.
 package webhooks
 
 import (
+	"context"
+	"errors"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -32,6 +35,7 @@ import (
 	"github.com/verrazzano/cluster-api-provider-ocne/feature"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/test/builder"
 	"github.com/verrazzano/cluster-api-provider-ocne/internal/webhooks/util"
+	"github.com/verrazzano/cluster-api-provider-ocne/util/conditions"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
@@ -56,8 +60,8 @@ func TestClusterDefaultNamespaces(t *testing.T) {
 	g.Expect(c.Spec.ControlPlaneRef.Namespace).To(Equal(c.Namespace))
 }
 
-// TestClusterDefaultVariables cases where cluster.spec.topology.class is altered.
-func TestClusterDefaultVariables(t *testing.T) {
+// TestClusterDefaultAndValidateVariables cases where cluster.spec.topology.class is altered.
+func TestClusterDefaultAndValidateVariables(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
 
 	tests := []struct {
@@ -65,20 +69,27 @@ func TestClusterDefaultVariables(t *testing.T) {
 		clusterClass *clusterv1.ClusterClass
 		topology     *clusterv1.Topology
 		expect       *clusterv1.Topology
+		wantErr      bool
 	}{
 		{
 			name: "default a single variable to its correct values",
 			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
-				WithVariables(clusterv1.ClusterClassVariable{
-					Name:     "location",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type:    "string",
-							Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "location",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
 						},
 					},
-				}).
+				},
+				).
 				Build(),
 			topology: &clusterv1.Topology{},
 			expect: &clusterv1.Topology{
@@ -95,13 +106,18 @@ func TestClusterDefaultVariables(t *testing.T) {
 		{
 			name: "don't change a variable if it is already set",
 			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
-				WithVariables(clusterv1.ClusterClassVariable{
-					Name:     "location",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type:    "string",
-							Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "location",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
 						},
 					},
 				},
@@ -131,27 +147,38 @@ func TestClusterDefaultVariables(t *testing.T) {
 		{
 			name: "default many variables to their correct values",
 			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
-				WithVariables(
-					clusterv1.ClusterClassVariable{
-						Name:     "location",
-						Required: true,
-						Schema: clusterv1.VariableSchema{
-							OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-								Type:    "string",
-								Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+				WithStatusVariables([]clusterv1.ClusterClassStatusVariable{
+					{
+						Name: "location",
+						Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+							{
+								Required: true,
+								From:     clusterv1.VariableDefinitionFromInline,
+								Schema: clusterv1.VariableSchema{
+									OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+										Type:    "string",
+										Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+									},
+								},
 							},
 						},
 					},
-					clusterv1.ClusterClassVariable{
-						Name:     "count",
-						Required: true,
-						Schema: clusterv1.VariableSchema{
-							OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-								Type:    "number",
-								Default: &apiextensionsv1.JSON{Raw: []byte(`0.1`)},
+					{
+						Name: "count",
+						Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+							{
+								Required: true,
+								From:     clusterv1.VariableDefinitionFromInline,
+								Schema: clusterv1.VariableSchema{
+									OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+										Type:    "number",
+										Default: &apiextensionsv1.JSON{Raw: []byte(`0.1`)},
+									},
+								},
 							},
 						},
-					}).
+					},
+				}...).
 				Build(),
 			topology: &clusterv1.Topology{},
 			expect: &clusterv1.Topology{
@@ -177,17 +204,21 @@ func TestClusterDefaultVariables(t *testing.T) {
 				WithWorkerMachineDeploymentClasses(
 					*builder.MachineDeploymentClass("default-worker").Build(),
 				).
-				WithVariables(
-					clusterv1.ClusterClassVariable{
-						Name:     "location",
-						Required: true,
-						Schema: clusterv1.VariableSchema{
-							OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-								Type:    "string",
-								Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "location",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
 							},
 						},
-					}).
+					},
+				}).
 				Build(),
 			topology: &clusterv1.Topology{
 				Workers: &clusterv1.WorkersTopology{
@@ -225,25 +256,29 @@ func TestClusterDefaultVariables(t *testing.T) {
 				WithWorkerMachineDeploymentClasses(
 					*builder.MachineDeploymentClass("default-worker").Build(),
 				).
-				WithVariables(
-					clusterv1.ClusterClassVariable{
-						Name:     "httpProxy",
-						Required: true,
-						Schema: clusterv1.VariableSchema{
-							OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-								Type: "object",
-								Properties: map[string]clusterv1.JSONSchemaProps{
-									"enabled": {
-										Type: "boolean",
-									},
-									"url": {
-										Type:    "string",
-										Default: &apiextensionsv1.JSON{Raw: []byte(`"http://localhost:3128"`)},
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "httpProxy",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "object",
+									Properties: map[string]clusterv1.JSONSchemaProps{
+										"enabled": {
+											Type: "boolean",
+										},
+										"url": {
+											Type:    "string",
+											Default: &apiextensionsv1.JSON{Raw: []byte(`"http://localhost:3128"`)},
+										},
 									},
 								},
 							},
 						},
-					}).
+					},
+				}).
 				Build(),
 			topology: &clusterv1.Topology{
 				Workers: &clusterv1.WorkersTopology{
@@ -298,33 +333,446 @@ func TestClusterDefaultVariables(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Use one value for multiple definitions when variables don't conflict",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "location",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "somepatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "anotherpatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+					},
+				},
+				).
+				Build(),
+			topology: &clusterv1.Topology{},
+			expect: &clusterv1.Topology{
+				Variables: []clusterv1.ClusterVariable{
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-east"`),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Add defaults for each definitionFrom if variable is defined for some definitionFrom",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "location",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "somepatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "anotherpatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+					},
+				},
+				).
+				Build(),
+			topology: &clusterv1.Topology{
+				Variables: []clusterv1.ClusterVariable{
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-west"`),
+						},
+						DefinitionFrom: "somepatch",
+					},
+				},
+			},
+			expect: &clusterv1.Topology{
+				Variables: []clusterv1.ClusterVariable{
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-west"`),
+						},
+						DefinitionFrom: "somepatch",
+					},
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-east"`),
+						},
+						DefinitionFrom: clusterv1.VariableDefinitionFromInline,
+					},
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-east"`),
+						},
+						DefinitionFrom: "anotherpatch",
+					},
+				},
+			},
+		},
+		{
+			name: "set definitionFrom on defaults when variables conflict",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name:                "location",
+					DefinitionsConflict: true,
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"first-region"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "somepatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"another-region"`)},
+								},
+							},
+						},
+						{
+							Required: true,
+							From:     "anotherpatch",
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type:    "string",
+									Default: &apiextensionsv1.JSON{Raw: []byte(`"us-east"`)},
+								},
+							},
+						},
+					},
+				},
+				).
+				Build(),
+			topology: &clusterv1.Topology{},
+			expect: &clusterv1.Topology{
+				Variables: []clusterv1.ClusterVariable{
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"first-region"`),
+						},
+						DefinitionFrom: clusterv1.VariableDefinitionFromInline,
+					},
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"another-region"`),
+						},
+						DefinitionFrom: "somepatch",
+					},
+					{
+						Name: "location",
+						Value: apiextensionsv1.JSON{
+							Raw: []byte(`"us-east"`),
+						},
+						DefinitionFrom: "anotherpatch",
+					},
+				},
+			},
+		},
+		// Testing validation of variables.
+		{
+			name: "should fail when required variable is missing top-level",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					},
+				}).Build(),
+			topology: builder.ClusterTopology().Build(),
+			expect:   builder.ClusterTopology().Build(),
+			wantErr:  true,
+		},
+		{
+			name: "should fail when top-level variable is invalid",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					}},
+				).Build(),
+			topology: builder.ClusterTopology().
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`"text"`)},
+				}).
+				Build(),
+			expect:  builder.ClusterTopology().Build(),
+			wantErr: true,
+		},
+		{
+			name: "should fail when variable override is invalid",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					}}).Build(),
+			topology: builder.ClusterTopology().
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+				}).
+				WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
+					WithClass("aa").
+					WithVariables(clusterv1.ClusterVariable{
+						Name:  "cpu",
+						Value: apiextensionsv1.JSON{Raw: []byte(`"text"`)},
+					}).
+					Build()).
+				Build(),
+			expect:  builder.ClusterTopology().Build(),
+			wantErr: true,
+		},
+		{
+			name: "should pass when required variable exists top-level",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					}}).Build(),
+			topology: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+				}).
+				// Variable is not required in MachineDeployment topologies.
+				Build(),
+			expect: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+				}).
+				// Variable is not required in MachineDeployment topologies.
+				Build(),
+		},
+		{
+			name: "should pass when top-level variable and override are valid",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithWorkerMachineDeploymentClasses(*builder.MachineDeploymentClass("md1").Build()).
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: true,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					}}).Build(),
+			topology: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+				}).
+				WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
+					WithClass("md1").
+					WithVariables(clusterv1.ClusterVariable{
+						Name:  "cpu",
+						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+					}).
+					Build()).
+				Build(),
+			expect: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithVariables(clusterv1.ClusterVariable{
+					Name:  "cpu",
+					Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+				}).
+				WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
+					WithClass("md1").
+					WithVariables(clusterv1.ClusterVariable{
+						Name:  "cpu",
+						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+					}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "should pass even when variable override is missing the corresponding top-level variable",
+			clusterClass: builder.ClusterClass(metav1.NamespaceDefault, "class1").
+				WithWorkerMachineDeploymentClasses(*builder.MachineDeploymentClass("md1").Build()).
+				WithStatusVariables(clusterv1.ClusterClassStatusVariable{
+					Name: "cpu",
+					Definitions: []clusterv1.ClusterClassStatusVariableDefinition{
+						{
+							Required: false,
+							From:     clusterv1.VariableDefinitionFromInline,
+							Schema: clusterv1.VariableSchema{
+								OpenAPIV3Schema: clusterv1.JSONSchemaProps{
+									Type: "integer",
+								},
+							},
+						},
+					}}).Build(),
+			topology: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
+					WithClass("md1").
+					WithVariables(clusterv1.ClusterVariable{
+						Name:  "cpu",
+						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+					}).
+					Build()).
+				Build(),
+			expect: builder.ClusterTopology().
+				WithClass("foo").
+				WithVersion("v1.19.1").
+				WithVariables([]clusterv1.ClusterVariable{}...).
+				WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
+					WithClass("md1").
+					WithVariables(clusterv1.ClusterVariable{
+						Name:  "cpu",
+						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
+					}).
+					Build()).
+				Build(),
+		},
 	}
 	for _, tt := range tests {
-		// Setting Class and Version here to avoid obfuscating the test cases above.
-		tt.topology.Class = "class1"
-		tt.topology.Version = "v1.22.2"
-		tt.expect.Class = "class1"
-		tt.expect.Version = "v1.22.2"
-
-		cluster := builder.Cluster(metav1.NamespaceDefault, "cluster1").
-			WithTopology(tt.topology).
-			Build()
-		fakeClient := fake.NewClientBuilder().
-			WithObjects(tt.clusterClass).
-			WithScheme(fakeScheme).
-			Build()
-		// Create the webhook and add the fakeClient as its client. This is required because the test uses a Managed Topology.
-		webhook := &Cluster{Client: fakeClient}
-
 		t.Run(tt.name, func(t *testing.T) {
-			// Test if defaulting works in combination with validation.
-			util.CustomDefaultValidateTest(ctx, cluster, webhook)(t)
+			// Setting Class and Version here to avoid obfuscating the test cases above.
+			tt.topology.Class = "class1"
+			tt.topology.Version = "v1.22.2"
+			tt.expect.Class = "class1"
+			tt.expect.Version = "v1.22.2"
+
+			cluster := builder.Cluster(metav1.NamespaceDefault, "cluster1").
+				WithTopology(tt.topology).
+				Build()
+
+			// Mark this condition to true so the webhook sees the ClusterClass as up to date.
+			conditions.MarkTrue(tt.clusterClass, clusterv1.ClusterClassVariablesReconciledCondition)
+			fakeClient := fake.NewClientBuilder().
+				WithObjects(tt.clusterClass).
+				WithScheme(fakeScheme).
+				Build()
+			// Create the webhook and add the fakeClient as its client. This is required because the test uses a Managed Topology.
+			webhook := &Cluster{Client: fakeClient}
+
 			// Test defaulting.
 			t.Run("default", func(t *testing.T) {
 				g := NewWithT(t)
+				if tt.wantErr {
+					g.Expect(webhook.Default(ctx, cluster)).To(Not(Succeed()))
+					return
+				}
 				g.Expect(webhook.Default(ctx, cluster)).To(Succeed())
-				g.Expect(cluster.Spec.Topology).To(Equal(tt.expect))
+				g.Expect(cluster.Spec.Topology).To(BeEquivalentTo(tt.expect))
 			})
+
+			// Test if defaulting works in combination with validation.
+			// Note this test is not run for the case where the webhook should fail.
+			if tt.wantErr {
+				t.Skip("skipping test for combination of defaulting and validation (not supported by the test)")
+			}
+			util.CustomDefaultValidateTest(ctx, cluster, webhook)(t)
 		})
 	}
 }
@@ -343,9 +791,11 @@ func TestClusterDefaultTopologyVersion(t *testing.T) {
 			Build()).
 		Build()
 
+	clusterClass := builder.ClusterClass("fooboo", "foo").Build()
+	conditions.MarkTrue(clusterClass, clusterv1.ClusterClassVariablesReconciledCondition)
 	// Sets up the fakeClient for the test case. This is required because the test uses a Managed Topology.
 	fakeClient := fake.NewClientBuilder().
-		WithObjects(builder.ClusterClass("fooboo", "foo").Build()).
+		WithObjects(clusterClass).
 		WithScheme(fakeScheme).
 		Build()
 
@@ -557,7 +1007,8 @@ func TestClusterValidation(t *testing.T) {
 			// Create the webhook.
 			webhook := &Cluster{}
 
-			err := webhook.validate(ctx, tt.old, tt.in)
+			warnings, err := webhook.validate(ctx, tt.old, tt.in)
+			g.Expect(warnings).To(BeEmpty())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 				return
@@ -573,11 +1024,11 @@ func TestClusterTopologyValidation(t *testing.T) {
 	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
 
 	tests := []struct {
-		name                  string
-		clusterClassVariables []clusterv1.ClusterClassVariable
-		in                    *clusterv1.Cluster
-		old                   *clusterv1.Cluster
-		expectErr             bool
+		name                        string
+		clusterClassStatusVariables []clusterv1.ClusterClassStatusVariable
+		in                          *clusterv1.Cluster
+		old                         *clusterv1.Cluster
+		expectErr                   bool
 	}{
 		{
 			name:      "should return error when topology does not have class",
@@ -760,171 +1211,45 @@ func TestClusterTopologyValidation(t *testing.T) {
 				Build(),
 		},
 		{
-			name: "should pass when required variable exists top-level",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
-			in: builder.Cluster("fooboo", "cluster1").
-				WithTopology(builder.ClusterTopology().
-					WithClass("foo").
-					WithVersion("v1.19.1").
-					WithVariables(clusterv1.ClusterVariable{
-						Name:  "cpu",
-						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
-					}).
-					// Variable is not required in MachineDeployment topologies.
-					Build()).
-				Build(),
-			expectErr: false,
-		},
-		{
-			name: "should fail when required variable is missing top-level",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
-			in: builder.Cluster("fooboo", "cluster1").
-				WithTopology(builder.ClusterTopology().
-					WithClass("foo").
-					WithVersion("v1.19.1").
-					Build()).
-				Build(),
+			name:      "should return error when upgrade concurrency annotation value is < 1",
 			expectErr: true,
-		},
-		{
-			name: "should fail when top-level variable is invalid",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
 			in: builder.Cluster("fooboo", "cluster1").
+				WithAnnotations(map[string]string{
+					clusterv1.ClusterTopologyUpgradeConcurrencyAnnotation: "-1",
+				}).
 				WithTopology(builder.ClusterTopology().
 					WithClass("foo").
-					WithVersion("v1.19.1").
-					WithVariables(clusterv1.ClusterVariable{
-						Name:  "cpu",
-						Value: apiextensionsv1.JSON{Raw: []byte(`"text"`)},
-					}).
+					WithVersion("v1.19.2").
 					Build()).
 				Build(),
+		},
+		{
+			name:      "should return error when upgrade concurrency annotation value is not numeric",
 			expectErr: true,
-		},
-		{
-			name: "should pass when top-level variable and override are valid",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
 			in: builder.Cluster("fooboo", "cluster1").
+				WithAnnotations(map[string]string{
+					clusterv1.ClusterTopologyUpgradeConcurrencyAnnotation: "abc",
+				}).
 				WithTopology(builder.ClusterTopology().
 					WithClass("foo").
-					WithVersion("v1.19.1").
-					WithVariables(clusterv1.ClusterVariable{
-						Name:  "cpu",
-						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
-					}).
-					WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
-						WithClass("aa").
-						WithVariables(clusterv1.ClusterVariable{
-							Name:  "cpu",
-							Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
-						}).
-						Build()).
+					WithVersion("v1.19.2").
 					Build()).
 				Build(),
+		},
+		{
+			name:      "should pass upgrade concurrency annotation value is >= 1",
 			expectErr: false,
-		},
-		{
-			name: "should fail when variable override is invalid",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: true,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
 			in: builder.Cluster("fooboo", "cluster1").
+				WithAnnotations(map[string]string{
+					clusterv1.ClusterTopologyUpgradeConcurrencyAnnotation: "2",
+				}).
 				WithTopology(builder.ClusterTopology().
 					WithClass("foo").
-					WithVersion("v1.19.1").
-					WithVariables(clusterv1.ClusterVariable{
-						Name:  "cpu",
-						Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
-					}).
-					WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
-						WithClass("aa").
-						WithVariables(clusterv1.ClusterVariable{
-							Name:  "cpu",
-							Value: apiextensionsv1.JSON{Raw: []byte(`"text"`)},
-						}).
-						Build()).
+					WithVersion("v1.19.2").
 					Build()).
 				Build(),
-			expectErr: true,
-		},
-		{
-			name: "should pass even when variable override is missing the corresponding top-level variable",
-			clusterClassVariables: []clusterv1.ClusterClassVariable{
-				{
-					Name:     "cpu",
-					Required: false,
-					Schema: clusterv1.VariableSchema{
-						OpenAPIV3Schema: clusterv1.JSONSchemaProps{
-							Type: "integer",
-						},
-					},
-				},
-			},
-			in: builder.Cluster("fooboo", "cluster1").
-				WithTopology(builder.ClusterTopology().
-					WithClass("foo").
-					WithVersion("v1.19.1").
-					WithMachineDeployment(builder.MachineDeploymentTopology("workers1").
-						WithClass("aa").
-						WithVariables(clusterv1.ClusterVariable{
-							Name:  "cpu",
-							Value: apiextensionsv1.JSON{Raw: []byte(`2`)},
-						}).
-						Build()).
-					Build()).
-				Build(),
-			expectErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
@@ -933,8 +1258,11 @@ func TestClusterTopologyValidation(t *testing.T) {
 					*builder.MachineDeploymentClass("bb").Build(),
 					*builder.MachineDeploymentClass("aa").Build(),
 				).
-				WithVariables(tt.clusterClassVariables...).
+				WithStatusVariables(tt.clusterClassStatusVariables...).
 				Build()
+
+			// Mark this condition to true so the webhook sees the ClusterClass as up to date.
+			conditions.MarkTrue(class, clusterv1.ClusterClassVariablesReconciledCondition)
 			// Sets up the fakeClient for the test case.
 			fakeClient := fake.NewClientBuilder().
 				WithObjects(class).
@@ -944,12 +1272,14 @@ func TestClusterTopologyValidation(t *testing.T) {
 			// Create the webhook and add the fakeClient as its client. This is required because the test uses a Managed Topology.
 			webhook := &Cluster{Client: fakeClient}
 
-			err := webhook.validate(ctx, tt.old, tt.in)
+			warnings, err := webhook.validate(ctx, tt.old, tt.in)
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
+				g.Expect(warnings).To(BeEmpty())
 				return
 			}
 			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(warnings).To(BeEmpty())
 		})
 	}
 }
@@ -960,14 +1290,16 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 	g := NewWithT(t)
 
 	tests := []struct {
-		name    string
-		cluster *clusterv1.Cluster
-		class   *clusterv1.ClusterClass
-		objects []client.Object
-		wantErr bool
+		name            string
+		cluster         *clusterv1.Cluster
+		class           *clusterv1.ClusterClass
+		classReconciled bool
+		objects         []client.Object
+		wantErr         bool
+		wantWarnings    bool
 	}{
 		{
-			name: "Accept a cluster with an existing clusterclass named in cluster.spec.topology.class",
+			name: "Accept a cluster with an existing ClusterClass named in cluster.spec.topology.class",
 			cluster: builder.Cluster(metav1.NamespaceDefault, "cluster1").
 				WithTopology(
 					builder.ClusterTopology().
@@ -978,10 +1310,11 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 				Build(),
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				Build(),
-			wantErr: false,
+			classReconciled: true,
+			wantErr:         false,
 		},
 		{
-			name: "Reject a cluster which has a non-existent clusterclass named in cluster.spec.topology.class",
+			name: "Warning for a cluster with non-existent ClusterClass referenced cluster.spec.topology.class",
 			cluster: builder.Cluster(metav1.NamespaceDefault, "cluster1").
 				WithTopology(
 					builder.ClusterTopology().
@@ -992,7 +1325,26 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 				Build(),
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				Build(),
-			wantErr: true,
+			// There should be a warning for a ClusterClass which can not be found.
+			wantWarnings: true,
+			wantErr:      false,
+		},
+		{
+			name: "Warning for a cluster with an unreconciled ClusterClass named in cluster.spec.topology.class",
+			cluster: builder.Cluster(metav1.NamespaceDefault, "cluster1").
+				WithTopology(
+					builder.ClusterTopology().
+						WithClass("clusterclass").
+						WithVersion("v1.22.2").
+						WithControlPlaneReplicas(3).
+						Build()).
+				Build(),
+			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
+				Build(),
+			classReconciled: false,
+			// There should be a warning for a ClusterClass which is not yet reconciled.
+			wantWarnings: true,
+			wantErr:      false,
 		},
 		{
 			name: "Reject a cluster that has MHC enabled for control plane but is missing MHC definition in cluster topology and clusterclass",
@@ -1009,7 +1361,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 				Build(),
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				Build(),
-			wantErr: true,
+			classReconciled: true,
+			wantErr:         true,
 		},
 		{
 			name: "Reject a cluster that MHC override defined for control plane but is missing unhealthy conditions",
@@ -1028,7 +1381,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 				Build(),
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				Build(),
-			wantErr: true,
+			classReconciled: true,
+			wantErr:         true,
 		},
 		{
 			name: "Reject a cluster that MHC override defined for control plane but is set when control plane is missing machineInfrastructure",
@@ -1052,7 +1406,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 				Build(),
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				Build(),
-			wantErr: true,
+			classReconciled: true,
+			wantErr:         true,
 		},
 		{
 			name: "Accept a cluster that has MHC enabled for control plane with control plane MHC defined in ClusterClass",
@@ -1070,7 +1425,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				WithControlPlaneMachineHealthCheck(&clusterv1.MachineHealthCheckClass{}).
 				Build(),
-			wantErr: false,
+			classReconciled: true,
+			wantErr:         false,
 		},
 		{
 			name: "Accept a cluster that has MHC enabled for control plane with control plane MHC defined in cluster topology",
@@ -1096,7 +1452,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 			class: builder.ClusterClass(metav1.NamespaceDefault, "clusterclass").
 				WithControlPlaneInfrastructureMachineTemplate(&unstructured.Unstructured{}).
 				Build(),
-			wantErr: false,
+			classReconciled: true,
+			wantErr:         false,
 		},
 		{
 			name: "Reject a cluster that has MHC enabled for machine deployment but is missing MHC definition in cluster topology and ClusterClass",
@@ -1121,7 +1478,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 					*builder.MachineDeploymentClass("worker-class").Build(),
 				).
 				Build(),
-			wantErr: true,
+			classReconciled: true,
+			wantErr:         true,
 		},
 		{
 			name: "Reject a cluster that has MHC override defined for machine deployment but is missing unhealthy conditions",
@@ -1148,7 +1506,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 					*builder.MachineDeploymentClass("worker-class").Build(),
 				).
 				Build(),
-			wantErr: true,
+			classReconciled: true,
+			wantErr:         true,
 		},
 		{
 			name: "Accept a cluster that has MHC enabled for machine deployment with machine deployment MHC defined in ClusterClass",
@@ -1175,7 +1534,8 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 						Build(),
 				).
 				Build(),
-			wantErr: false,
+			classReconciled: true,
+			wantErr:         false,
 		},
 		{
 			name: "Accept a cluster that has MHC enabled for machine deployment with machine deployment MHC defined in cluster topology",
@@ -1208,11 +1568,16 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 					*builder.MachineDeploymentClass("worker-class").Build(),
 				).
 				Build(),
-			wantErr: false,
+			classReconciled: true,
+			wantErr:         false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Mark this condition to true so the webhook sees the ClusterClass as up to date.
+			if tt.classReconciled {
+				conditions.MarkTrue(tt.class, clusterv1.ClusterClassVariablesReconciledCondition)
+			}
 			// Sets up the fakeClient for the test case.
 			fakeClient := fake.NewClientBuilder().
 				WithObjects(tt.class).
@@ -1223,10 +1588,16 @@ func TestClusterTopologyValidationWithClient(t *testing.T) {
 			c := &Cluster{Client: fakeClient}
 
 			// Checks the return error.
+			warnings, err := c.ValidateCreate(ctx, tt.cluster)
 			if tt.wantErr {
-				g.Expect(c.ValidateCreate(ctx, tt.cluster)).NotTo(Succeed())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(c.ValidateCreate(ctx, tt.cluster)).To(Succeed())
+				g.Expect(err).ToNot(HaveOccurred())
+			}
+			if tt.wantWarnings {
+				g.Expect(warnings).ToNot(BeEmpty())
+			} else {
+				g.Expect(warnings).To(BeEmpty())
 			}
 		})
 	}
@@ -1626,6 +1997,10 @@ func TestClusterTopologyValidationForTopologyClassChange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Mark this condition to true so the webhook sees the ClusterClass as up to date.
+			conditions.MarkTrue(tt.firstClass, clusterv1.ClusterClassVariablesReconciledCondition)
+			conditions.MarkTrue(tt.secondClass, clusterv1.ClusterClassVariablesReconciledCondition)
+
 			// Sets up the fakeClient for the test case.
 			fakeClient := fake.NewClientBuilder().
 				WithObjects(tt.firstClass, tt.secondClass).
@@ -1640,11 +2015,13 @@ func TestClusterTopologyValidationForTopologyClassChange(t *testing.T) {
 			secondCluster.Spec.Topology.Class = tt.secondClass.Name
 
 			// Checks the return error.
+			warnings, err := c.ValidateUpdate(ctx, cluster, secondCluster)
 			if tt.wantErr {
-				g.Expect(c.ValidateUpdate(ctx, cluster, secondCluster)).NotTo(Succeed())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(c.ValidateUpdate(ctx, cluster, secondCluster)).To(Succeed())
+				g.Expect(err).ToNot(HaveOccurred())
 			}
+			g.Expect(warnings).To(BeEmpty())
 		})
 	}
 }
@@ -1719,9 +2096,34 @@ func TestMovingBetweenManagedAndUnmanaged(t *testing.T) {
 			updatedTopology: nil,
 			wantErr:         true,
 		},
+		{
+			name: "Reject cluster update if ClusterClass does not exist",
+			cluster: builder.Cluster(metav1.NamespaceDefault, "cluster1").
+				WithTopology(builder.ClusterTopology().
+					WithClass("class1").
+					WithVersion("v1.22.2").
+					WithControlPlaneReplicas(3).
+					Build()).
+				Build(),
+			clusterClass:
+			// ClusterClass name is different to that in the Cluster `.spec.topology.class`
+			builder.ClusterClass(metav1.NamespaceDefault, "completely-different-class").
+				WithInfrastructureClusterTemplate(refToUnstructured(ref)).
+				WithControlPlaneTemplate(refToUnstructured(ref)).
+				WithControlPlaneInfrastructureMachineTemplate(refToUnstructured(ref)).
+				Build(),
+			updatedTopology: builder.ClusterTopology().
+				WithClass("class1").
+				WithVersion("v1.22.2").
+				WithControlPlaneReplicas(3).
+				Build(),
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Mark this condition to true so the webhook sees the ClusterClass as up to date.
+			conditions.MarkTrue(tt.clusterClass, clusterv1.ClusterClassVariablesReconciledCondition)
 			// Sets up the fakeClient for the test case.
 			fakeClient := fake.NewClientBuilder().
 				WithObjects(tt.clusterClass, tt.cluster).
@@ -1736,10 +2138,184 @@ func TestMovingBetweenManagedAndUnmanaged(t *testing.T) {
 			updatedCluster.Spec.Topology = tt.updatedTopology
 
 			// Checks the return error.
+			warnings, err := c.ValidateUpdate(ctx, tt.cluster, updatedCluster)
 			if tt.wantErr {
-				g.Expect(c.ValidateUpdate(ctx, tt.cluster, updatedCluster)).NotTo(Succeed())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(c.ValidateUpdate(ctx, tt.cluster, updatedCluster)).To(Succeed())
+				g.Expect(err).NotTo(HaveOccurred())
+				// Errors may be duplicated as warnings. There should be no warnings in this case if there are no errors.
+				g.Expect(warnings).To(BeEmpty())
+			}
+		})
+	}
+}
+
+// TestClusterClassPollingErrors tests when a Cluster can be reconciled given different reconcile states of the ClusterClass.
+func TestClusterClassPollingErrors(t *testing.T) {
+	defer utilfeature.SetFeatureGateDuringTest(t, feature.Gates, feature.ClusterTopology, true)()
+	g := NewWithT(t)
+	ref := &corev1.ObjectReference{
+		APIVersion: "group.test.io/foo",
+		Kind:       "barTemplate",
+		Name:       "baz",
+		Namespace:  "default",
+	}
+
+	topology := builder.ClusterTopology().WithClass("class1").WithVersion("v1.24.3").Build()
+	secondTopology := builder.ClusterTopology().WithClass("class2").WithVersion("v1.24.3").Build()
+	notFoundTopology := builder.ClusterTopology().WithClass("doesnotexist").WithVersion("v1.24.3").Build()
+
+	baseClusterClass := builder.ClusterClass(metav1.NamespaceDefault, "class1").
+		WithInfrastructureClusterTemplate(refToUnstructured(ref)).
+		WithControlPlaneTemplate(refToUnstructured(ref)).
+		WithControlPlaneInfrastructureMachineTemplate(refToUnstructured(ref))
+
+	// ccFullyReconciled is a ClusterClass with a matching generation and observed generation, and VariablesReconciled=True.
+	ccFullyReconciled := baseClusterClass.DeepCopy().Build()
+	ccFullyReconciled.Generation = 1
+	ccFullyReconciled.Status.ObservedGeneration = 1
+	conditions.MarkTrue(ccFullyReconciled, clusterv1.ClusterClassVariablesReconciledCondition)
+
+	// secondFullyReconciled is a second ClusterClass with a matching generation and observed generation, and VariablesReconciled=True.
+	secondFullyReconciled := ccFullyReconciled.DeepCopy()
+	secondFullyReconciled.SetName("class2")
+
+	// ccGenerationMismatch is a ClusterClass with a mismatched generation and observed generation, but VariablesReconciledCondition=True.
+	ccGenerationMismatch := baseClusterClass.DeepCopy().Build()
+	ccGenerationMismatch.Generation = 999
+	ccGenerationMismatch.Status.ObservedGeneration = 1
+	conditions.MarkTrue(ccGenerationMismatch, clusterv1.ClusterClassVariablesReconciledCondition)
+
+	// ccVariablesReconciledFalse with VariablesReconciled=False.
+	ccVariablesReconciledFalse := baseClusterClass.DeepCopy().Build()
+	conditions.MarkFalse(ccGenerationMismatch, clusterv1.ClusterClassVariablesReconciledCondition, "", clusterv1.ConditionSeverityError, "")
+
+	tests := []struct {
+		name           string
+		cluster        *clusterv1.Cluster
+		oldCluster     *clusterv1.Cluster
+		clusterClasses []*clusterv1.ClusterClass
+		injectedErr    interceptor.Funcs
+		wantErr        bool
+		wantWarnings   bool
+	}{
+		{
+			name:           "Pass on create if ClusterClass is fully reconciled",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled},
+			wantErr:        false,
+		},
+		{
+			name:           "Pass on create if ClusterClass generation does not match observedGeneration",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccGenerationMismatch},
+			wantErr:        false,
+			wantWarnings:   true,
+		},
+		{
+			name:           "Pass on create if ClusterClass generation matches observedGeneration but VariablesReconciled=False",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccVariablesReconciledFalse},
+			wantErr:        false,
+			wantWarnings:   true,
+		},
+		{
+			name:           "Pass on create if ClusterClass is not found",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(notFoundTopology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled},
+			wantErr:        false,
+			wantWarnings:   true,
+		},
+		{
+			name:           "Pass on update if oldCluster ClusterClass is fully reconciled",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(secondTopology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled, secondFullyReconciled},
+			wantErr:        false,
+		},
+		{
+			name:           "Fail on update if oldCluster ClusterClass generation does not match observedGeneration",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(secondTopology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccGenerationMismatch, secondFullyReconciled},
+			wantErr:        true,
+		},
+		{
+			name:           "Fail on update if old Cluster ClusterClass is not found",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(notFoundTopology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled},
+			wantErr:        true,
+		},
+		{
+			name:           "Fail on update if new Cluster ClusterClass is not found",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(notFoundTopology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled},
+			wantErr:        true,
+			wantWarnings:   true,
+		},
+		{
+			name:           "Fail on update if new ClusterClass returns connection error",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(secondTopology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled, secondFullyReconciled},
+			injectedErr: interceptor.Funcs{
+				Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+					// Throw an error if the second ClusterClass `class2` used as the new ClusterClass is being retrieved.
+					if key.Name == secondTopology.Class {
+						return errors.New("connection error")
+					}
+					return client.Get(ctx, key, obj)
+				},
+			},
+			wantErr:      true,
+			wantWarnings: false,
+		},
+		{
+			name:           "Fail on update if old ClusterClass returns connection error",
+			cluster:        builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(secondTopology).Build(),
+			oldCluster:     builder.Cluster(metav1.NamespaceDefault, "cluster1").WithTopology(topology).Build(),
+			clusterClasses: []*clusterv1.ClusterClass{ccFullyReconciled, secondFullyReconciled},
+			injectedErr: interceptor.Funcs{
+				Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+					// Throw an error if the ClusterClass `class1` used as the old ClusterClass is being retrieved.
+					if key.Name == topology.Class {
+						return errors.New("connection error")
+					}
+					return client.Get(ctx, key, obj)
+				},
+			},
+			wantErr:      true,
+			wantWarnings: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Sets up a reconcile with a fakeClient for the test case.
+			objs := []client.Object{}
+			for _, cc := range tt.clusterClasses {
+				objs = append(objs, cc)
+			}
+			c := &Cluster{Client: fake.NewClientBuilder().
+				WithInterceptorFuncs(tt.injectedErr).
+				WithScheme(fakeScheme).
+				WithObjects(objs...).
+				Build(),
+			}
+
+			// Checks the return error.
+			warnings, err := c.validate(ctx, tt.oldCluster, tt.cluster)
+			if tt.wantErr {
+				g.Expect(err).To(HaveOccurred())
+			} else {
+				g.Expect(err).ToNot(HaveOccurred())
+			}
+			if tt.wantWarnings {
+				g.Expect(warnings).NotTo(BeNil())
+			} else {
+				g.Expect(warnings).To(BeNil())
 			}
 		})
 	}

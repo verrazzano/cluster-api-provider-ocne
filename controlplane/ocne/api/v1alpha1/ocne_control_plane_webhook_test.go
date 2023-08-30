@@ -273,11 +273,13 @@ func TestOCNEControlPlaneValidateCreate(t *testing.T) {
 			}
 			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
+			_, err = tt.ocnecp.ValidateCreate()
 			if tt.expectErr {
-				g.Expect(tt.ocnecp.ValidateCreate()).NotTo(Succeed())
+				g.Expect(err).NotTo(Succeed())
 			} else {
-				g.Expect(tt.ocnecp.ValidateCreate()).To(Succeed())
+				g.Expect(err).To(Succeed())
 			}
+
 		})
 	}
 }
@@ -1035,12 +1037,13 @@ func TestOCNEControlPlaneValidateUpdate(t *testing.T) {
 			}
 			defer func() { ocne.GetCoreV1Func = ocne.GetCoreV1Client }()
 
-			err = tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
+			warnings, err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
 				g.Expect(err).To(Succeed())
 			}
+			g.Expect(warnings).To(BeEmpty())
 		})
 	}
 }
@@ -1212,7 +1215,7 @@ func TestOCNEControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
-			err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
+			warnings, err := tt.ocnecp.ValidateUpdate(tt.before.DeepCopy())
 			if tt.expectErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
@@ -1223,6 +1226,7 @@ func TestOCNEControlPlaneValidateUpdateAfterDefaulting(t *testing.T) {
 				g.Expect(tt.ocnecp.Spec.RolloutStrategy.RollingUpdate.MaxSurge.IntVal).To(Equal(int32(1)))
 				g.Expect(tt.ocnecp.Spec.Replicas).To(Equal(pointer.Int32(1)))
 			}
+			g.Expect(warnings).To(BeEmpty())
 		})
 	}
 }

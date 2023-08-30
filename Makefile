@@ -148,6 +148,10 @@ GINKGO_BIN := ginkgo
 GINKGO := $(abspath $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINGKO_VER))
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
+MOCKGEN_VER := v0.2.0
+MOCKGEN_BIN := mockgen
+MOCKGEN := $(TOOLS_BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
+
 CONVERSION_VERIFIER_BIN := conversion-verifier
 CONVERSION_VERIFIER := $(abspath $(TOOLS_BIN_DIR)/$(CONVERSION_VERIFIER_BIN))
 
@@ -179,6 +183,9 @@ OCNE_BOOTSTRAP_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_BOOTSTRAP_IMAGE_NAME)
 OCNE_CONTROL_PLANE_IMAGE_NAME ?= cluster-api-ocne-control-plane-controller
 OCNE_CONTROL_PLANE_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_CONTROL_PLANE_IMAGE_NAME)
 
+# addons
+VERRAZZANO_ADDONS_IMAGE_NAME ?= cluster-api-verrazzano-release-controller
+VERRAZZANO_RELEASE_CONTROLLER_IMG ?= $(REGISTRY)/$(VERRAZZANO_ADDONS_IMAGE_NAME)
 
 # test extension
 TEST_EXTENSION_IMAGE_NAME ?= test-extension
@@ -224,7 +231,8 @@ help:  # Display this help
 
 ##@ generate:
 
-ALL_GENERATE_MODULES = ocne-bootstrap ocne-control-plane
+ALL_GENERATE_MODULES = addons-verrazzano ocne-bootstrap ocne-control-plane
+
 
 .PHONY: generate
 generate: ## Run all generate-manifests-*, generate-go-deepcopy-*
@@ -260,6 +268,20 @@ generate-manifests-ocne-control-plane: $(CONTROLLER_GEN) ## Generate manifests e
 		output:webhook:dir=./controlplane/ocne/config/webhook \
 		webhook
 
+PHONY: generate-manifests-addons-verrazzano
+generate-manifests-addons-verrazzano: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc. for ocne control plane
+	$(MAKE) clean-generated-yaml SRC_DIRS="./addons/verrazzano/config/crd/bases"
+	$(CONTROLLER_GEN) \
+		paths=./addons/verrazzano/api/... \
+		paths=./addons/verrazzano/controllers/... \
+		crd:crdVersions=v1 \
+		rbac:roleName=manager-role \
+		output:crd:artifacts:config=./addons/verrazzano/config/crd/bases \
+		output:crd:dir=./addons/verrazzano/config/crd/bases \
+		output:rbac:dir=./addons/verrazzano/config/rbac \
+        output:webhook:dir=./addons/verrazzano/config/webhook \
+		crd webhook
+
 .PHONY: generate-go-deepcopy
 generate-go-deepcopy:  ## Run all generate-go-deepcopy-* targets
 	$(MAKE) $(addprefix generate-go-deepcopy-,$(ALL_GENERATE_MODULES))
@@ -278,6 +300,13 @@ generate-go-deepcopy-ocne-control-plane: $(CONTROLLER_GEN) ## Generate deepcopy 
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate/boilerplate.generatego.txt \
 		paths=./controlplane/ocne/api/...
+
+.PHONY: generate-go-deepcopy-addons-verrazzano
+generate-go-deepcopy-addons-verrazzano: $(CONTROLLER_GEN) $(MOCKGEN) $(KUSTOMIZE)## Generate deepcopy go code for ocne control plane
+	$(MAKE) clean-generated-deepcopy SRC_DIRS="./addons/verrazzano/api"
+	$(CONTROLLER_GEN) \
+		object:headerFile=./hack/boilerplate/boilerplate.generatego.txt \
+		paths=./addons/verrazzano/api/...
 
 .PHONY: generate-modules
 generate-modules: ## Run go mod tidy to ensure modules are up to date
@@ -366,7 +395,7 @@ docker-build-all: $(addprefix docker-build-,$(ALL_ARCH)) ## Build docker images 
 docker-build-%:
 	$(MAKE) ARCH=$* docker-build
 
-ALL_DOCKER_BUILD = ocne-bootstrap ocne-control-plane
+ALL_DOCKER_BUILD = ocne-bootstrap ocne-control-plane addons-verrazzano
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ## Run docker-build-* targets for all the images
@@ -385,6 +414,13 @@ docker-build-ocne-control-plane: ## Build the docker image for ocne control plan
 	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg vz_module_branch=$(VERRAZZANO_MODULE_BRANCH) --build-arg vz_module_commit=$(VERRAZZANO_MODULE_COMMIT) --build-arg vz_module_tag=$(VERRAZZANO_MODULE_OPERATOR_TAG) --build-arg package=./controlplane/ocne --build-arg ldflags="$(LDFLAGS)" . -t $(OCNE_CONTROL_PLANE_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(OCNE_CONTROL_PLANE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./controlplane/ocne/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./controlplane/ocne/config/default/manager_pull_policy.yaml"
+
+.PHONY: docker-build-addons-verrazzano
+docker-build-addons-verrazzano: ## Build the docker image for verrazzano addons
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg ldflags="$(LDFLAGS)" . -t $(VERRAZZANO_RELEASE_CONTROLLER_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(VERRAZZANO_RELEASE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./addons/verrazzano/config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./addons/verrazzano/config/default/manager_pull_policy.yaml"
+
 
 ## --------------------------------------
 ## Testing
@@ -484,6 +520,8 @@ release-manifests: $(RELEASE_DIR) $(KUSTOMIZE) ## Build the manifests to publish
 	$(KUSTOMIZE) build bootstrap/ocne/config/default > $(RELEASE_DIR)/bootstrap-components.yaml
 	# Build control-plane-components.
 	$(KUSTOMIZE) build controlplane/ocne/config/default > $(RELEASE_DIR)/control-plane-components.yaml
+	# Build addon-components.
+	$(KUSTOMIZE) build addons/verrazzano/config/default > $(RELEASE_DIR)/addon-components.yaml
 
 	# Add metadata to the release artifacts
 	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
@@ -590,6 +628,9 @@ $(GOLANGCI_LINT_BIN): $(GOLANGCI_LINT) ## Build a local copy of golangci-lint
 .PHONY: $(GINKGO_BIN)
 $(GINKGO_BIN): $(GINKGO) ## Build a local copy of ginkgo
 
+.PHONY: $(MOCKGEN_BIN)
+$(MOCKGEN_BIN): $(MOCKGEN) ## Build a local copy of mockgen.
+
 $(CONTROLLER_GEN): # Build controller-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(CONTROLLER_GEN_PKG) $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
 
@@ -611,6 +652,8 @@ $(GOLANGCI_LINT): .github/workflows/golangci-lint.yml # Download golangci-lint u
 $(GINKGO): # Build ginkgo from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINGKO_VER)
 
+$(MOCKGEN): ## Build mockgen from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) go.uber.org/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
 
 ## --------------------------------------
 ## Build OCNE Artifacts
@@ -618,20 +661,22 @@ $(GINKGO): # Build ginkgo from tools folder.
 
 RELEASE_BOOTSTRAP_DIR := release/bootstrap-ocne/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
 RELEASE_CONTROL_PLANE_DIR := release/control-plane-ocne/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
+RELEASE_VERRAZZANO_ADDON_DIR := release/addon-verrazzanorelease/v${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}
 ##@ Build OCNE Artifacts:
 .PHONY:
 ocnebuild: ## Remove files generated by conversion-gen from the mentioned dirs. Example SRC_DIRS="./api/v1alpha4"
-	rm -rf $(RELEASE_BOOTSTRAP_DIR) $(RELEASE_CONTROL_PLANE_DIR) out bin
+	rm -rf $(RELEASE_BOOTSTRAP_DIR) $(RELEASE_CONTROL_PLANE_DIR) ${RELEASE_VERRAZZANO_ADDON_DIR} out bin
 	mkdir -p $(RELEASE_BOOTSTRAP_DIR)
 	mkdir -p $(RELEASE_CONTROL_PLANE_DIR)
+	mkdir -p $(RELEASE_VERRAZZANO_ADDON_DIR)
 	$(MAKE) clean
 	$(MAKE) generate
-	$(MAKE) docker-build
-	$(MAKE) docker-push
+	#$(MAKE) docker-build
+	#$(MAKE) docker-push
 	$(MAKE) release-manifests
 	cp out/bootstrap-components.yaml $(RELEASE_BOOTSTRAP_DIR)/bootstrap-components.yaml
 	cp out/metadata.yaml $(RELEASE_BOOTSTRAP_DIR)/metadata.yaml
 	cp out/control-plane-components.yaml  $(RELEASE_CONTROL_PLANE_DIR)/control-plane-components.yaml
 	cp out/metadata.yaml  $(RELEASE_CONTROL_PLANE_DIR)/metadata.yaml
-
-
+	cp out/addon-components.yaml $(RELEASE_VERRAZZANO_ADDON_DIR)/addon-components.yaml
+	cp out/metadata.yaml $(RELEASE_VERRAZZANO_ADDON_DIR)/metadata.yaml
