@@ -184,7 +184,7 @@ OCNE_CONTROL_PLANE_IMAGE_NAME ?= cluster-api-ocne-control-plane-controller
 OCNE_CONTROL_PLANE_CONTROLLER_IMG ?= $(REGISTRY)/$(OCNE_CONTROL_PLANE_IMAGE_NAME)
 
 # addons
-VERRAZZANO_ADDONS_IMAGE_NAME ?= cluster-api-verrazzano-release-controller
+VERRAZZANO_ADDONS_IMAGE_NAME ?= cluster-api-verrazzano-addon-controller
 VERRAZZANO_RELEASE_CONTROLLER_IMG ?= $(REGISTRY)/$(VERRAZZANO_ADDONS_IMAGE_NAME)
 
 # test extension
