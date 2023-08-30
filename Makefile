@@ -417,7 +417,7 @@ docker-build-ocne-control-plane: ## Build the docker image for ocne control plan
 
 .PHONY: docker-build-addons-verrazzano
 docker-build-addons-verrazzano: ## Build the docker image for verrazzano addons
-	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg ldflags="$(LDFLAGS)" -f Dockerfileaddons -t $(VERRAZZANO_RELEASE_CONTROLLER_IMG):$(TAG)
+	docker build --build-arg builder_image=$(GO_CONTAINER_IMAGE) --build-arg goproxy=$(GOPROXY) --build-arg ARCH=$(ARCH) --build-arg ldflags="$(LDFLAGS)" -f Dockerfileaddons . -t $(VERRAZZANO_RELEASE_CONTROLLER_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(VERRAZZANO_RELEASE_CONTROLLER_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./addons/verrazzano/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./addons/verrazzano/config/default/manager_pull_policy.yaml"
 
