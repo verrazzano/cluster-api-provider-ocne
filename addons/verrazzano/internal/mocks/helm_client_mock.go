@@ -55,7 +55,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // GetHelmRelease mocks base method.
-func (m *MockClient) GetHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoReleaseBindingSpec) (*release.Release, error) {
+func (m *MockClient) GetHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoFleetBindingSpec) (*release.Release, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHelmRelease", ctx, kubeconfig, spec)
 	ret0, _ := ret[0].(*release.Release)
@@ -70,7 +70,7 @@ func (mr *MockClientMockRecorder) GetHelmRelease(ctx, kubeconfig, spec interface
 }
 
 // InstallOrUpgradeHelmRelease mocks base method.
-func (m *MockClient) InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoReleaseBindingSpec) (*release.Release, error) {
+func (m *MockClient) InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoFleetBindingSpec) (*release.Release, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "InstallOrUpgradeHelmRelease", ctx, kubeconfig, spec)
 	ret0, _ := ret[0].(*release.Release)
@@ -85,7 +85,7 @@ func (mr *MockClientMockRecorder) InstallOrUpgradeHelmRelease(ctx, kubeconfig, s
 }
 
 // UninstallHelmRelease mocks base method.
-func (m *MockClient) UninstallHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoReleaseBindingSpec) (*release.UninstallReleaseResponse, error) {
+func (m *MockClient) UninstallHelmRelease(ctx context.Context, kubeconfig string, spec v1alpha1.VerrazzanoFleetBindingSpec) (*release.UninstallReleaseResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UninstallHelmRelease", ctx, kubeconfig, spec)
 	ret0, _ := ret[0].(*release.UninstallReleaseResponse)

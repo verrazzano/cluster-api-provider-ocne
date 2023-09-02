@@ -101,10 +101,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&VerrazzanoRelease{}).SetupWebhookWithManager(mgr)
+	err = (&VerrazzanoFleet{}).SetupWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&VerrazzanoReleaseBinding{}).SetupWebhookWithManager(mgr)
+	err = (&VerrazzanoFleetBinding{}).SetupWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook

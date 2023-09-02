@@ -16,7 +16,7 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package verrazzanorelease
+package verrazzanofleet
 
 import (
 	"testing"
@@ -35,19 +35,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var _ reconcile.Reconciler = &VerrazzanoReleaseReconciler{}
+var _ reconcile.Reconciler = &VerrazzanoFleetReconciler{}
 
 var (
-	defaultProxy = &addonsv1alpha1.VerrazzanoRelease{
+	defaultProxy = &addonsv1alpha1.VerrazzanoFleet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: addonsv1alpha1.GroupVersion.String(),
-			Kind:       "VerrazzanoRelease",
+			Kind:       "VerrazzanoFleet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hcp",
 			Namespace: "test-namespace",
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 			ClusterSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"test-label": "test-value",
@@ -140,25 +140,25 @@ var (
 		},
 	}
 
-	hrpReady1 = &addonsv1alpha1.VerrazzanoReleaseBinding{
+	hrpReady1 = &addonsv1alpha1.VerrazzanoFleetBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hrp-1",
 			Namespace: "test-namespace",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         addonsv1alpha1.GroupVersion.String(),
-					Kind:               "VerrazzanoRelease",
+					Kind:               "VerrazzanoFleet",
 					Name:               "test-hcp",
 					Controller:         pointer.Bool(true),
 					BlockOwnerDeletion: pointer.Bool(true),
 				},
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:                "test-cluster-1",
-				addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+				clusterv1.ClusterNameLabel:              "test-cluster-1",
+				addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 			},
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 			ClusterRef: corev1.ObjectReference{
 				APIVersion: clusterv1.GroupVersion.String(),
 				Kind:       "Cluster",
@@ -173,7 +173,7 @@ var (
 			Values:           "apiServerPort: 1234",
 			Options:          &addonsv1alpha1.HelmOptions{},
 		},
-		Status: addonsv1alpha1.VerrazzanoReleaseBindingStatus{
+		Status: addonsv1alpha1.VerrazzanoFleetBindingStatus{
 			Conditions: []clusterv1.Condition{
 				{
 					Type:   clusterv1.ReadyCondition,
@@ -183,25 +183,25 @@ var (
 		},
 	}
 
-	hrpReady2 = &addonsv1alpha1.VerrazzanoReleaseBinding{
+	hrpReady2 = &addonsv1alpha1.VerrazzanoFleetBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hrp-2",
 			Namespace: "test-namespace",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         addonsv1alpha1.GroupVersion.String(),
-					Kind:               "VerrazzanoRelease",
+					Kind:               "VerrazzanoFleet",
 					Name:               "test-hcp",
 					Controller:         pointer.Bool(true),
 					BlockOwnerDeletion: pointer.Bool(true),
 				},
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:                "test-cluster-2",
-				addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+				clusterv1.ClusterNameLabel:              "test-cluster-2",
+				addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 			},
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 			ClusterRef: corev1.ObjectReference{
 				APIVersion: clusterv1.GroupVersion.String(),
 				Kind:       "Cluster",
@@ -216,7 +216,7 @@ var (
 			Values:           "apiServerPort: 5678",
 			Options:          &addonsv1alpha1.HelmOptions{},
 		},
-		Status: addonsv1alpha1.VerrazzanoReleaseBindingStatus{
+		Status: addonsv1alpha1.VerrazzanoFleetBindingStatus{
 			Conditions: []clusterv1.Condition{
 				{
 					Type:   clusterv1.ReadyCondition,
@@ -229,17 +229,17 @@ var (
 
 func TestReconcileNormal(t *testing.T) {
 	testcases := []struct {
-		name              string
-		verrazzanoRelease *addonsv1alpha1.VerrazzanoRelease
-		objects           []client.Object
-		expect            func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoRelease)
-		expectedError     string
+		name            string
+		verrazzanoFleet *addonsv1alpha1.VerrazzanoFleet
+		objects         []client.Object
+		expect          func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoFleet)
+		expectedError   string
 	}{
 		{
-			name:              "successfully select clusters and install VerrazzanoReleaseBindings",
-			verrazzanoRelease: defaultProxy,
-			objects:           []client.Object{cluster1, cluster2, cluster3, cluster4},
-			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoRelease) {
+			name:            "successfully select clusters and install VerrazzanoFleetBindings",
+			verrazzanoFleet: defaultProxy,
+			objects:         []client.Object{cluster1, cluster2, cluster3, cluster4},
+			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoFleet) {
 				g.Expect(hcp.Status.MatchingClusters).To(BeEquivalentTo([]corev1.ObjectReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -254,19 +254,19 @@ func TestReconcileNormal(t *testing.T) {
 						Namespace:  "test-namespace",
 					},
 				}))
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				// This is false as the VerrazzanoReleaseBindings won't be ready until the VerrazzanoReleaseBinding controller runs.
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingsReadyCondition)).To(BeFalse())
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				// This is false as the VerrazzanoFleetBindings won't be ready until the VerrazzanoFleetBinding controller runs.
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingsReadyCondition)).To(BeFalse())
 
 			},
 			expectedError: "",
 		},
 		{
-			name:              "mark VerrazzanoRelease as ready once VerrazzanoReleaseBindings ready conditions are true",
-			verrazzanoRelease: defaultProxy,
-			objects:           []client.Object{cluster1, cluster2, hrpReady1, hrpReady2},
-			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoRelease) {
+			name:            "mark VerrazzanoFleet as ready once VerrazzanoFleetBindings ready conditions are true",
+			verrazzanoFleet: defaultProxy,
+			objects:         []client.Object{cluster1, cluster2, hrpReady1, hrpReady2},
+			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoFleet) {
 				g.Expect(hcp.Status.MatchingClusters).To(BeEquivalentTo([]corev1.ObjectReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -281,29 +281,29 @@ func TestReconcileNormal(t *testing.T) {
 						Namespace:  "test-namespace",
 					},
 				}))
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingsReadyCondition)).To(BeTrue())
-				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoReleaseBindingsReadyCondition)).To(BeTrue())
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingsReadyCondition)).To(BeTrue())
+				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoFleetBindingsReadyCondition)).To(BeTrue())
 				g.Expect(conditions.Has(hcp, clusterv1.ReadyCondition)).To(BeTrue())
 				g.Expect(conditions.IsTrue(hcp, clusterv1.ReadyCondition)).To(BeTrue())
 			},
 			expectedError: "",
 		},
 		{
-			name:              "successfully delete orphaned VerrazzanoReleaseBindings",
-			verrazzanoRelease: defaultProxy,
-			objects:           []client.Object{hrpReady1, hrpReady2},
-			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoRelease) {
+			name:            "successfully delete orphaned VerrazzanoFleetBindings",
+			verrazzanoFleet: defaultProxy,
+			objects:         []client.Object{hrpReady1, hrpReady2},
+			expect: func(g *WithT, c client.Client, hcp *addonsv1alpha1.VerrazzanoFleet) {
 				g.Expect(hcp.Status.MatchingClusters).To(BeEmpty())
-				g.Expect(c.Get(ctx, client.ObjectKey{Namespace: hrpReady1.Namespace, Name: hrpReady1.Name}, &addonsv1alpha1.VerrazzanoReleaseBinding{})).ToNot(Succeed())
-				g.Expect(c.Get(ctx, client.ObjectKey{Namespace: hrpReady2.Namespace, Name: hrpReady2.Name}, &addonsv1alpha1.VerrazzanoReleaseBinding{})).ToNot(Succeed())
+				g.Expect(c.Get(ctx, client.ObjectKey{Namespace: hrpReady1.Namespace, Name: hrpReady1.Name}, &addonsv1alpha1.VerrazzanoFleetBinding{})).ToNot(Succeed())
+				g.Expect(c.Get(ctx, client.ObjectKey{Namespace: hrpReady2.Namespace, Name: hrpReady2.Name}, &addonsv1alpha1.VerrazzanoFleetBinding{})).ToNot(Succeed())
 
 				// Vacuously true as there are no HRPs
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingsReadyCondition)).To(BeTrue())
-				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoReleaseBindingsReadyCondition)).To(BeTrue())
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingsReadyCondition)).To(BeTrue())
+				g.Expect(conditions.IsTrue(hcp, addonsv1alpha1.VerrazzanoFleetBindingsReadyCondition)).To(BeTrue())
 				g.Expect(conditions.Has(hcp, clusterv1.ReadyCondition)).To(BeTrue())
 				g.Expect(conditions.IsTrue(hcp, clusterv1.ReadyCondition)).To(BeTrue())
 
@@ -318,16 +318,16 @@ func TestReconcileNormal(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 			request := reconcile.Request{
-				NamespacedName: util.ObjectKey(tc.verrazzanoRelease),
+				NamespacedName: util.ObjectKey(tc.verrazzanoFleet),
 			}
 
-			tc.objects = append(tc.objects, tc.verrazzanoRelease)
-			r := &VerrazzanoReleaseReconciler{
+			tc.objects = append(tc.objects, tc.verrazzanoFleet)
+			r := &VerrazzanoFleetReconciler{
 				Client: fake.NewClientBuilder().
 					WithScheme(fakeScheme).
 					WithObjects(tc.objects...).
-					WithStatusSubresource(&addonsv1alpha1.VerrazzanoRelease{}).
-					WithStatusSubresource(&addonsv1alpha1.VerrazzanoReleaseBinding{}).
+					WithStatusSubresource(&addonsv1alpha1.VerrazzanoFleet{}).
+					WithStatusSubresource(&addonsv1alpha1.VerrazzanoFleetBinding{}).
 					Build(),
 			}
 			result, err := r.Reconcile(ctx, request)
@@ -339,7 +339,7 @@ func TestReconcileNormal(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(result).To(Equal(reconcile.Result{}))
 
-				hcp := &addonsv1alpha1.VerrazzanoRelease{}
+				hcp := &addonsv1alpha1.VerrazzanoFleet{}
 				g.Expect(r.Client.Get(ctx, request.NamespacedName, hcp)).To(Succeed())
 
 				tc.expect(g, r.Client, hcp)

@@ -11,9 +11,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanorelease
+      path: /mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleet
   failurePolicy: Fail
-  name: verrazzanorelease.kb.io
+  name: verrazzanofleet.kb.io
   rules:
   - apiGroups:
     - addons.cluster.x-k8s.io
@@ -23,7 +23,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - verrazzanoreleases
+    - verrazzanofleets
   sideEffects: None
 - admissionReviewVersions:
   - v1
@@ -31,9 +31,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanoreleasebinding
+      path: /mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleetbinding
   failurePolicy: Fail
-  name: verrazzanoreleasebinding.kb.io
+  name: verrazzanofleetbinding.kb.io
   rules:
   - apiGroups:
     - addons.cluster.x-k8s.io
@@ -43,7 +43,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - verrazzanoreleasebindings
+    - verrazzanofleetbindings
   sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
@@ -58,9 +58,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanorelease
+      path: /validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleet
   failurePolicy: Fail
-  name: vverrazzanorelease.kb.io
+  name: vverrazzanofleet.kb.io
   rules:
   - apiGroups:
     - addons.cluster.x-k8s.io
@@ -70,7 +70,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - verrazzanoreleases
+    - verrazzanofleets
   sideEffects: None
 - admissionReviewVersions:
   - v1
@@ -78,9 +78,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanoreleasebinding
+      path: /validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleetbinding
   failurePolicy: Fail
-  name: vverrazzanoreleasebinding.kb.io
+  name: vverrazzanofleetbinding.kb.io
   rules:
   - apiGroups:
     - addons.cluster.x-k8s.io
@@ -90,5 +90,5 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - verrazzanoreleasebindings
+    - verrazzanofleetbindings
   sideEffects: None

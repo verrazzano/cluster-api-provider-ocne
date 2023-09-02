@@ -1,13 +1,13 @@
-# permissions for end users to view verrazzanoreleases.
+# permissions for end users to view verrazzanofleets.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: verrazzanorelease-viewer-role
+  name: verrazzanofleet-viewer-role
 rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases
+  - verrazzanofleets
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases/status
+  - verrazzanofleets/status
   verbs:
   - get

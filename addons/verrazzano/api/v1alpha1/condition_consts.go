@@ -20,61 +20,61 @@ package v1alpha1
 
 import clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-// VerrazzanoRelease Conditions and Reasons.
+// VerrazzanoFleet Conditions and Reasons.
 const (
-	// VerrazzanoReleaseBindingSpecsUpToDateCondition indicates that the VerrazzanoReleaseBinding specs are up to date with the VerrazzanoRelease specs,
-	// meaning that the VerrazzanoReleaseBindings are created/updated, value template parsing succeeded, and the orphaned VerrazzanoReleaseBindings are deleted.
-	VerrazzanoReleaseBindingSpecsUpToDateCondition clusterv1.ConditionType = "VerrazzanoReleaseBindingSpecsUpToDate"
+	// VerrazzanoFleetBindingSpecsUpToDateCondition indicates that the VerrazzanoFleetBinding specs are up to date with the VerrazzanoFleet specs,
+	// meaning that the VerrazzanoFleetBindings are created/updated, value template parsing succeeded, and the orphaned VerrazzanoFleetBindings are deleted.
+	VerrazzanoFleetBindingSpecsUpToDateCondition clusterv1.ConditionType = "VerrazzanoFleetBindingSpecsUpToDate"
 
-	// VerrazzanoReleaseBindingCreationFailedReason indicates that the VerrazzanoRelease controller failed to create a VerrazzanoReleaseBinding.
-	VerrazzanoReleaseBindingCreationFailedReason = "VerrazzanoReleaseBindingCreationFailed"
+	// VerrazzanoFleetBindingCreationFailedReason indicates that the VerrazzanoFleet controller failed to create a VerrazzanoFleetBinding.
+	VerrazzanoFleetBindingCreationFailedReason = "VerrazzanoFleetBindingCreationFailed"
 
-	// VerrazzanoReleaseBindingDeletionFailedReason indicates that the VerrazzanoRelease controller failed to delete a VerrazzanoReleaseBinding.
-	VerrazzanoReleaseBindingDeletionFailedReason = "VerrazzanoReleaseBindingDeletionFailed"
+	// VerrazzanoFleetBindingDeletionFailedReason indicates that the VerrazzanoFleet controller failed to delete a VerrazzanoFleetBinding.
+	VerrazzanoFleetBindingDeletionFailedReason = "VerrazzanoFleetBindingDeletionFailed"
 
-	// VerrazzanoReleaseBindingReinstallingReason indicates that the VerrazzanoRelease controller is reinstalling a VerrazzanoReleaseBinding.
-	VerrazzanoReleaseBindingReinstallingReason = "VerrazzanoReleaseBindingReinstalling"
+	// VerrazzanoFleetBindingReinstallingReason indicates that the VerrazzanoFleet controller is reinstalling a VerrazzanoFleetBinding.
+	VerrazzanoFleetBindingReinstallingReason = "VerrazzanoFleetBindingReinstalling"
 
-	// ValueParsingFailedReason indicates that the VerrazzanoRelease controller failed to parse the values.
+	// ValueParsingFailedReason indicates that the VerrazzanoFleet controller failed to parse the values.
 	ValueParsingFailedReason = "ValueParsingFailed"
 
-	// ClusterSelectionFailedReason indicates that the VerrazzanoRelease controller failed to select the workload Clusters.
+	// ClusterSelectionFailedReason indicates that the VerrazzanoFleet controller failed to select the workload Clusters.
 	ClusterSelectionFailedReason = "ClusterSelectionFailed"
 
-	// VerrazzanoReleaseBindingsReadyCondition indicates that the VerrazzanoReleaseBindings are ready, meaning that the Helm installation, upgrade
+	// VerrazzanoFleetBindingsReadyCondition indicates that the VerrazzanoFleetBindings are ready, meaning that the Helm installation, upgrade
 	// or deletion is complete.
-	VerrazzanoReleaseBindingsReadyCondition clusterv1.ConditionType = "VerrazzanoReleaseBindingsReady"
+	VerrazzanoFleetBindingsReadyCondition clusterv1.ConditionType = "VerrazzanoFleetBindingsReady"
 )
 
-// VerrazzanoReleaseBinding Conditions and Reasons.
+// VerrazzanoFleetBinding Conditions and Reasons.
 const (
-	// HelmReleaseReadyCondition indicates the current status of the underlying Helm release managed by the VerrazzanoReleaseBinding.
+	// HelmReleaseReadyCondition indicates the current status of the underlying Helm release managed by the VerrazzanoFleetBinding.
 	HelmReleaseReadyCondition clusterv1.ConditionType = "HelmReleaseReady"
 
-	// PreparingToHelmInstallReason indicates that the VerrazzanoReleaseBinding is preparing to install the Helm release.
+	// PreparingToHelmInstallReason indicates that the VerrazzanoFleetBinding is preparing to install the Helm release.
 	PreparingToHelmInstallReason = "PreparingToHelmInstall"
 
-	// HelmReleasePendingReason indicates that the VerrazzanoReleaseBinding is pending either install, upgrade, or rollback.
+	// HelmReleasePendingReason indicates that the VerrazzanoFleetBinding is pending either install, upgrade, or rollback.
 	HelmReleasePendingReason = "HelmReleasePending"
 
-	// HelmInstallOrUpgradeFailedReason indicates that the VerrazzanoReleaseBinding failed to install or upgrade the Helm release.
+	// HelmInstallOrUpgradeFailedReason indicates that the VerrazzanoFleetBinding failed to install or upgrade the Helm release.
 	HelmInstallOrUpgradeFailedReason = "HelmInstallOrUpgradeFailed"
 
-	// HelmReleaseDeletionFailedReason is indicates that the VerrazzanoReleaseBinding failed to delete the Helm release.
+	// HelmReleaseDeletionFailedReason is indicates that the VerrazzanoFleetBinding failed to delete the Helm release.
 	HelmReleaseDeletionFailedReason = "HelmReleaseDeletionFailed"
 
-	// HelmReleaseDeletedReason indicates that the VerrazzanoReleaseBinding deleted the Helm release.
+	// HelmReleaseDeletedReason indicates that the VerrazzanoFleetBinding deleted the Helm release.
 	HelmReleaseDeletedReason = "HelmReleaseDeleted"
 
-	// HelmReleaseGetFailedReason indicates that the VerrazzanoReleaseBinding failed to get the Helm release.
+	// HelmReleaseGetFailedReason indicates that the VerrazzanoFleetBinding failed to get the Helm release.
 	HelmReleaseGetFailedReason = "HelmReleaseGetFailed"
 
 	// ClusterAvailableCondition indicates that the Cluster to install the Helm release on is available.
 	ClusterAvailableCondition clusterv1.ConditionType = "ClusterAvailable"
 
-	// GetClusterFailedReason indicates that the VerrazzanoReleaseBinding failed to get the Cluster.
+	// GetClusterFailedReason indicates that the VerrazzanoFleetBinding failed to get the Cluster.
 	GetClusterFailedReason = "GetClusterFailed"
 
-	// GetKubeconfigFailedReason indicates that the VerrazzanoReleaseBinding failed to get the kubeconfig for the Cluster.
+	// GetKubeconfigFailedReason indicates that the VerrazzanoFleetBinding failed to get the kubeconfig for the Cluster.
 	GetKubeconfigFailedReason = "GetKubeconfigFailed"
 )

@@ -22,7 +22,7 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleasebindings
+  - verrazzanofleetbindings
   verbs:
   - create
   - delete
@@ -34,13 +34,13 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleasebindings/finalizers
+  - verrazzanofleetbindings/finalizers
   verbs:
   - update
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleasebindings/status
+  - verrazzanofleetbindings/status
   verbs:
   - get
   - patch
@@ -48,7 +48,7 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases
+  - verrazzanofleets
   verbs:
   - create
   - delete
@@ -60,13 +60,13 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases/finalizers
+  - verrazzanofleets/finalizers
   verbs:
   - update
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases/status
+  - verrazzanofleets/status
   verbs:
   - get
   - patch

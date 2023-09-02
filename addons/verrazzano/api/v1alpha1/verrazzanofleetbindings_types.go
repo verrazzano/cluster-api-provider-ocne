@@ -25,19 +25,19 @@ import (
 )
 
 const (
-	// VerrazzanoReleaseBindingFinalizer is the finalizer used by the VerrazzanoReleaseBinding controller to cleanup add-on resources when
-	// a VerrazzanoReleaseBinding is being deleted.
-	VerrazzanoReleaseBindingFinalizer = "verrazzanoreleasebinding.addons.cluster.x-k8s.io"
+	// VerrazzanoFleetBindingFinalizer is the finalizer used by the VerrazzanoFleetBinding controller to cleanup add-on resources when
+	// a VerrazzanoFleetBinding is being deleted.
+	VerrazzanoFleetBindingFinalizer = "verrazzanofleetbinding.addons.cluster.x-k8s.io"
 
-	// VerrazzanoReleaseLabelName is the label signifying which VerrazzanoRelease a VerrazzanoReleaseBinding is associated with.
-	VerrazzanoReleaseLabelName = "verrazzanoreleasebinding.addons.cluster.x-k8s.io/verrazzanorelease-name"
+	// VerrazzanoFleetLabelName is the label signifying which VerrazzanoFleet a VerrazzanoFleetBinding is associated with.
+	VerrazzanoFleetLabelName = "verrazzanofleetbinding.addons.cluster.x-k8s.io/verrazzanofleet-name"
 
 	// IsReleaseNameGeneratedAnnotation is the annotation signifying the Helm release name is auto-generated.
-	IsReleaseNameGeneratedAnnotation = "verrazzanoreleasebinding.addons.cluster.x-k8s.io/is-release-name-generated"
+	IsReleaseNameGeneratedAnnotation = "verrazzanofleetbinding.addons.cluster.x-k8s.io/is-release-name-generated"
 )
 
-// VerrazzanoReleaseBindingSpec defines the desired state of VerrazzanoReleaseBinding.
-type VerrazzanoReleaseBindingSpec struct {
+// VerrazzanoFleetBindingSpec defines the desired state of VerrazzanoFleetBinding.
+type VerrazzanoFleetBindingSpec struct {
 	// ClusterRef is a reference to the Cluster to install the Helm release on.
 	ClusterRef corev1.ObjectReference `json:"clusterRef"`
 
@@ -74,9 +74,9 @@ type VerrazzanoReleaseBindingSpec struct {
 	Options *HelmOptions `json:"options,omitempty"`
 }
 
-// VerrazzanoReleaseBindingStatus defines the observed state of VerrazzanoReleaseBinding.
-type VerrazzanoReleaseBindingStatus struct {
-	// Conditions defines current state of the VerrazzanoReleaseBinding.
+// VerrazzanoFleetBindingStatus defines the observed state of VerrazzanoFleetBinding.
+type VerrazzanoFleetBindingStatus struct {
+	// Conditions defines current state of the VerrazzanoFleetBinding.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
@@ -91,61 +91,61 @@ type VerrazzanoReleaseBindingStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".spec.clusterRef.name",description="Cluster to which this VerrazzanoReleaseBinding belongs"
+// +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".spec.clusterRef.name",description="Cluster to which this VerrazzanoFleetBinding belongs"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].reason"
 // +kubebuilder:printcolumn:name="Message",type="string",priority=1,JSONPath=".status.conditions[?(@.type=='Ready')].message"
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status"
 // +kubebuilder:printcolumn:name="Revision",type="string",JSONPath=".status.revision"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of VerrazzanoRelease"
-// +kubebuilder:resource:shortName=vrb;vrbs,scope=Namespaced,categories=cluster-api
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of VerrazzanoFleet"
+// +kubebuilder:resource:shortName=vfb;vfbs,scope=Namespaced,categories=cluster-api
 
-// VerrazzanoReleaseBinding is the Schema for the verrazzanoreleasebindings API
-type VerrazzanoReleaseBinding struct {
+// VerrazzanoFleetBinding is the Schema for the verrazzanofleetbindings API
+type VerrazzanoFleetBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VerrazzanoReleaseBindingSpec   `json:"spec,omitempty"`
-	Status VerrazzanoReleaseBindingStatus `json:"status,omitempty"`
+	Spec   VerrazzanoFleetBindingSpec   `json:"spec,omitempty"`
+	Status VerrazzanoFleetBindingStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// VerrazzanoReleaseBindingList contains a list of VerrazzanoReleaseBinding
-type VerrazzanoReleaseBindingList struct {
+// VerrazzanoFleetBindingList contains a list of VerrazzanoFleetBinding
+type VerrazzanoFleetBindingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VerrazzanoReleaseBinding `json:"items"`
+	Items           []VerrazzanoFleetBinding `json:"items"`
 }
 
-// GetConditions returns the list of conditions for an VerrazzanoReleaseBinding API object.
-func (r *VerrazzanoReleaseBinding) GetConditions() clusterv1.Conditions {
+// GetConditions returns the list of conditions for an VerrazzanoFleetBinding API object.
+func (r *VerrazzanoFleetBinding) GetConditions() clusterv1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an VerrazzanoReleaseBinding object.
-func (r *VerrazzanoReleaseBinding) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions will set the given conditions on an VerrazzanoFleetBinding object.
+func (r *VerrazzanoFleetBinding) SetConditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
 
-// SetReleaseStatus will set the given status on an VerrazzanoReleaseBinding object.
-func (r *VerrazzanoReleaseBinding) SetReleaseStatus(status string) {
+// SetReleaseStatus will set the given status on an VerrazzanoFleetBinding object.
+func (r *VerrazzanoFleetBinding) SetReleaseStatus(status string) {
 	r.Status.Status = status // See pkg/release/status.go in Helm for possible values
 	// r.Status.Status = release.Info.Status.String() // See pkg/release/status.go in Helm for possible values
 }
 
-// SetReleaseRevision will set the given revision on an VerrazzanoReleaseBinding object.
-func (r *VerrazzanoReleaseBinding) SetReleaseRevision(version int) {
+// SetReleaseRevision will set the given revision on an VerrazzanoFleetBinding object.
+func (r *VerrazzanoFleetBinding) SetReleaseRevision(version int) {
 	r.Status.Revision = version
 }
 
-// SetReleaseName will set the given name on an VerrazzanoReleaseBinding object. This is used if the release name is auto-generated by Helm.
-func (r *VerrazzanoReleaseBinding) SetReleaseName(name string) {
+// SetReleaseName will set the given name on an VerrazzanoFleetBinding object. This is used if the release name is auto-generated by Helm.
+func (r *VerrazzanoFleetBinding) SetReleaseName(name string) {
 	if r.Spec.ReleaseName == "" {
 		r.Spec.ReleaseName = name
 	}
 }
 
 func init() {
-	SchemeBuilder.Register(&VerrazzanoReleaseBinding{}, &VerrazzanoReleaseBindingList{})
+	SchemeBuilder.Register(&VerrazzanoFleetBinding{}, &VerrazzanoFleetBindingList{})
 }

@@ -31,9 +31,9 @@ import (
 )
 
 // log is for logging in this package.
-var verrazzanoreleasebindinglog = logf.Log.WithName("verrazzanoreleasebinding-resource")
+var verrazzanofleetbindinglog = logf.Log.WithName("verrazzanofleetbinding-resource")
 
-func (r *VerrazzanoReleaseBinding) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *VerrazzanoFleetBinding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -41,13 +41,13 @@ func (r *VerrazzanoReleaseBinding) SetupWebhookWithManager(mgr ctrl.Manager) err
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-//+kubebuilder:webhook:path=/mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanoreleasebinding,mutating=true,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanoreleasebindings,verbs=create;update,versions=v1alpha1,name=verrazzanoreleasebinding.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleetbinding,mutating=true,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanofleetbindings,verbs=create;update,versions=v1alpha1,name=verrazzanofleetbinding.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &VerrazzanoReleaseBinding{}
+var _ webhook.Defaulter = &VerrazzanoFleetBinding{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (p *VerrazzanoReleaseBinding) Default() {
-	verrazzanoreleasebindinglog.Info("default", "name", p.Name)
+func (p *VerrazzanoFleetBinding) Default() {
+	verrazzanofleetbindinglog.Info("default", "name", p.Name)
 
 	if p.Spec.ReleaseNamespace == "" {
 		p.Spec.ReleaseNamespace = "default"
@@ -55,24 +55,24 @@ func (p *VerrazzanoReleaseBinding) Default() {
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanoreleasebinding,mutating=false,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanoreleasebindings,verbs=create;update,versions=v1alpha1,name=vverrazzanoreleasebinding.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleetbinding,mutating=false,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanofleetbindings,verbs=create;update,versions=v1alpha1,name=vverrazzanofleetbinding.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &VerrazzanoReleaseBinding{}
+var _ webhook.Validator = &VerrazzanoFleetBinding{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoReleaseBinding) ValidateCreate() (admission.Warnings, error) {
-	verrazzanoreleasebindinglog.Info("validate create", "name", r.Name)
+func (r *VerrazzanoFleetBinding) ValidateCreate() (admission.Warnings, error) {
+	verrazzanofleetbindinglog.Info("validate create", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object creation.
 	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoReleaseBinding) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
-	verrazzanoreleasebindinglog.Info("validate update", "name", r.Name)
+func (r *VerrazzanoFleetBinding) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
+	verrazzanofleetbindinglog.Info("validate update", "name", r.Name)
 
 	var allErrs field.ErrorList
-	old := oldRaw.(*VerrazzanoReleaseBinding)
+	old := oldRaw.(*VerrazzanoFleetBinding)
 
 	if !reflect.DeepEqual(r.Spec.RepoURL, old.Spec.RepoURL) {
 		allErrs = append(allErrs,
@@ -98,15 +98,15 @@ func (r *VerrazzanoReleaseBinding) ValidateUpdate(oldRaw runtime.Object) (admiss
 	// TODO: add webhook for ReleaseName. Currently it's being set if the release name is generated.
 
 	if len(allErrs) > 0 {
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("VerrazzanoReleaseBinding").GroupKind(), r.Name, allErrs)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("VerrazzanoFleetBinding").GroupKind(), r.Name, allErrs)
 	}
 
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoReleaseBinding) ValidateDelete() (admission.Warnings, error) {
-	verrazzanoreleasebindinglog.Info("validate delete", "name", r.Name)
+func (r *VerrazzanoFleetBinding) ValidateDelete() (admission.Warnings, error) {
+	verrazzanofleetbindinglog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil

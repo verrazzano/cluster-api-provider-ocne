@@ -36,7 +36,7 @@ import (
 
 // initializeBuiltins takes a map of keys to object references, attempts to get the referenced objects, and returns a map of keys to the actual objects.
 // These objects are a map[string]interface{} so that they can be used as values in the template.
-func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, spec addonsv1alpha1.VerrazzanoReleaseSpec, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
+func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap map[string]corev1.ObjectReference, spec addonsv1alpha1.VerrazzanoFleetSpec, cluster *clusterv1.Cluster) (map[string]interface{}, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	valueLookUp := make(map[string]interface{})
@@ -54,7 +54,7 @@ func initializeBuiltins(ctx context.Context, c ctrlClient.Client, referenceMap m
 }
 
 // ParseValues parses the values template and returns the expanded template. It attempts to populate a map of supported templating objects.
-func ParseValues(ctx context.Context, c ctrlClient.Client, spec addonsv1alpha1.VerrazzanoReleaseSpec, cluster *clusterv1.Cluster) (string, error) {
+func ParseValues(ctx context.Context, c ctrlClient.Client, spec addonsv1alpha1.VerrazzanoFleetSpec, cluster *clusterv1.Cluster) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Rendering templating in values:", "values", spec.ValuesTemplate)

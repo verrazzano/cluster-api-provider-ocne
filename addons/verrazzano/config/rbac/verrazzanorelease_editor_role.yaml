@@ -1,13 +1,13 @@
-# permissions for end users to edit verrazzanoreleases.
+# permissions for end users to edit verrazzanofleets.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: verrazzanorelease-editor-role
+  name: verrazzanofleet-editor-role
 rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases
+  - verrazzanofleets
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - addons.cluster.x-k8s.io
   resources:
-  - verrazzanoreleases/status
+  - verrazzanofleets/status
   verbs:
   - get

@@ -16,7 +16,7 @@ limitations under the License.
 
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package verrazzanorelease
+package verrazzanofleet
 
 import (
 	"fmt"
@@ -35,19 +35,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var _ reconcile.Reconciler = &VerrazzanoReleaseReconciler{}
+var _ reconcile.Reconciler = &VerrazzanoFleetReconciler{}
 
 var (
-	fakeHelmChartProxy1 = &addonsv1alpha1.VerrazzanoRelease{
+	fakeHelmChartProxy1 = &addonsv1alpha1.VerrazzanoFleet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: addonsv1alpha1.GroupVersion.String(),
-			Kind:       "VerrazzanoRelease",
+			Kind:       "VerrazzanoFleet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hcp",
 			Namespace: "test-namespace",
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 			ReleaseName:      "test-release-name",
 			ChartName:        "test-chart-name",
 			RepoURL:          "https://test-repo-url",
@@ -58,16 +58,16 @@ var (
 		},
 	}
 
-	fakeHelmChartProxy2 = &addonsv1alpha1.VerrazzanoRelease{
+	fakeHelmChartProxy2 = &addonsv1alpha1.VerrazzanoFleet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: addonsv1alpha1.GroupVersion.String(),
-			Kind:       "VerrazzanoRelease",
+			Kind:       "VerrazzanoFleet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hcp",
 			Namespace: "test-namespace",
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 			ReleaseName:      "test-release-name",
 			ChartName:        "test-chart-name",
 			RepoURL:          "https://test-repo-url",
@@ -78,16 +78,16 @@ var (
 		},
 	}
 
-	fakeInvalidHelmChartProxy = &addonsv1alpha1.VerrazzanoRelease{
+	fakeInvalidHelmChartProxy = &addonsv1alpha1.VerrazzanoFleet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: addonsv1alpha1.GroupVersion.String(),
-			Kind:       "VerrazzanoRelease",
+			Kind:       "VerrazzanoFleet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hcp",
 			Namespace: "test-namespace",
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 			ReleaseName:      "test-release-name",
 			ChartName:        "test-chart-name",
 			RepoURL:          "https://test-repo-url",
@@ -98,16 +98,16 @@ var (
 		},
 	}
 
-	fakeReinstallHelmChartProxy = &addonsv1alpha1.VerrazzanoRelease{
+	fakeReinstallHelmChartProxy = &addonsv1alpha1.VerrazzanoFleet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: addonsv1alpha1.GroupVersion.String(),
-			Kind:       "VerrazzanoRelease",
+			Kind:       "VerrazzanoFleet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-hcp",
 			Namespace: "test-namespace",
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 			ReleaseName:      "other-release-name",
 			ChartName:        "other-chart-name",
 			RepoURL:          "https://other-repo-url",
@@ -156,25 +156,25 @@ var (
 		},
 	}
 
-	fakeVerrazzanoReleaseBinding = &addonsv1alpha1.VerrazzanoReleaseBinding{
+	fakeVerrazzanoFleetBinding = &addonsv1alpha1.VerrazzanoFleetBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-generated-name",
 			Namespace: "test-namespace",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         addonsv1alpha1.GroupVersion.String(),
-					Kind:               "VerrazzanoRelease",
+					Kind:               "VerrazzanoFleet",
 					Name:               "test-hcp",
 					Controller:         pointer.Bool(true),
 					BlockOwnerDeletion: pointer.Bool(true),
 				},
 			},
 			Labels: map[string]string{
-				clusterv1.ClusterNameLabel:                "test-cluster",
-				addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+				clusterv1.ClusterNameLabel:              "test-cluster",
+				addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 			},
 		},
-		Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+		Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 			ClusterRef: corev1.ObjectReference{
 				APIVersion: clusterv1.GroupVersion.String(),
 				Kind:       "Cluster",
@@ -194,57 +194,57 @@ var (
 
 func TestReconcileForCluster(t *testing.T) {
 	testcases := []struct {
-		name                                  string
-		verrazzanoRelease                     *addonsv1alpha1.VerrazzanoRelease
-		existingVerrazzanoReleaseBinding      *addonsv1alpha1.VerrazzanoReleaseBinding
-		cluster                               *clusterv1.Cluster
-		expect                                func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding)
-		expectVerrazzanoReleaseBindingToExist bool
-		expectedError                         string
+		name                                string
+		verrazzanoFleet                     *addonsv1alpha1.VerrazzanoFleet
+		existingVerrazzanoFleetBinding      *addonsv1alpha1.VerrazzanoFleetBinding
+		cluster                             *clusterv1.Cluster
+		expect                              func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding)
+		expectVerrazzanoFleetBindingToExist bool
+		expectedError                       string
 	}{
 		{
-			name:                                  "creates a VerrazzanoReleaseBinding for a VerrazzanoRelease",
-			verrazzanoRelease:                     fakeHelmChartProxy1,
-			cluster:                               fakeCluster1,
-			expectVerrazzanoReleaseBindingToExist: true,
-			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding) {
+			name:                                "creates a VerrazzanoFleetBinding for a VerrazzanoFleet",
+			verrazzanoFleet:                     fakeHelmChartProxy1,
+			cluster:                             fakeCluster1,
+			expectVerrazzanoFleetBindingToExist: true,
+			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding) {
 				g.Expect(hrp.Spec.Values).To(Equal("apiServerPort: 6443"))
 
 			},
 			expectedError: "",
 		},
 		{
-			name:                                  "updates a VerrazzanoReleaseBinding when Cluster value changes",
-			verrazzanoRelease:                     fakeHelmChartProxy1,
-			existingVerrazzanoReleaseBinding:      fakeVerrazzanoReleaseBinding,
-			cluster:                               fakeCluster2,
-			expectVerrazzanoReleaseBindingToExist: true,
-			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding) {
+			name:                                "updates a VerrazzanoFleetBinding when Cluster value changes",
+			verrazzanoFleet:                     fakeHelmChartProxy1,
+			existingVerrazzanoFleetBinding:      fakeVerrazzanoFleetBinding,
+			cluster:                             fakeCluster2,
+			expectVerrazzanoFleetBindingToExist: true,
+			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding) {
 				g.Expect(hrp.Spec.Values).To(Equal("apiServerPort: 1234"))
 
 			},
 			expectedError: "",
 		},
 		{
-			name:                                  "updates a VerrazzanoReleaseBinding when valuesTemplate value changes",
-			verrazzanoRelease:                     fakeHelmChartProxy2,
-			existingVerrazzanoReleaseBinding:      fakeVerrazzanoReleaseBinding,
-			cluster:                               fakeCluster2,
-			expectVerrazzanoReleaseBindingToExist: true,
-			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding) {
+			name:                                "updates a VerrazzanoFleetBinding when valuesTemplate value changes",
+			verrazzanoFleet:                     fakeHelmChartProxy2,
+			existingVerrazzanoFleetBinding:      fakeVerrazzanoFleetBinding,
+			cluster:                             fakeCluster2,
+			expectVerrazzanoFleetBindingToExist: true,
+			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding) {
 				g.Expect(hrp.Spec.Values).To(Equal("cidrBlockList: 10.0.0.0/16,20.0.0.0/16"))
 
 			},
 			expectedError: "",
 		},
 		{
-			name:                                  "set condition when failing to parse values for a VerrazzanoRelease",
-			verrazzanoRelease:                     fakeInvalidHelmChartProxy,
-			cluster:                               fakeCluster1,
-			expectVerrazzanoReleaseBindingToExist: true,
-			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding) {
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				specsReady := conditions.Get(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)
+			name:                                "set condition when failing to parse values for a VerrazzanoFleet",
+			verrazzanoFleet:                     fakeInvalidHelmChartProxy,
+			cluster:                             fakeCluster1,
+			expectVerrazzanoFleetBindingToExist: true,
+			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding) {
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				specsReady := conditions.Get(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)
 				g.Expect(specsReady.Status).To(Equal(corev1.ConditionFalse))
 				g.Expect(specsReady.Reason).To(Equal(addonsv1alpha1.ValueParsingFailedReason))
 				g.Expect(specsReady.Severity).To(Equal(clusterv1.ConditionSeverityError))
@@ -253,18 +253,18 @@ func TestReconcileForCluster(t *testing.T) {
 			expectedError: "failed to parse values on cluster test-cluster: template: test-chart-name-test-cluster:1: bad character U+002D '-'",
 		},
 		{
-			name:                                  "set condition for reinstalling when requeueing after a deletion",
-			verrazzanoRelease:                     fakeReinstallHelmChartProxy,
-			existingVerrazzanoReleaseBinding:      fakeVerrazzanoReleaseBinding,
-			cluster:                               fakeCluster1,
-			expectVerrazzanoReleaseBindingToExist: false,
-			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoRelease, hrp *addonsv1alpha1.VerrazzanoReleaseBinding) {
-				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)).To(BeTrue())
-				specsReady := conditions.Get(hcp, addonsv1alpha1.VerrazzanoReleaseBindingSpecsUpToDateCondition)
+			name:                                "set condition for reinstalling when requeueing after a deletion",
+			verrazzanoFleet:                     fakeReinstallHelmChartProxy,
+			existingVerrazzanoFleetBinding:      fakeVerrazzanoFleetBinding,
+			cluster:                             fakeCluster1,
+			expectVerrazzanoFleetBindingToExist: false,
+			expect: func(g *WithT, hcp *addonsv1alpha1.VerrazzanoFleet, hrp *addonsv1alpha1.VerrazzanoFleetBinding) {
+				g.Expect(conditions.Has(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)).To(BeTrue())
+				specsReady := conditions.Get(hcp, addonsv1alpha1.VerrazzanoFleetBindingSpecsUpToDateCondition)
 				g.Expect(specsReady.Status).To(Equal(corev1.ConditionFalse))
-				g.Expect(specsReady.Reason).To(Equal(addonsv1alpha1.VerrazzanoReleaseBindingReinstallingReason))
+				g.Expect(specsReady.Reason).To(Equal(addonsv1alpha1.VerrazzanoFleetBindingReinstallingReason))
 				g.Expect(specsReady.Severity).To(Equal(clusterv1.ConditionSeverityInfo))
-				g.Expect(specsReady.Message).To(Equal(fmt.Sprintf("VerrazzanoReleaseBinding on cluster '%s' successfully deleted, preparing to reinstall", fakeCluster1.Name)))
+				g.Expect(specsReady.Message).To(Equal(fmt.Sprintf("VerrazzanoFleetBinding on cluster '%s' successfully deleted, preparing to reinstall", fakeCluster1.Name)))
 			},
 			expectedError: "",
 		},
@@ -276,68 +276,68 @@ func TestReconcileForCluster(t *testing.T) {
 			g := NewWithT(t)
 			t.Parallel()
 
-			objects := []client.Object{tc.verrazzanoRelease, tc.cluster}
-			if tc.existingVerrazzanoReleaseBinding != nil {
-				objects = append(objects, tc.existingVerrazzanoReleaseBinding)
+			objects := []client.Object{tc.verrazzanoFleet, tc.cluster}
+			if tc.existingVerrazzanoFleetBinding != nil {
+				objects = append(objects, tc.existingVerrazzanoFleetBinding)
 			}
-			r := &VerrazzanoReleaseReconciler{
+			r := &VerrazzanoFleetReconciler{
 				Client: fake.NewClientBuilder().
 					WithScheme(fakeScheme).
 					WithObjects(objects...).
-					WithStatusSubresource(&addonsv1alpha1.VerrazzanoRelease{}).
-					WithStatusSubresource(&addonsv1alpha1.VerrazzanoReleaseBinding{}).
+					WithStatusSubresource(&addonsv1alpha1.VerrazzanoFleet{}).
+					WithStatusSubresource(&addonsv1alpha1.VerrazzanoFleetBinding{}).
 					Build(),
 			}
-			err := r.reconcileForCluster(ctx, tc.verrazzanoRelease, *tc.cluster)
+			err := r.reconcileForCluster(ctx, tc.verrazzanoFleet, *tc.cluster)
 
 			if tc.expectedError != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err).To(MatchError(tc.expectedError), err.Error())
 			} else {
 				g.Expect(err).NotTo(HaveOccurred())
-				var hrp *addonsv1alpha1.VerrazzanoReleaseBinding
+				var hrp *addonsv1alpha1.VerrazzanoFleetBinding
 				var err error
-				if tc.expectVerrazzanoReleaseBindingToExist {
-					hrp, err = r.getExistingVerrazzanoReleaseBinding(ctx, tc.verrazzanoRelease, tc.cluster)
+				if tc.expectVerrazzanoFleetBindingToExist {
+					hrp, err = r.getExistingVerrazzanoFleetBinding(ctx, tc.verrazzanoFleet, tc.cluster)
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(hrp).NotTo(BeNil())
 				}
-				tc.expect(g, tc.verrazzanoRelease, hrp)
+				tc.expect(g, tc.verrazzanoFleet, hrp)
 			}
 		})
 	}
 }
 
-func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
+func TestConstructVerrazzanoFleetBinding(t *testing.T) {
 	testCases := []struct {
-		name              string
-		existing          *addonsv1alpha1.VerrazzanoReleaseBinding
-		verrazzanoRelease *addonsv1alpha1.VerrazzanoRelease
-		parsedValues      string
-		cluster           *clusterv1.Cluster
-		expected          *addonsv1alpha1.VerrazzanoReleaseBinding
+		name            string
+		existing        *addonsv1alpha1.VerrazzanoFleetBinding
+		verrazzanoFleet *addonsv1alpha1.VerrazzanoFleet
+		parsedValues    string
+		cluster         *clusterv1.Cluster
+		expected        *addonsv1alpha1.VerrazzanoFleetBinding
 	}{
 		{
 			name: "existing up to date, nothing to do",
-			existing: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			existing: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-generated-name",
 					Namespace: "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -353,16 +353,16 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Options:          &addonsv1alpha1.HelmOptions{},
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: addonsv1alpha1.GroupVersion.String(),
-					Kind:       "VerrazzanoRelease",
+					Kind:       "VerrazzanoFleet",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-hcp",
 					Namespace: "test-namespace",
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ReleaseName:      "test-release-name",
 					ChartName:        "test-chart-name",
 					RepoURL:          "https://test-repo-url",
@@ -387,16 +387,16 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 		{
 			name:     "construct helm release proxy without existing",
 			existing: nil,
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: addonsv1alpha1.GroupVersion.String(),
-					Kind:       "VerrazzanoRelease",
+					Kind:       "VerrazzanoFleet",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-hcp",
 					Namespace: "test-namespace",
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ReleaseName:      "test-release-name",
 					ChartName:        "test-chart-name",
 					RepoURL:          "https://test-repo-url",
@@ -415,25 +415,25 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
-			expected: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			expected: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "test-chart-name-test-cluster-",
 					Namespace:    "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -451,25 +451,25 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 		},
 		{
 			name: "version changed",
-			existing: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			existing: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-generated-name",
 					Namespace: "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -485,16 +485,16 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Options:          &addonsv1alpha1.HelmOptions{},
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: addonsv1alpha1.GroupVersion.String(),
-					Kind:       "VerrazzanoRelease",
+					Kind:       "VerrazzanoFleet",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-hcp",
 					Namespace: "test-namespace",
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ReleaseName:      "test-release-name",
 					ChartName:        "test-chart-name",
 					RepoURL:          "https://test-repo-url",
@@ -514,25 +514,25 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
-			expected: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			expected: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-generated-name",
 					Namespace: "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -551,25 +551,25 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 		},
 		{
 			name: "parsed values changed",
-			existing: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			existing: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-generated-name",
 					Namespace: "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -585,16 +585,16 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Options:          &addonsv1alpha1.HelmOptions{},
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: addonsv1alpha1.GroupVersion.String(),
-					Kind:       "VerrazzanoRelease",
+					Kind:       "VerrazzanoFleet",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-hcp",
 					Namespace: "test-namespace",
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ReleaseName:      "test-release-name",
 					ChartName:        "test-chart-name",
 					RepoURL:          "https://test-repo-url",
@@ -614,25 +614,25 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
-			expected: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			expected: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-generated-name",
 					Namespace: "test-namespace",
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion:         addonsv1alpha1.GroupVersion.String(),
-							Kind:               "VerrazzanoRelease",
+							Kind:               "VerrazzanoFleet",
 							Name:               "test-hcp",
 							Controller:         pointer.Bool(true),
 							BlockOwnerDeletion: pointer.Bool(true),
 						},
 					},
 					Labels: map[string]string{
-						clusterv1.ClusterNameLabel:                "test-cluster",
-						addonsv1alpha1.VerrazzanoReleaseLabelName: "test-hcp",
+						clusterv1.ClusterNameLabel:              "test-cluster",
+						addonsv1alpha1.VerrazzanoFleetLabelName: "test-hcp",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ClusterRef: corev1.ObjectReference{
 						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
@@ -657,7 +657,7 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			result := constructVerrazzanoReleaseBinding(tc.existing, tc.verrazzanoRelease, tc.parsedValues, tc.cluster)
+			result := constructVerrazzanoFleetBinding(tc.existing, tc.verrazzanoFleet, tc.parsedValues, tc.cluster)
 			diff := cmp.Diff(tc.expected, result)
 			g.Expect(diff).To(BeEmpty())
 		})
@@ -666,23 +666,23 @@ func TestConstructVerrazzanoReleaseBinding(t *testing.T) {
 
 func TestShouldReinstallHelmRelease(t *testing.T) {
 	testCases := []struct {
-		name                     string
-		verrazzanoReleaseBinding *addonsv1alpha1.VerrazzanoReleaseBinding
-		verrazzanoRelease        *addonsv1alpha1.VerrazzanoRelease
-		reinstall                bool
+		name                   string
+		verrazzanoFleetBinding *addonsv1alpha1.VerrazzanoFleetBinding
+		verrazzanoFleet        *addonsv1alpha1.VerrazzanoFleet
+		reinstall              bool
 	}{
 		{
 			name: "nothing to do",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
 					ReleaseNamespace: "test-namespace",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
@@ -693,16 +693,16 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "chart name changed, should reinstall",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
 					ReleaseNamespace: "test-namespace",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:        "another-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
@@ -713,16 +713,16 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "repo url changed, should reinstall",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
 					ReleaseNamespace: "test-namespace",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://another-repo-url",
 					ReleaseName:      "test-release-name",
@@ -733,20 +733,20 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "generated release name changed, should reinstall",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "generated-release-name",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "some-other-release-name",
@@ -756,20 +756,20 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "generated release name unchanged, nothing to do",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "generated-release-name",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "",
@@ -779,20 +779,20 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "non-generated release name changed, should reinstall",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "test-release-name",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "some-other-release-name",
@@ -802,21 +802,21 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		},
 		{
 			name: "release namespace changed, should reinstall",
-			verrazzanoReleaseBinding: &addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBinding: &addonsv1alpha1.VerrazzanoFleetBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
 					},
 				},
-				Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+				Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
 					ReleaseNamespace: "test-namespace",
 				},
 			},
-			verrazzanoRelease: &addonsv1alpha1.VerrazzanoRelease{
-				Spec: addonsv1alpha1.VerrazzanoReleaseSpec{
+			verrazzanoFleet: &addonsv1alpha1.VerrazzanoFleet{
+				Spec: addonsv1alpha1.VerrazzanoFleetSpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",
 					ReleaseName:      "test-release-name",
@@ -833,18 +833,18 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			result := shouldReinstallHelmRelease(ctx, tc.verrazzanoReleaseBinding, tc.verrazzanoRelease)
+			result := shouldReinstallHelmRelease(ctx, tc.verrazzanoFleetBinding, tc.verrazzanoFleet)
 			g.Expect(result).To(Equal(tc.reinstall))
 		})
 	}
 }
 
-func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
+func TestGetOrphanedVerrazzanoFleetBindings(t *testing.T) {
 	testCases := []struct {
-		name                      string
-		selectedClusters          []clusterv1.Cluster
-		verrazzanoReleaseBindings []addonsv1alpha1.VerrazzanoReleaseBinding
-		releasesToDelete          []addonsv1alpha1.VerrazzanoReleaseBinding
+		name                    string
+		selectedClusters        []clusterv1.Cluster
+		verrazzanoFleetBindings []addonsv1alpha1.VerrazzanoFleetBinding
+		releasesToDelete        []addonsv1alpha1.VerrazzanoFleetBinding
 	}{
 		{
 			name: "nothing to do",
@@ -862,9 +862,9 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 			},
-			verrazzanoReleaseBindings: []addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBindings: []addonsv1alpha1.VerrazzanoFleetBinding{
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-1",
 							Namespace: "test-namespace-1",
@@ -872,7 +872,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-2",
 							Namespace: "test-namespace-2",
@@ -880,7 +880,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 			},
-			releasesToDelete: []addonsv1alpha1.VerrazzanoReleaseBinding{},
+			releasesToDelete: []addonsv1alpha1.VerrazzanoFleetBinding{},
 		},
 		{
 			name: "delete one release",
@@ -892,9 +892,9 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 			},
-			verrazzanoReleaseBindings: []addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBindings: []addonsv1alpha1.VerrazzanoFleetBinding{
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-1",
 							Namespace: "test-namespace-1",
@@ -902,7 +902,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-2",
 							Namespace: "test-namespace-2",
@@ -910,9 +910,9 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 			},
-			releasesToDelete: []addonsv1alpha1.VerrazzanoReleaseBinding{
+			releasesToDelete: []addonsv1alpha1.VerrazzanoFleetBinding{
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-2",
 							Namespace: "test-namespace-2",
@@ -924,9 +924,9 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 		{
 			name:             "delete both releases",
 			selectedClusters: []clusterv1.Cluster{},
-			verrazzanoReleaseBindings: []addonsv1alpha1.VerrazzanoReleaseBinding{
+			verrazzanoFleetBindings: []addonsv1alpha1.VerrazzanoFleetBinding{
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-1",
 							Namespace: "test-namespace-1",
@@ -934,7 +934,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-2",
 							Namespace: "test-namespace-2",
@@ -942,9 +942,9 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 			},
-			releasesToDelete: []addonsv1alpha1.VerrazzanoReleaseBinding{
+			releasesToDelete: []addonsv1alpha1.VerrazzanoFleetBinding{
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-1",
 							Namespace: "test-namespace-1",
@@ -952,7 +952,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 					},
 				},
 				{
-					Spec: addonsv1alpha1.VerrazzanoReleaseBindingSpec{
+					Spec: addonsv1alpha1.VerrazzanoFleetBindingSpec{
 						ClusterRef: corev1.ObjectReference{
 							Name:      "test-cluster-2",
 							Namespace: "test-namespace-2",
@@ -969,7 +969,7 @@ func TestGetOrphanedVerrazzanoReleaseBindings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			result := getOrphanedVerrazzanoReleaseBindings(ctx, tc.selectedClusters, tc.verrazzanoReleaseBindings)
+			result := getOrphanedVerrazzanoFleetBindings(ctx, tc.selectedClusters, tc.verrazzanoFleetBindings)
 			g.Expect(result).To(Equal(tc.releasesToDelete))
 		})
 	}

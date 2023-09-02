@@ -25,13 +25,13 @@ import (
 )
 
 const (
-	// HelmChartFinalizer is the finalizer used by the VerrazzanoRelease controller to cleanup add-on resources when
-	// a VerrazzanoRelease is being deleted.
-	VerrazzanoReleaseFinalizer = "verrazzanorelease.addons.cluster.x-k8s.io"
+	// HelmChartFinalizer is the finalizer used by the VerrazzanoFleet controller to cleanup add-on resources when
+	// a VerrazzanoFleet is being deleted.
+	VerrazzanoFleetFinalizer = "verrazzanofleet.addons.cluster.x-k8s.io"
 )
 
-// VerrazzanoReleaseSpec defines the desired state of VerrazzanoRelease.
-type VerrazzanoReleaseSpec struct {
+// VerrazzanoFleetSpec defines the desired state of VerrazzanoFleet.
+type VerrazzanoFleetSpec struct {
 	// ClusterSelector selects Clusters in the same namespace with a label that matches the specified label selector. The Helm
 	// chart will be installed on all selected Clusters. If a Cluster is no longer selected, the Helm release will be uninstalled.
 	ClusterSelector metav1.LabelSelector `json:"clusterSelector"`
@@ -129,7 +129,7 @@ type HelmOptions struct {
 
 type HelmInstallOptions struct {
 	// CreateNamespace indicates the Helm install/upgrade action to create the
-	// VerrazzanoReleaseSpec.ReleaseNamespace if it does not exist yet.
+	// VerrazzanoFleetSpec.ReleaseNamespace if it does not exist yet.
 	// On uninstall, the namespace will not be garbage collected.
 	// If it is not specified by user, will be set to default 'true'.
 	// +optional
@@ -179,9 +179,9 @@ type HelmUninstallOptions struct {
 	Description string `json:"description,omitempty"`
 }
 
-// VerrazzanoReleaseStatus defines the observed state of VerrazzanoRelease.
-type VerrazzanoReleaseStatus struct {
-	// Conditions defines current state of the VerrazzanoRelease.
+// VerrazzanoFleetStatus defines the observed state of VerrazzanoFleet.
+type VerrazzanoFleetStatus struct {
+	// Conditions defines current state of the VerrazzanoFleet.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 
@@ -195,39 +195,39 @@ type VerrazzanoReleaseStatus struct {
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="Reason",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].reason"
 // +kubebuilder:printcolumn:name="Message",type="string",priority=1,JSONPath=".status.conditions[?(@.type=='Ready')].message"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of VerrazzanoRelease"
-// +kubebuilder:resource:shortName=vr;vrs,scope=Namespaced,categories=cluster-api
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of VerrazzanoFleet"
+// +kubebuilder:resource:shortName=vf;vfs,scope=Namespaced,categories=cluster-api
 
-// VerrazzanoRelease is the Schema for the verrazzanoreleases API
-type VerrazzanoRelease struct {
+// VerrazzanoFleet is the Schema for the verrazzanofleets API
+type VerrazzanoFleet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VerrazzanoReleaseSpec   `json:"spec,omitempty"`
-	Status VerrazzanoReleaseStatus `json:"status,omitempty"`
+	Spec   VerrazzanoFleetSpec   `json:"spec,omitempty"`
+	Status VerrazzanoFleetStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// VerrazzanoReleaseList contains a list of VerrazzanoRelease
-type VerrazzanoReleaseList struct {
+// VerrazzanoFleetList contains a list of VerrazzanoFleet
+type VerrazzanoFleetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VerrazzanoRelease `json:"items"`
+	Items           []VerrazzanoFleet `json:"items"`
 }
 
-// GetConditions returns the list of conditions for an VerrazzanoRelease API object.
-func (c *VerrazzanoRelease) GetConditions() clusterv1.Conditions {
+// GetConditions returns the list of conditions for an VerrazzanoFleet API object.
+func (c *VerrazzanoFleet) GetConditions() clusterv1.Conditions {
 	return c.Status.Conditions
 }
 
-// SetConditions will set the given conditions on an VerrazzanoRelease object.
-func (c *VerrazzanoRelease) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions will set the given conditions on an VerrazzanoFleet object.
+func (c *VerrazzanoFleet) SetConditions(conditions clusterv1.Conditions) {
 	c.Status.Conditions = conditions
 }
 
-// SetMatchingClusters will set the given list of matching clusters on an VerrazzanoRelease object.
-func (c *VerrazzanoRelease) SetMatchingClusters(clusterList []clusterv1.Cluster) {
+// SetMatchingClusters will set the given list of matching clusters on an VerrazzanoFleet object.
+func (c *VerrazzanoFleet) SetMatchingClusters(clusterList []clusterv1.Cluster) {
 	matchingClusters := make([]corev1.ObjectReference, 0, len(clusterList))
 	for _, cluster := range clusterList {
 		matchingClusters = append(matchingClusters, corev1.ObjectReference{
@@ -242,5 +242,5 @@ func (c *VerrazzanoRelease) SetMatchingClusters(clusterList []clusterv1.Cluster)
 }
 
 func init() {
-	SchemeBuilder.Register(&VerrazzanoRelease{}, &VerrazzanoReleaseList{})
+	SchemeBuilder.Register(&VerrazzanoFleet{}, &VerrazzanoFleetList{})
 }

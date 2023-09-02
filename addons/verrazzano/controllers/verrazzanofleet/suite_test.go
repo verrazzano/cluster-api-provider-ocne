@@ -15,7 +15,7 @@ limitations under the License.
 */
 // This file from the cluster-api community (https://github.com/kubernetes-sigs/cluster-api) has been modified by Oracle.
 
-package verrazzanorelease
+package verrazzanofleet
 
 import (
 	"path/filepath"

@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	addonsv1alpha1 "github.com/verrazzano/cluster-api-provider-ocne/addons/verrazzano/api/v1alpha1"
-	hcpController "github.com/verrazzano/cluster-api-provider-ocne/addons/verrazzano/controllers/verrazzanorelease"
-	hrpController "github.com/verrazzano/cluster-api-provider-ocne/addons/verrazzano/controllers/verrazzanoreleasebinding"
+	hcpController "github.com/verrazzano/cluster-api-provider-ocne/addons/verrazzano/controllers/verrazzanofleet"
+	hrpController "github.com/verrazzano/cluster-api-provider-ocne/addons/verrazzano/controllers/verrazzanofleetbinding"
 	"github.com/verrazzano/cluster-api-provider-ocne/version"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -63,8 +63,8 @@ func main() {
 	var leaderElectionRenewDeadline time.Duration
 	var leaderElectionRetryPeriod time.Duration
 	var probeAddr string
-	var verrazzanoReleaseConcurrency int
-	var verrazzanoReleaseBindingConcurrency int
+	var verrazzanoFleetConcurrency int
+	var verrazzanoFleetBindingConcurrency int
 	var syncPeriod time.Duration
 
 	klog.InitFlags(nil)
@@ -80,8 +80,8 @@ func main() {
 		"Duration that the leading controller manager will retry refreshing leadership before giving up (duration string)")
 	flag.DurationVar(&leaderElectionRetryPeriod, "leader-elect-retry-period", 2*time.Second,
 		"Duration the LeaderElector clients should wait between tries of actions (duration string)")
-	flag.IntVar(&verrazzanoReleaseConcurrency, "helm-chart-proxy-concurrency", 10, "The number of VerrazzanoReleases to process concurrently.")
-	flag.IntVar(&verrazzanoReleaseBindingConcurrency, "helm-release-proxy-concurrency", 10, "The number of VerrazzanoReleaseBindings to process concurrently.")
+	flag.IntVar(&verrazzanoFleetConcurrency, "helm-chart-proxy-concurrency", 10, "The number of VerrazzanoFleets to process concurrently.")
+	flag.IntVar(&verrazzanoFleetBindingConcurrency, "helm-release-proxy-concurrency", 10, "The number of VerrazzanoFleetBindings to process concurrently.")
 	flag.DurationVar(&syncPeriod, "sync-period", 10*time.Minute,
 		"The minimum interval at which watched resources are reconciled (e.g. 15m)")
 	// Set log level 2 as default.
@@ -116,28 +116,28 @@ func main() {
 
 	ctx := ctrl.SetupSignalHandler()
 
-	if err = (&hcpController.VerrazzanoReleaseReconciler{
+	if err = (&hcpController.VerrazzanoFleetReconciler{
 		Client: mgr.GetClient(),
 		Scheme: scheme,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: verrazzanoReleaseConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VerrazzanoRelease")
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: verrazzanoFleetConcurrency}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "VerrazzanoFleet")
 		os.Exit(1)
 	}
-	if err = (&addonsv1alpha1.VerrazzanoRelease{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "VerrazzanoRelease")
+	if err = (&addonsv1alpha1.VerrazzanoFleet{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "VerrazzanoFleet")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
 
-	if err = (&hrpController.VerrazzanoReleaseBindingReconciler{
+	if err = (&hrpController.VerrazzanoFleetBindingReconciler{
 		Client: mgr.GetClient(),
 		Scheme: scheme,
-	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: verrazzanoReleaseBindingConcurrency}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VerrazzanoReleaseBinding")
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: verrazzanoFleetBindingConcurrency}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "VerrazzanoFleetBinding")
 		os.Exit(1)
 	}
-	if err = (&addonsv1alpha1.VerrazzanoReleaseBinding{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "VerrazzanoReleaseBinding")
+	if err = (&addonsv1alpha1.VerrazzanoFleetBinding{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "VerrazzanoFleetBinding")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

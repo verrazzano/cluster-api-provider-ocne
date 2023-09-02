@@ -33,9 +33,9 @@ import (
 )
 
 // log is for logging in this package.
-var verrazzanoreleaselog = logf.Log.WithName("verrazzanorelease-resource")
+var verrazzanofleetlog = logf.Log.WithName("verrazzanofleet-resource")
 
-func (r *VerrazzanoRelease) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *VerrazzanoFleet) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -43,15 +43,15 @@ func (r *VerrazzanoRelease) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-//+kubebuilder:webhook:path=/mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanorelease,mutating=true,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanoreleases,verbs=create;update,versions=v1alpha1,name=verrazzanorelease.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleet,mutating=true,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanofleets,verbs=create;update,versions=v1alpha1,name=verrazzanofleet.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &VerrazzanoRelease{}
+var _ webhook.Defaulter = &VerrazzanoFleet{}
 
 const helmTimeoutSeconds = time.Second * 600
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (p *VerrazzanoRelease) Default() {
-	verrazzanoreleaselog.Info("default", "name", p.Name)
+func (p *VerrazzanoFleet) Default() {
+	verrazzanofleetlog.Info("default", "name", p.Name)
 
 	if p.Spec.ReleaseNamespace == "" {
 		p.Spec.ReleaseNamespace = "default"
@@ -73,13 +73,13 @@ func (p *VerrazzanoRelease) Default() {
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanorelease,mutating=false,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanoreleases,verbs=create;update,versions=v1alpha1,name=vverrazzanorelease.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-addons-cluster-x-k8s-io-v1alpha1-verrazzanofleet,mutating=false,failurePolicy=fail,sideEffects=None,groups=addons.cluster.x-k8s.io,resources=verrazzanofleets,verbs=create;update,versions=v1alpha1,name=vverrazzanofleet.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &VerrazzanoRelease{}
+var _ webhook.Validator = &VerrazzanoFleet{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoRelease) ValidateCreate() (admission.Warnings, error) {
-	verrazzanoreleaselog.Info("validate create", "name", r.Name)
+func (r *VerrazzanoFleet) ValidateCreate() (admission.Warnings, error) {
+	verrazzanofleetlog.Info("validate create", "name", r.Name)
 
 	if err := isUrlValid(r.Spec.RepoURL); err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func (r *VerrazzanoRelease) ValidateCreate() (admission.Warnings, error) {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoRelease) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	verrazzanoreleaselog.Info("validate update", "name", r.Name)
+func (r *VerrazzanoFleet) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	verrazzanofleetlog.Info("validate update", "name", r.Name)
 
 	if err := isUrlValid(r.Spec.RepoURL); err != nil {
 		return nil, err
@@ -100,8 +100,8 @@ func (r *VerrazzanoRelease) ValidateUpdate(old runtime.Object) (admission.Warnin
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *VerrazzanoRelease) ValidateDelete() (admission.Warnings, error) {
-	verrazzanoreleaselog.Info("validate delete", "name", r.Name)
+func (r *VerrazzanoFleet) ValidateDelete() (admission.Warnings, error) {
+	verrazzanofleetlog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil

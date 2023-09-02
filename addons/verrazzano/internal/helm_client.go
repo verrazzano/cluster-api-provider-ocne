@@ -48,9 +48,9 @@ import (
 )
 
 type Client interface {
-	InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.Release, error)
-	GetHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.Release, error)
-	UninstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.UninstallReleaseResponse, error)
+	InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.Release, error)
+	GetHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.Release, error)
+	UninstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.UninstallReleaseResponse, error)
 }
 
 type HelmClient struct{}
@@ -117,7 +117,7 @@ func HelmInit(ctx context.Context, namespace string, kubeconfig string) (*helmCl
 
 // InstallOrUpgradeHelmRelease installs a Helm release if it does not exist, or upgrades it if it does and differs from the spec.
 // It returns a boolean indicating whether an install or upgrade was performed.
-func (c *HelmClient) InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.Release, error) {
+func (c *HelmClient) InstallOrUpgradeHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Installing or upgrading Helm release")
@@ -197,7 +197,7 @@ func generateHelmUpgradeConfig(actionConfig *helmAction.Configuration, helmOptio
 }
 
 // InstallHelmRelease installs a Helm release.
-func (c *HelmClient) InstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.Release, error) {
+func (c *HelmClient) InstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -303,7 +303,7 @@ func getHelmChartAndRepoName(chartName, repoURL string) (string, string, error) 
 }
 
 // UpgradeHelmReleaseIfChanged upgrades a Helm release. The boolean refers to if an upgrade was attempted.
-func (c *HelmClient) UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec, existing *helmRelease.Release) (*helmRelease.Release, error) {
+func (c *HelmClient) UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec, existing *helmRelease.Release) (*helmRelease.Release, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	settings, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
@@ -382,7 +382,7 @@ func (c *HelmClient) UpgradeHelmReleaseIfChanged(ctx context.Context, kubeconfig
 }
 
 // writeValuesToFile writes the Helm values to a temporary file.
-func writeValuesToFile(ctx context.Context, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (string, error) {
+func writeValuesToFile(ctx context.Context, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(2).Info("Writing values to file")
 	valuesFile, err := os.CreateTemp("", spec.ChartName+"-"+spec.ReleaseName+"-*.yaml")
@@ -431,7 +431,7 @@ func shouldUpgradeHelmRelease(ctx context.Context, existing helmRelease.Release,
 }
 
 // GetHelmRelease returns a Helm release if it exists.
-func (c *HelmClient) GetHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.Release, error) {
+func (c *HelmClient) GetHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.Release, error) {
 	if spec.ReleaseName == "" {
 		return nil, helmDriver.ErrReleaseNotFound
 	}
@@ -450,7 +450,7 @@ func (c *HelmClient) GetHelmRelease(ctx context.Context, kubeconfig string, spec
 }
 
 // ListHelmReleases lists all Helm releases in a namespace.
-func (c *HelmClient) ListHelmReleases(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) ([]*helmRelease.Release, error) {
+func (c *HelmClient) ListHelmReleases(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) ([]*helmRelease.Release, error) {
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
 	if err != nil {
 		return nil, err
@@ -486,7 +486,7 @@ func generateHelmUninstallConfig(actionConfig *helmAction.Configuration, helmOpt
 }
 
 // UninstallHelmRelease uninstalls a Helm release.
-func (c *HelmClient) UninstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) (*helmRelease.UninstallReleaseResponse, error) {
+func (c *HelmClient) UninstallHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) (*helmRelease.UninstallReleaseResponse, error) {
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
 	if err != nil {
 		return nil, err
@@ -503,7 +503,7 @@ func (c *HelmClient) UninstallHelmRelease(ctx context.Context, kubeconfig string
 }
 
 // RollbackHelmRelease rolls back a Helm release.
-func (c *HelmClient) RollbackHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoReleaseBindingSpec) error {
+func (c *HelmClient) RollbackHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.VerrazzanoFleetBindingSpec) error {
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
 	if err != nil {
 		return err
