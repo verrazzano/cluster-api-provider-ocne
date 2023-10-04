@@ -355,7 +355,7 @@
     nginx: 1.17.7
     externalip-webhook: v1.0.0-1
     module-operator: v1.7.0
-1.26.6-2:
+1.26.6-1:
   architecture: aarch64
   container-images:
     pause: 3.9
