@@ -197,7 +197,7 @@ func GetOCNEOverrides(userData *OCNEOverrideData) ([]string, error) {
 	case "aarch64":
 		ocneDependenciesInstall = []string{
 			`sudo dnf install -y oracle-olcne-release-el8`,
-			`sudo dnf config-manager --enable ol8_developer_olcne`,
+			//`sudo dnf config-manager --enable ol8_developer_olcne`,
 			`sudo sh -c 'echo -e "[ol8_developer_olcne]\nname=Developer Preview for Oracle Cloud Native Environment ($basearch)\nbaseurl=https://yum$ociregion.$ocidomain/repo/OracleLinux/OL8/developer/olcne/$basearch/\ngpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle\ngpgcheck=1\nenabled=1\n"| sudo tee /etc/yum.repos.d/oraclelinux-developer-ol8.repo'`,
 			fmt.Sprintf("sudo dnf install -y kubelet-%s.el8 kubeadm-%s.el8 kubectl-%s.el8 helm-%s.el8", ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubelet, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubeadm, ocneMeta[userData.KubernetesVersion].OCNEPackages.Kubectl, ocneMeta[userData.KubernetesVersion].OCNEPackages.Helm),
 			`sudo dnf install -y oraclelinux-developer-release-el8 python36-oci-cli olcnectl olcne-api-server olcne-utils`,
