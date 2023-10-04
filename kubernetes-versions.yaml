@@ -356,7 +356,6 @@
     externalip-webhook: v1.0.0-1
     module-operator: v1.7.0
 1.26.6-1:
-  architecture: aarch64
   container-images:
     pause: 3.9
     etcd: 3.5.6-1

@@ -67,7 +67,7 @@ var k8s_ocne_version_maping = map[string]string{
 }
 
 var k8s_ocne_architecture_maping = map[string]string{
-	"v1.26.6-2": "aarch64",
+	"v1.26.6-1": "aarch64",
 	"v1.26.6":   "x86_64",
 	"v1.25.11":  "x86_64",
 	"v1.25.7":   "x86_64",
