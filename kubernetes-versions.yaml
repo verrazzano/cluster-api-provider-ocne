@@ -2,6 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 1.14.8:
+  architecture: x86_64
   container-images:
     pause: 3.1
     etcd: 3.3.10-1
@@ -353,4 +354,25 @@
     flannel: v0.14.1
     nginx: 1.17.7
     externalip-webhook: v1.0.0-1
+    module-operator: v1.7.0
+1.26.6-2:
+  architecture: aarch64
+  container-images:
+    pause: 3.9
+    etcd: 3.5.6-1
+    coredns: v1.9.3-1
+    kube-controller-manager: v1.26.6-1
+    kube-scheduler: v1.26.6-1
+    kube-apiserver: v1.26.6-1
+    kube-proxy: v1.26.6-1
+  packages:
+    kubeadm: 1.26.6-2
+    kubectl: 1.26.6-2
+    kubelet: 1.26.6-2
+    helm: 3.12.0-2
+  extra-images:
+    kubernetes-dashboard: v2.5.1-1
+    flannel: v0.14.1-1
+    nginx: 1.17.7-1
+    externalip-webhook: v1.0.0-2
     module-operator: v1.7.0

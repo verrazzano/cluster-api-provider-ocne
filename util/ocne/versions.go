@@ -20,6 +20,7 @@ type OCNEMetadata struct {
 	OCNEImages   `json:"container-images"`
 	OCNEPackages `json:"packages"`
 	Release      string `json:release,omitempty`
+	Architecture string `json:architecture,omitempty`
 }
 
 type OCNEImages struct {
@@ -63,6 +64,21 @@ var k8s_ocne_version_maping = map[string]string{
 	"v1.22.16": "1.5",
 	"v1.22.14": "1.5",
 	"v1.22.8":  "1.5",
+}
+
+var k8s_ocne_architecture_maping = map[string]string{
+	"v1.26.6-2": "aarch64",
+	"v1.26.6":   "x86_64",
+	"v1.25.11":  "x86_64",
+	"v1.25.7":   "x86_64",
+	"v1.24.8":   "x86_64",
+	"v1.24.5":   "x86_64",
+	"v1.23.14":  "x86_64",
+	"v1.23.11":  "x86_64",
+	"v1.23.7":   "x86_64",
+	"v1.22.16":  "x86_64",
+	"v1.22.14":  "x86_64",
+	"v1.22.8":   "x86_64",
 }
 
 var getCoreV1Func = getCoreV1Client
@@ -169,6 +185,14 @@ func buildMapping(rawMapping map[string]OCNEMetadata) (map[string]OCNEMetadata, 
 				ocneVersion, ok := k8s_ocne_version_maping[version]
 				if ok {
 					meta.Release = ocneVersion
+				}
+			}
+
+			//Add architecture if missing
+			if meta.Architecture == "" {
+				ocneArchitecture, ok := k8s_ocne_architecture_maping[version]
+				if ok {
+					meta.Architecture = ocneArchitecture
 				}
 			}
 
