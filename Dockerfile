@@ -84,6 +84,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
 RUN yq -iy ".\"1.25.7\".\"container-images\".\"module-operator\" = \"${VERRAZZANO_MODULE_OPERATOR_TAG}\"" kubernetes-versions.yaml
 RUN yq -iy ".\"1.25.11\".\"container-images\".\"module-operator\" = \"${VERRAZZANO_MODULE_OPERATOR_TAG}\"" kubernetes-versions.yaml
 RUN yq -iy ".\"1.26.6\".\"container-images\".\"module-operator\" = \"${VERRAZZANO_MODULE_OPERATOR_TAG}\"" kubernetes-versions.yaml
+RUN yq -iy ".\"1.26.6-2\".\"container-images\".\"module-operator\" = \"${VERRAZZANO_MODULE_OPERATOR_TAG}\"" kubernetes-versions.yaml
 
 
 # Production image
