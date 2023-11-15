@@ -71,8 +71,7 @@ ENV VERRAZZANO_MODULE_DIRECTORY=verrazzano-modules
 RUN dnf install -y oracle-olcne-release-el8 oraclelinux-developer-release-el8 && \
     dnf config-manager --enable ol8_olcne16 ol8_developer && \
     dnf update -y && \
-    dnf install -y jq helm-3.11.1-1.el8 tar git && \
-    go version
+    dnf install -y jq helm-3.11.1-1.el8
 
 RUN git clone -b $VERRAZZANO_MODULE_BRANCH https://github.com/verrazzano/verrazzano-modules.git && \
     git -C $VERRAZZANO_MODULE_DIRECTORY checkout $VERRAZZANO_MODULE_COMMIT && \
