@@ -63,10 +63,17 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} \
 FROM ${helper_image} as helper
 WORKDIR /workspace
 
+ARG vz_module_branch
+ARG vz_module_commit
+ARG vz_module_tag
+
 ENV VERRAZZANO_MODULE_BRANCH=$vz_module_branch
 ENV VERRAZZANO_MODULE_COMMIT=$vz_module_commit
 ENV VERRAZZANO_MODULE_OPERATOR_TAG=$vz_module_tag
 ENV VERRAZZANO_MODULE_DIRECTORY=verrazzano-modules
+
+# Copy the sources
+COPY ./ ./
 
 RUN dnf install -y oracle-olcne-release-el8 oraclelinux-developer-release-el8 && \
     dnf config-manager --enable ol8_olcne16 ol8_developer && \
