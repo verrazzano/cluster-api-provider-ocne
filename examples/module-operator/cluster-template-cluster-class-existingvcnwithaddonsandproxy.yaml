@@ -328,6 +328,11 @@ spec:
       shapeConfig:
         ocpus: "${OCI_NODE_MACHINE_TYPE_OCPUS=4}"
         memoryInGBs: "${OCI_NODE_MACHINE_MEMORY_GBS=80}"
+      # Disable the OSMS plugin as it interferes with the Yum repo setup and tool installation
+      agentConfig:
+        pluginsConfigs:
+          - desiredState: DISABLED
+            name: "OS Management Service Agent"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIMachineTemplate
@@ -347,6 +352,11 @@ spec:
       shapeConfig:
         ocpus: "${OCI_NODE_MACHINE_TYPE_OCPUS=4}"
         memoryInGBs: "${OCI_NODE_MACHINE_MEMORY_GBS=80}"
+      # Disable the OSMS plugin as it interferes with the Yum repo setup and tool installation
+      agentConfig:
+        pluginsConfigs:
+          - desiredState: DISABLED
+            name: "OS Management Service Agent"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: OCIMachineTemplate
@@ -366,6 +376,11 @@ spec:
       shapeConfig:
         ocpus: "${OCI_NODE_MACHINE_TYPE_OCPUS=4}"
         memoryInGBs: "${OCI_NODE_MACHINE_MEMORY_GBS=80}"
+      # Disable the OSMS plugin as it interferes with the Yum repo setup and tool installation
+      agentConfig:
+        pluginsConfigs:
+          - desiredState: DISABLED
+            name: "OS Management Service Agent"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
 kind: OCNEConfigTemplate
