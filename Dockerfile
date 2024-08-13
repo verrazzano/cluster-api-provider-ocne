@@ -115,6 +115,6 @@ RUN groupadd -r ocne \
     && chown -R 1000:ocne /manager /home/ocne \
     && chmod 500 /manager
 RUN mkdir -p /license
-COPY LICENSE README.md THIRD_PARTY_LICENSES.txt /license/
+COPY LICENSE.txt README.md THIRD_PARTY_LICENSES.txt /license/
 USER 1000
 ENTRYPOINT ["/manager"]
